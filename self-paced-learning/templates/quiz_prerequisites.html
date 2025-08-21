@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Quiz Prerequisites - {{ subject.title() }} {{ subtopic.title() }}
+    </title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <style>
+      .prerequisites-container {
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 40px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+
+      .prerequisites-icon {
+        font-size: 4rem;
+        color: #e74c3c;
+        margin-bottom: 20px;
+      }
+
+      .prerequisites-title {
+        font-size: 2rem;
+        color: #2c3e50;
+        margin-bottom: 10px;
+      }
+
+      .prerequisites-subtitle {
+        font-size: 1.2rem;
+        color: #7f8c8d;
+        margin-bottom: 30px;
+      }
+
+      .requirements-list {
+        text-align: left;
+        margin: 30px 0;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #3498db;
+      }
+
+      .requirement-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #ecf0f1;
+      }
+
+      .requirement-item:last-child {
+        border-bottom: none;
+      }
+
+      .requirement-status {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        margin-right: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.8rem;
+      }
+
+      .requirement-status.complete {
+        background-color: #27ae60;
+        color: white;
+      }
+
+      .requirement-status.incomplete {
+        background-color: #e74c3c;
+        color: white;
+      }
+
+      .requirement-text {
+        flex: 1;
+        font-size: 1.1rem;
+      }
+
+      .missing-items {
+        background: #fff5f5;
+        border: 1px solid #fed7d7;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+      }
+
+      .missing-items h3 {
+        color: #e53e3e;
+        margin-bottom: 15px;
+      }
+
+      .missing-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
+        color: #742a2a;
+      }
+
+      .missing-item::before {
+        content: "⚠️";
+        margin-right: 10px;
+      }
+
+      .action-buttons {
+        margin-top: 30px;
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+      }
+
+      .btn {
+        padding: 12px 30px;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .btn-primary {
+        background: #3498db;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-2px);
+      }
+
+      .btn-secondary {
+        background: #95a5a6;
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background: #7f8c8d;
+      }
+
+      .progress-summary {
+        display: flex;
+        justify-content: space-around;
+        margin: 30px 0;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .progress-item {
+        text-align: center;
+      }
+
+      .progress-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #2c3e50;
+      }
+
+      .progress-label {
+        font-size: 0.9rem;
+        color: #7f8c8d;
+        margin-top: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="prerequisites-container">
+      {% if prerequisites.admin_override %}
+      <div class="prerequisites-icon" style="color: #27ae60">🔓</div>
+      <h1 class="prerequisites-title">Admin Override Active</h1>
+      <p class="prerequisites-subtitle">
+        Prerequisites are bypassed - you can take the quiz directly
+      </p>
+
+      <div
+        style="
+          margin: 30px 0;
+          padding: 20px;
+          background: #d4edda;
+          border: 1px solid #c3e6cb;
+          border-radius: 8px;
+          color: #155724;
+        "
+      >
+        <p><strong>Admin Override Enabled</strong></p>
+        <p>
+          All quiz prerequisites have been bypassed. You can proceed directly to
+          the quiz without completing lessons or watching videos.
+        </p>
+      </div>
+
+      <div class="action-buttons">
+        <a href="/quiz/{{ subject }}/{{ subtopic }}" class="btn btn-primary">
+          Take Quiz Now
+        </a>
+        <a href="/subjects/{{ subject }}" class="btn btn-secondary">
+          Back to Subject
+        </a>
+      </div>
+      {% else %}
+      <div class="prerequisites-icon">🚫</div>
+      <h1 class="prerequisites-title">Quiz Prerequisites Required</h1>
+      <p class="prerequisites-subtitle">
+        Complete the following requirements before taking the {{ subject.title()
+        }} - {{ subtopic.title() }} quiz
+      </p>
+
+      <div class="progress-summary">
+        <div class="progress-item">
+          <div class="progress-value">
+            {{ prerequisites.completed_lessons|length }}
+          </div>
+          <div class="progress-label">Lessons Completed</div>
+        </div>
+        <div class="progress-item">
+          <div class="progress-value">
+            {{ prerequisites.total_initial_lessons }}
+          </div>
+          <div class="progress-label">Total Lessons</div>
+        </div>
+        <div class="progress-item">
+          <div class="progress-value">
+            {% if prerequisites.video_watched %}✅{% else %}❌{% endif %}
+          </div>
+          <div class="progress-label">Video Watched</div>
+        </div>
+      </div>
+
+      <div class="requirements-list">
+        <h3>Requirements Checklist:</h3>
+
+        <div class="requirement-item">
+          <div
+            class="requirement-status {% if prerequisites.lessons_complete %}complete{% else %}incomplete{% endif %}"
+          >
+            {% if prerequisites.lessons_complete %}✓{% else %}✗{% endif %}
+          </div>
+          <div class="requirement-text">
+            Complete all initial lessons ({{
+            prerequisites.completed_lessons|length }}/{{
+            prerequisites.total_initial_lessons }})
+          </div>
+        </div>
+
+        <div class="requirement-item">
+          <div
+            class="requirement-status {% if prerequisites.video_watched %}complete{% else %}incomplete{% endif %}"
+          >
+            {% if prerequisites.video_watched %}✓{% else %}✗{% endif %}
+          </div>
+          <div class="requirement-text">Watch the lecture video</div>
+        </div>
+      </div>
+
+      {% if missing_items %}
+      <div class="missing-items">
+        <h3>Still Need To Complete:</h3>
+        {% for item in missing_items %}
+        <div class="missing-item">{{ item }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="action-buttons">
+        <a href="/subjects/{{ subject }}" class="btn btn-primary">
+          Complete Requirements
+        </a>
+        <a href="/subjects" class="btn btn-secondary"> Back to Subjects </a>
+      </div>
+
+      <div
+        style="
+          margin-top: 30px;
+          padding: 20px;
+          background: #e8f4f8;
+          border-radius: 8px;
+          color: #2c3e50;
+        "
+      >
+        <p><strong>Why are prerequisites required?</strong></p>
+        <p>
+          To ensure you have the foundational knowledge needed to succeed on the
+          quiz, you must first complete all lessons and watch the instructional
+          video. This helps guarantee better learning outcomes and quiz
+          performance.
+        </p>
+      </div>
+      {% endif %}
+    </div>
+
+    <script>
+      // Auto-refresh every 10 seconds to check for updated prerequisites
+      setInterval(() => {
+        // Check if all prerequisites are now met
+        fetch(`/api/quiz-prerequisites/{{ subject }}/{{ subtopic }}`)
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.all_met) {
+              // Show success message and option to take quiz
+              window.location.reload();
+            }
+          })
+          .catch((error) => console.log("Prerequisites check error:", error));
+      }, 10000);
+    </script>
+  </body>
+</html>
