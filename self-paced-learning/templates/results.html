@@ -84,6 +84,65 @@
     <script src="https://www.youtube.com/iframe_api"></script>
 
     <script>
+      // Simple global test function
+      window.simpleTest = function() {
+        console.log("Simple test function called!");
+        const links = document.querySelectorAll('a[data-action="read"]');
+        console.log("Found links:", links.length);
+        if (links.length > 0) {
+          console.log("Clicking first link...");
+          links[0].click();
+        }
+      };
+      
+      // Global test function for debugging
+      window.testClickHandler = function() {
+        console.log("=== GLOBAL CLICK TEST ===");
+        const readLinks = document.querySelectorAll('a[data-action="read"]');
+        console.log("Found read links:", readLinks.length);
+        
+        if (readLinks.length > 0) {
+          const firstLink = readLinks[0];
+          console.log("First link:", firstLink);
+          console.log("First link computed style:", window.getComputedStyle(firstLink));
+          console.log("First link visibility:", {
+            display: window.getComputedStyle(firstLink).display,
+            visibility: window.getComputedStyle(firstLink).visibility,
+            opacity: window.getComputedStyle(firstLink).opacity,
+            pointerEvents: window.getComputedStyle(firstLink).pointerEvents,
+            zIndex: window.getComputedStyle(firstLink).zIndex
+          });
+          console.log("First link bounding rect:", firstLink.getBoundingClientRect());
+          console.log("First link data:", {
+            action: firstLink.dataset.action,
+            topic: firstLink.dataset.topic,
+            subject: firstLink.dataset.subject,
+            subtopic: firstLink.dataset.subtopic,
+            weakTopic: firstLink.dataset.weakTopic
+          });
+          
+          // Check if link is actually visible and clickable
+          const rect = firstLink.getBoundingClientRect();
+          const isVisible = rect.width > 0 && rect.height > 0 && rect.top >= 0;
+          console.log("Link is visible:", isVisible);
+          
+          // Try clicking it
+          console.log("Triggering click...");
+          firstLink.click();
+          
+          // Also try dispatching a manual click event
+          console.log("Dispatching manual click event...");
+          const clickEvent = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            view: window
+          });
+          firstLink.dispatchEvent(clickEvent);
+        }
+      };
+    </script>
+
+    <script>
       const REMEDIAL_LESSON_PLANS = {{ LESSON_PLANS | tojson | safe }};
       const VIDEO_DATA = {{ VIDEO_DATA | tojson | safe }};
       const CURRENT_SUBJECT = {{ CURRENT_SUBJECT | tojson | safe }};
@@ -161,9 +220,84 @@
         // Initialize lesson index early
         buildLessonIndex();
 
-        // DEBUG: Test if clicks work at all
-        document.body.addEventListener("click", function (e) {
-          console.log("BODY CLICK:", e.target, e.target.tagName);
+        // --- REGISTER CLICK HANDLER EARLY TO ENSURE IT'S ALWAYS AVAILABLE ---
+        console.log("=== REGISTERING DOCUMENT CLICK HANDLER EARLY ===");
+        document.addEventListener("click", function (e) {
+          console.log("Document click detected on:", e.target);
+          console.log("Looking for closest a[data-action]...");
+
+          // Only handle clicks on links with data-action attribute (our lesson links)
+          const link = e.target.closest("a[data-action]");
+          console.log("Found link:", link);
+
+          if (!link) {
+            console.log("No link with data-action found, returning");
+            return;
+          }
+
+          console.log("=== LESSON CLICK DETECTED ===");
+          console.log("Link found:", link);
+          console.log("Link dataset:", link.dataset);
+
+          e.preventDefault();
+
+          const action = link.dataset.action;
+          const topic = link.dataset.topic;
+          const weakTopic = link.dataset.weakTopic;
+          const subject = link.dataset.subject || CURRENT_SUBJECT;
+          const subtopic = link.dataset.subtopic || CURRENT_SUBTOPIC;
+
+          if (!topic || !action) {
+            console.warn("Sidebar click without topic/action:", link);
+            return;
+          }
+
+          const completionKey = weakTopic || topic;
+
+          // Clear previous active state
+          const currentActive = document.querySelector("a.active");
+          if (currentActive) currentActive.classList.remove("active");
+          link.classList.add("active");
+
+          console.log("Processing lesson click:", {
+            action,
+            topic,
+            weakTopic,
+            completionKey,
+            subject,
+            subtopic,
+          });
+
+          if (action === "read") {
+            if (currentPlayer) {
+              currentPlayer.destroy();
+              currentPlayer = null;
+            }
+            if (videoProgressChecker) {
+              clearInterval(videoProgressChecker);
+              videoProgressChecker = null;
+            }
+            currentVideoTopic = null;
+
+            console.log("About to render lesson with:", {
+              topic,
+              subject,
+              subtopic,
+              completionKey,
+            });
+
+            renderLesson(topic, subject, subtopic);
+            updateCompletionState(completionKey, "read");
+          } else if (action === "watch") {
+            console.log("About to render video with:", {
+              topic,
+              completionKey,
+              subject,
+              subtopic,
+            });
+
+            renderVideo(topic, completionKey, subject, subtopic);
+          }
         });
 
         // --- State Tracking ---
@@ -366,6 +500,7 @@
             });
 
             setupLessonEventHandlers();
+            debugRemedialLessons(); // Add programmatic debug for low score case
             continueButton.classList.remove("hidden");
             backToTopicsButton.classList.remove("hidden");
             checkCompletionAndToggleButton();
@@ -487,9 +622,12 @@
 
                 console.log("Lessons grouped by topic:", lessonsByTopic);
 
+                console.log("=== STARTING WEAK TOPICS FOREACH LOOP ===");
                 // Display lessons organized by weak topics; prefer remedial where available
                 weakTopics.forEach((topic) => {
+                  console.log("Processing weak topic:", topic);
                   const lessons = lessonsByTopic[topic] || [];
+                  console.log("Lessons for topic:", topic, lessons);
                   if (lessons.length > 0) {
                     const remedialFirst = (() => {
                       const rem = lessons.filter(
@@ -517,6 +655,7 @@
                 });
 
                 setupLessonEventHandlers();
+                debugRemedialLessons(); // Add programmatic debug after lessons are built
                 return;
               } else {
                 console.log("API returned no lessons");
@@ -531,6 +670,8 @@
           // Fallback to original direct key lookup method
           console.log("Falling back to direct key lookup method");
           displayWeakTopics(weakTopics);
+          setupLessonEventHandlers();
+          debugRemedialLessons(); // Add programmatic debug for fallback case too
         }
 
         // --- NEW HELPERS: Build sidebar sections and attach handlers ---
@@ -589,6 +730,87 @@
           // and prevents default navigation, so no additional handlers needed here.
         }
 
+        // --- PROGRAMMATIC REMEDIAL LESSON DEBUGGING ---
+        function debugRemedialLessons() {
+          console.log("=== PROGRAMMATIC REMEDIAL LESSON DEBUG ===");
+
+          // Find all remedial lesson links
+          const allLinks = document.querySelectorAll("a[data-action]");
+          console.log(
+            `Found ${allLinks.length} links with data-action attribute:`
+          );
+
+          allLinks.forEach((link, index) => {
+            console.log(`Link ${index + 1}:`, {
+              element: link,
+              text: link.textContent.trim(),
+              action: link.dataset.action,
+              topic: link.dataset.topic,
+              subject: link.dataset.subject,
+              subtopic: link.dataset.subtopic,
+              weakTopic: link.dataset.weakTopic,
+              href: link.href,
+              parent: link.parentElement,
+              isVisible: link.offsetParent !== null,
+            });
+          });
+
+          // Try to trigger a click on the first "read" action link programmatically
+          const readLinks = Array.from(allLinks).filter(
+            (link) => link.dataset.action === "read"
+          );
+          if (readLinks.length > 0) {
+            console.log(
+              "Found read links, but NOT auto-clicking to preserve UI flow"
+            );
+            const firstReadLink = readLinks[0];
+
+            // Test if we can access the data
+            console.log("First read link data:", {
+              action: firstReadLink.dataset.action,
+              topic: firstReadLink.dataset.topic,
+              subject: firstReadLink.dataset.subject,
+              subtopic: firstReadLink.dataset.subtopic,
+              weakTopic: firstReadLink.dataset.weakTopic,
+            });
+
+            // Log that renderLesson function exists and is callable
+            console.log(
+              "renderLesson function exists:",
+              typeof renderLesson === "function"
+            );
+          } else {
+            console.log("No read links found!");
+          }
+
+          console.log("=== END PROGRAMMATIC DEBUG ===");
+        }
+
+        // --- MANUAL CLICK TEST FUNCTION ---
+        window.testRemedialClick = function () {
+          console.log("=== MANUAL CLICK TEST ===");
+          const readLinks = document.querySelectorAll('a[data-action="read"]');
+          console.log("Found read links:", readLinks.length);
+
+          if (readLinks.length > 0) {
+            const firstLink = readLinks[0];
+            console.log("Attempting to click first read link:", firstLink);
+            console.log("Link attributes:", {
+              action: firstLink.dataset.action,
+              topic: firstLink.dataset.topic,
+              subject: firstLink.dataset.subject,
+              subtopic: firstLink.dataset.subtopic,
+              weakTopic: firstLink.dataset.weakTopic,
+            });
+
+            // Try triggering click event
+            firstLink.click();
+            console.log("Click triggered");
+          } else {
+            console.log("No read links found");
+          }
+        };
+
         // --- Score Display Function ---
         function displayScore(scoreData) {
           const { correct, total, percentage } = scoreData;
@@ -616,77 +838,7 @@
           scoreContainer.classList.remove("hidden");
         }
 
-        // --- Main Event Listener for Sidebar Clicks ---
-        // Use document-level delegation to ensure we catch ALL clicks
-        document.addEventListener("click", function (e) {
-          // Only handle clicks on links with data-action attribute (our lesson links)
-          const link = e.target.closest("a[data-action]");
-          if (!link) return;
-          
-          console.log("=== LESSON CLICK DETECTED ===");
-          console.log("Link found:", link);
-          console.log("Link dataset:", link.dataset);
-          
-          e.preventDefault();
-
-          const action = link.dataset.action;
-          const topic = link.dataset.topic;
-          const weakTopic = link.dataset.weakTopic;
-          const subject = link.dataset.subject || CURRENT_SUBJECT;
-          const subtopic = link.dataset.subtopic || CURRENT_SUBTOPIC;
-
-          if (!topic || !action) {
-            console.warn("Sidebar click without topic/action:", link);
-            return;
-          }
-
-          const completionKey = weakTopic || topic;
-
-          // Clear previous active state
-          const currentActive = document.querySelector("a.active");
-          if (currentActive) currentActive.classList.remove("active");
-          link.classList.add("active");
-
-          console.log("Processing lesson click:", {
-            action,
-            topic,
-            weakTopic,
-            completionKey,
-            subject,
-            subtopic,
-          });
-
-          if (action === "read") {
-            if (currentPlayer) {
-              currentPlayer.destroy();
-              currentPlayer = null;
-            }
-            if (videoProgressChecker) {
-              clearInterval(videoProgressChecker);
-              videoProgressChecker = null;
-            }
-            currentVideoTopic = null;
-
-            console.log("About to render lesson with:", {
-              topic,
-              subject,
-              subtopic,
-              completionKey,
-            });
-
-            renderLesson(topic, subject, subtopic);
-            updateCompletionState(completionKey, "read");
-          } else if (action === "watch") {
-            console.log("About to render video with:", {
-              topic,
-              completionKey,
-              subject,
-              subtopic,
-            });
-
-            renderVideo(topic, completionKey, subject, subtopic);
-          }
-        });
+        // --- Score Display Function (duplicate click handler removed) ---
 
         continueButton.addEventListener("click", function () {
           if (!this.disabled) {
@@ -764,30 +916,19 @@
          */
         function renderLesson(topic, subject, subtopic) {
           console.log("=== renderLesson called ===");
-          console.log(
-            "Topic:",
-            topic,
-            "Subject:",
-            subject,
-            "Subtopic:",
-            subtopic
-          );
+          console.log("Topic:", topic, "Subject:", subject, "Subtopic:", subtopic);
 
-          // Ensure the analysis/welcome block is hidden when rendering a lesson
-          try {
-            const welcomeBlock = document.getElementById("welcome-message");
-            if (welcomeBlock) welcomeBlock.classList.add("hidden");
-          } catch (e) {
-            console.warn("Could not hide welcome-message:", e);
-          }
+          // Only hide the analysis/welcome block when we actually have content to show
+          // This prevents the welcome message from disappearing prematurely
 
           let lesson = resolveLesson(topic);
+          console.log("=== DETAILED LESSON RESOLUTION DEBUG ===");
+          console.log("Calling resolveLesson with topic:", topic);
           console.log("Resolved lesson from local plans:", lesson);
-          console.log(
-            "REMEDIAL_LESSON_PLANS keys:",
-            Object.keys(REMEDIAL_LESSON_PLANS || {})
-          );
-          console.log("Looking for lesson with key:", topic);
+          console.log("REMEDIAL_LESSON_PLANS keys:", Object.keys(REMEDIAL_LESSON_PLANS || {}));
+          console.log("Looking for lesson with exact key:", topic);
+          console.log("Direct lookup result:", REMEDIAL_LESSON_PLANS?.[topic]);
+          console.log("=== END LESSON RESOLUTION DEBUG ===");
 
           if (!lesson && subject && subtopic) {
             console.log("Lesson not in local plans; fetching:", {
@@ -836,7 +977,8 @@
           console.log("=== RENDERING LESSON OBJECT ===");
           console.log("Lesson object:", lesson);
 
-          // Hide the main welcome/feedback message
+          // Hide the main welcome/feedback message now that we're showing lesson content
+          welcomeMessageContainer.classList.add("hidden");
           welcomeMessageContainer.classList.add("hidden");
 
           let contentHtml = `<h2>${lesson.title}</h2>`;

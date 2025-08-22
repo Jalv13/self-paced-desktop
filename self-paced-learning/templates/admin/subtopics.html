@@ -32,17 +32,17 @@
             >
           </li>
           <li>
-            <a href="/admin/subtopics" class="active"
+            <a href="/admin/subtopics/select-subject" class="active"
               ><i class="fas fa-sitemap"></i> Subtopics</a
             >
           </li>
           <li>
-            <a href="/admin/lessons"
+            <a href="/admin/lessons/select-subject"
               ><i class="fas fa-chalkboard-teacher"></i> Lessons</a
             >
           </li>
           <li>
-            <a href="/admin/questions"
+            <a href="/admin/questions/select-subject"
               ><i class="fas fa-question-circle"></i> Questions</a
             >
           </li>
@@ -79,6 +79,24 @@
             </div>
           </div>
         </header>
+
+        <!-- Breadcrumb and Navigation -->
+        <div class="breadcrumb-nav">
+          <div class="breadcrumb">
+            <a href="/admin">Admin</a> >
+            <a href="/admin/subtopics/select-subject">Subject Selection</a> >
+            <span id="currentSubjectBreadcrumb">All Subtopics</span>
+          </div>
+          <div class="nav-actions">
+            <a
+              href="/admin/subtopics/select-subject"
+              class="action-btn secondary"
+            >
+              <i class="fas fa-arrow-left"></i>
+              Back to Subject Selection
+            </a>
+          </div>
+        </div>
 
         <!-- Filter Controls -->
         <div class="filter-controls">
@@ -782,6 +800,42 @@
         background: #28a745;
         color: white;
         border-color: #28a745;
+      }
+
+      /* Breadcrumb Navigation Styles */
+      .breadcrumb-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e1e5e9;
+      }
+
+      .breadcrumb {
+        font-size: 0.9rem;
+        color: #666;
+      }
+
+      .breadcrumb a {
+        color: #0066cc;
+        text-decoration: none;
+      }
+
+      .breadcrumb a:hover {
+        text-decoration: underline;
+      }
+
+      .breadcrumb span {
+        color: #333;
+        font-weight: 500;
+      }
+
+      .nav-actions .action-btn {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
       }
 
       .admin-actions .action-btn.secondary.override-active:hover {
@@ -2185,11 +2239,26 @@
 
       // Initialize page
       document.addEventListener('DOMContentLoaded', function() {
+          // Check for subject parameter in URL and pre-select filter
+          const urlParams = new URLSearchParams(window.location.search);
+          const subjectParam = urlParams.get('subject');
+          if (subjectParam) {
+              const subjectFilter = document.getElementById('subjectFilter');
+              if (subjectFilter) {
+                  subjectFilter.value = subjectParam;
+              }
+          }
+
           updateSubtopicCounts();
           setupEventListeners();
           updateEmptyState();
           checkAdminOverrideStatus();
           setupVideoPreview();
+
+          // Apply initial filter if subject parameter was provided
+          if (subjectParam) {
+              filterSubtopics();
+          }
       });
 
       // Video Preview Functionality
@@ -2419,7 +2488,19 @@
               }
           });
 
+          // Update breadcrumb based on selected subject
+          updateBreadcrumb(subjectFilter);
+
           updateEmptyState(visibleCount === 0);
+      }
+
+      function updateBreadcrumb(subjectFilter) {
+          const breadcrumbElement = document.getElementById('currentSubjectBreadcrumb');
+          if (subjectFilter && currentSubjects[subjectFilter]) {
+              breadcrumbElement.textContent = currentSubjects[subjectFilter].name + ' Subtopics';
+          } else {
+              breadcrumbElement.textContent = 'All Subtopics';
+          }
       }
 
       function updateEmptyState(show = null) {

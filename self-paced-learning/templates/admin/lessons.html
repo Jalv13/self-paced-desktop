@@ -32,17 +32,17 @@
             >
           </li>
           <li>
-            <a href="/admin/subtopics"
+            <a href="/admin/subtopics/select-subject"
               ><i class="fas fa-sitemap"></i> Subtopics</a
             >
           </li>
           <li>
-            <a href="/admin/lessons" class="active"
+            <a href="/admin/lessons/select-subject" class="active"
               ><i class="fas fa-chalkboard-teacher"></i> Lessons</a
             >
           </li>
           <li>
-            <a href="/admin/questions"
+            <a href="/admin/questions/select-subject"
               ><i class="fas fa-question-circle"></i> Questions</a
             >
           </li>
@@ -64,7 +64,7 @@
           </h1>
           <p>Manage lessons for this specific subtopic</p>
           <div class="breadcrumb">
-            <a href="/admin/lessons">All Lessons</a> >
+            <a href="/admin/lessons/select-subject">All Lessons</a> >
             <a href="/admin/subjects"
               >{{ subject_info.name or subject|title }}</a
             >
@@ -128,7 +128,10 @@
               </div>
             </div>
             {% if filtered_view %}
-            <a href="/admin/lessons" class="action-btn secondary">
+            <a
+              href="/admin/lessons/select-subject"
+              class="action-btn secondary"
+            >
               <i class="fas fa-list"></i> View All Lessons
             </a>
             {% endif %}

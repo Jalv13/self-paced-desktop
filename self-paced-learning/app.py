@@ -942,7 +942,9 @@ def show_results_page():
     # Try to get lesson plans from the new system
     try:
         lesson_plans = get_lesson_plans(current_subject, current_subtopic)
-        app.logger.info(f"DEBUG: lesson_plans loaded for {current_subject}/{current_subtopic}: {list(lesson_plans.keys()) if lesson_plans else 'None'}")
+        app.logger.info(
+            f"DEBUG: lesson_plans loaded for {current_subject}/{current_subtopic}: {list(lesson_plans.keys()) if lesson_plans else 'None'}"
+        )
     except Exception as e:
         app.logger.error(f"DEBUG: Exception loading lesson plans: {e}")
         lesson_plans = {}
@@ -1295,12 +1297,40 @@ def delete_lesson_from_file(subject, subtopic, lesson_id):
 @app.route("/admin/lessons")
 def admin_lessons():
     """List all lessons across all subjects."""
+    # Get URL parameters for filtering
+    subject_filter = request.args.get("subject")
+    subtopic_filter = request.args.get("subtopic")
+
     lessons = get_all_lessons()
 
     # Use auto-discovery for subjects dropdown
     subjects = data_loader.discover_subjects()
 
-    return render_template("admin/lessons.html", lessons=lessons, subjects=subjects)
+    # Get subject and subtopic names for display
+    subject_name = None
+    subtopic_name = None
+
+    if subject_filter and subject_filter in subjects:
+        subject_name = subjects[subject_filter].get("name", subject_filter.title())
+
+        if subtopic_filter:
+            subject_config = data_loader.load_subject_config(subject_filter)
+            if subject_config and "subtopics" in subject_config:
+                subtopics = subject_config["subtopics"]
+                if subtopic_filter in subtopics:
+                    subtopic_name = subtopics[subtopic_filter].get(
+                        "name", subtopic_filter.title()
+                    )
+
+    return render_template(
+        "admin/lessons.html",
+        lessons=lessons,
+        subjects=subjects,
+        subject_filter=subject_filter,
+        subtopic_filter=subtopic_filter,
+        subject_name=subject_name,
+        subtopic_name=subtopic_name,
+    )
 
 
 @app.route("/admin/lessons/create", methods=["GET", "POST"])
@@ -1489,6 +1519,207 @@ def admin_delete_lesson(subject, subtopic, lesson_id):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/admin/lessons/select-subject")
+def admin_select_subject_for_lessons():
+    """Subject selection page for lessons management."""
+    try:
+        # Use auto-discovery to get all subjects
+        subjects = data_loader.discover_subjects()
+
+        # Enhance subjects data with subtopic information from subject_config.json
+        for subject_id, subject_info in subjects.items():
+            subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject_id)
+            subject_config_path = os.path.join(subject_dir, "subject_config.json")
+
+            if os.path.exists(subject_config_path):
+                try:
+                    with open(subject_config_path, "r", encoding="utf-8") as f:
+                        config = json.load(f)
+
+                    # Get subtopics from subject_config.json
+                    config_subtopics = config.get("subtopics", {})
+                    allowed_tags = config.get(
+                        "allowed_tags", config.get("allowed_keywords", [])
+                    )
+
+                    subjects[subject_id]["subtopics"] = config_subtopics
+                    subjects[subject_id]["allowed_tags"] = allowed_tags
+
+                except Exception as e:
+                    app.logger.error(
+                        f"Error reading subject config for {subject_id}: {e}"
+                    )
+                    subjects[subject_id]["subtopics"] = {}
+                    subjects[subject_id]["allowed_tags"] = []
+            else:
+                subjects[subject_id]["subtopics"] = {}
+                subjects[subject_id]["allowed_tags"] = []
+
+        return render_template("admin/select_subject_lessons.html", subjects=subjects)
+
+    except Exception as e:
+        app.logger.error(f"Error loading subjects for lessons selection: {e}")
+        return render_template("admin/select_subject_lessons.html", subjects={})
+
+
+@app.route("/admin/lessons/select-subtopic")
+def admin_select_subtopic_for_lessons():
+    """Subtopic selection page for lessons management."""
+    subject_id = request.args.get("subject")
+    if not subject_id:
+        return redirect(url_for("admin_select_subject_for_lessons"))
+
+    try:
+        # Get subject information
+        subjects = data_loader.discover_subjects()
+        if subject_id not in subjects:
+            app.logger.error(f"Subject {subject_id} not found")
+            return redirect(url_for("admin_select_subject_for_lessons"))
+
+        subject_info = subjects[subject_id]
+        subject_name = subject_info.get("name", subject_id.title())
+
+        # Load subject config to get subtopics
+        subject_config = data_loader.load_subject_config(subject_id)
+        subtopics = {}
+
+        if subject_config and "subtopics" in subject_config:
+            subtopics = subject_config["subtopics"]
+
+        return render_template(
+            "admin/select_subtopic_lessons.html",
+            subject_id=subject_id,
+            subject_name=subject_name,
+            subtopics=subtopics,
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error loading subtopics for lessons selection: {e}")
+        return redirect(url_for("admin_select_subject_for_lessons"))
+
+
+@app.route("/admin/questions/select-subject")
+def admin_select_subject_for_questions():
+    """Subject selection page for questions management."""
+    try:
+        # Use auto-discovery to get all subjects
+        subjects = data_loader.discover_subjects()
+
+        # Enhance subjects data with subtopic information from subject_config.json
+        for subject_id, subject_info in subjects.items():
+            subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject_id)
+            subject_config_path = os.path.join(subject_dir, "subject_config.json")
+
+            if os.path.exists(subject_config_path):
+                try:
+                    with open(subject_config_path, "r", encoding="utf-8") as f:
+                        config = json.load(f)
+
+                    # Get subtopics from subject_config.json
+                    config_subtopics = config.get("subtopics", {})
+                    allowed_tags = config.get(
+                        "allowed_tags", config.get("allowed_keywords", [])
+                    )
+
+                    subjects[subject_id]["subtopics"] = config_subtopics
+                    subjects[subject_id]["allowed_tags"] = allowed_tags
+
+                except Exception as e:
+                    app.logger.error(
+                        f"Error reading subject config for {subject_id}: {e}"
+                    )
+                    subjects[subject_id]["subtopics"] = {}
+                    subjects[subject_id]["allowed_tags"] = []
+            else:
+                subjects[subject_id]["subtopics"] = {}
+                subjects[subject_id]["allowed_tags"] = []
+
+        return render_template("admin/select_subject_questions.html", subjects=subjects)
+
+    except Exception as e:
+        app.logger.error(f"Error loading subjects for questions selection: {e}")
+        return render_template("admin/select_subject_questions.html", subjects={})
+
+
+@app.route("/admin/questions/select-subtopic")
+def admin_select_subtopic_for_questions():
+    """Subtopic selection page for questions management."""
+    subject_id = request.args.get("subject")
+    if not subject_id:
+        return redirect(url_for("admin_select_subject_for_questions"))
+
+    try:
+        # Get subject information
+        subjects = data_loader.discover_subjects()
+        if subject_id not in subjects:
+            app.logger.error(f"Subject {subject_id} not found")
+            return redirect(url_for("admin_select_subject_for_questions"))
+
+        subject_info = subjects[subject_id]
+        subject_name = subject_info.get("name", subject_id.title())
+
+        # Load subject config to get subtopics
+        subject_config = data_loader.load_subject_config(subject_id)
+        subtopics = {}
+
+        if subject_config and "subtopics" in subject_config:
+            subtopics = subject_config["subtopics"]
+
+        return render_template(
+            "admin/select_subtopic_questions.html",
+            subject_id=subject_id,
+            subject_name=subject_name,
+            subtopics=subtopics,
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error loading subtopics for questions selection: {e}")
+        return redirect(url_for("admin_select_subject_for_questions"))
+
+
+@app.route("/admin/subtopics/select-subject")
+def admin_select_subject_for_subtopics():
+    """Subject selection page for subtopics management."""
+    try:
+        # Use auto-discovery to get all subjects
+        subjects = data_loader.discover_subjects()
+
+        # Enhance subjects data with subtopic information from subject_config.json
+        for subject_id, subject_info in subjects.items():
+            subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject_id)
+            subject_config_path = os.path.join(subject_dir, "subject_config.json")
+
+            if os.path.exists(subject_config_path):
+                try:
+                    with open(subject_config_path, "r", encoding="utf-8") as f:
+                        config = json.load(f)
+
+                    # Get subtopics from subject_config.json
+                    config_subtopics = config.get("subtopics", {})
+                    allowed_tags = config.get(
+                        "allowed_tags", config.get("allowed_keywords", [])
+                    )
+
+                    subjects[subject_id]["subtopics"] = config_subtopics
+                    subjects[subject_id]["allowed_tags"] = allowed_tags
+
+                except Exception as e:
+                    app.logger.error(
+                        f"Error reading subject config for {subject_id}: {e}"
+                    )
+                    subjects[subject_id]["subtopics"] = {}
+                    subjects[subject_id]["allowed_tags"] = []
+            else:
+                subjects[subject_id]["subtopics"] = {}
+                subjects[subject_id]["allowed_tags"] = []
+
+        return render_template("admin/select_subject_subtopics.html", subjects=subjects)
+
+    except Exception as e:
+        app.logger.error(f"Error loading subjects for selection: {e}")
+        return render_template("admin/select_subject_subtopics.html", subjects={})
+
+
 @app.route("/admin/subtopics")
 def admin_subtopics():
     """Manage subtopics across all subjects."""
@@ -1536,6 +1767,10 @@ def admin_subtopics():
 def admin_questions():
     """Questions management page."""
     try:
+        # Get URL parameters for filtering
+        subject_filter = request.args.get("subject")
+        subtopic_filter = request.args.get("subtopic")
+
         # Use auto-discovery instead of subjects.json
         subjects_data = {}
         stats = {
@@ -1545,10 +1780,32 @@ def admin_questions():
             "subtopics_without_questions": 0,
         }
 
-        # Discover subjects using auto-discoverythe subtopic
+        # Discover subjects using auto-discovery
         discovered_subjects = data_loader.discover_subjects()
 
+        # Get subject and subtopic names for display
+        subject_name = None
+        subtopic_name = None
+
+        if subject_filter and subject_filter in discovered_subjects:
+            subject_name = discovered_subjects[subject_filter].get(
+                "name", subject_filter.title()
+            )
+
+            if subtopic_filter:
+                subject_config = data_loader.load_subject_config(subject_filter)
+                if subject_config and "subtopics" in subject_config:
+                    subtopics = subject_config["subtopics"]
+                    if subtopic_filter in subtopics:
+                        subtopic_name = subtopics[subtopic_filter].get(
+                            "name", subtopic_filter.title()
+                        )
+
         for subject_id, subject_info in discovered_subjects.items():
+            # Skip if we're filtering by subject and this isn't the one
+            if subject_filter and subject_id != subject_filter:
+                continue
+
             # Load subject config to get subtopics
             subject_config = data_loader.load_subject_config(subject_id)
             if subject_config and "subtopics" in subject_config:
@@ -1559,6 +1816,10 @@ def admin_questions():
                 }
 
                 for subtopic_id, subtopic_data in subject_config["subtopics"].items():
+                    # Skip if we're filtering by subtopic and this isn't the one
+                    if subtopic_filter and subtopic_id != subtopic_filter:
+                        continue
+
                     # Load quiz data and question pool to get counts
                     quiz_data = data_loader.load_quiz_data(subject_id, subtopic_id)
                     pool_data = data_loader.get_question_pool_questions(
@@ -1584,7 +1845,13 @@ def admin_questions():
                 subjects_data[subject_id] = subject_data
 
         return render_template(
-            "admin/questions.html", subjects=subjects_data, stats=stats
+            "admin/questions.html",
+            subjects=subjects_data,
+            stats=stats,
+            subject_filter=subject_filter,
+            subtopic_filter=subtopic_filter,
+            subject_name=subject_name,
+            subtopic_name=subtopic_name,
         )
 
     except Exception as e:
@@ -1938,13 +2205,31 @@ def debug_lesson_data(subject, subtopic):
     """Debug endpoint to see what lesson data is being loaded."""
     try:
         lesson_plans = get_lesson_plans(subject, subtopic)
-        return jsonify({
-            "lesson_plans": lesson_plans,
-            "lesson_count": len(lesson_plans) if lesson_plans else 0,
-            "lesson_keys": list(lesson_plans.keys()) if lesson_plans else [],
-            "remedial_lessons": {k: v for k, v in lesson_plans.items() if v.get('type') == 'remedial'} if lesson_plans else {},
-            "initial_lessons": {k: v for k, v in lesson_plans.items() if v.get('type') == 'initial'} if lesson_plans else {}
-        })
+        return jsonify(
+            {
+                "lesson_plans": lesson_plans,
+                "lesson_count": len(lesson_plans) if lesson_plans else 0,
+                "lesson_keys": list(lesson_plans.keys()) if lesson_plans else [],
+                "remedial_lessons": (
+                    {
+                        k: v
+                        for k, v in lesson_plans.items()
+                        if v.get("type") == "remedial"
+                    }
+                    if lesson_plans
+                    else {}
+                ),
+                "initial_lessons": (
+                    {
+                        k: v
+                        for k, v in lesson_plans.items()
+                        if v.get("type") == "initial"
+                    }
+                    if lesson_plans
+                    else {}
+                ),
+            }
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -1953,16 +2238,20 @@ def debug_lesson_data(subject, subtopic):
 def api_get_lesson(subject, subtopic, lesson_id):
     """Return a specific lesson by subject/subtopic/lesson_id."""
     try:
-        app.logger.info(f"DEBUG: api_get_lesson called with {subject}/{subtopic}/{lesson_id}")
-        
+        app.logger.info(
+            f"DEBUG: api_get_lesson called with {subject}/{subtopic}/{lesson_id}"
+        )
+
         # Validate subject/subtopic exists
         if not data_loader.validate_subject_subtopic(subject, subtopic):
-            app.logger.error(f"DEBUG: Subject/subtopic validation failed for {subject}/{subtopic}")
+            app.logger.error(
+                f"DEBUG: Subject/subtopic validation failed for {subject}/{subtopic}"
+            )
             return jsonify({"error": "Subject or subtopic not found"}), 404
 
         lesson_plans = data_loader.load_lesson_plans(subject, subtopic)
         lessons = lesson_plans.get("lessons", {}) if lesson_plans else {}
-        
+
         app.logger.info(f"DEBUG: Available lesson keys: {list(lessons.keys())}")
         app.logger.info(f"DEBUG: Looking for lesson_id: '{lesson_id}'")
 
@@ -1977,7 +2266,9 @@ def api_get_lesson(subject, subtopic, lesson_id):
                 app.logger.info(f"DEBUG: Found lesson by title match: {key} -> {title}")
                 return jsonify({"lesson": value})
 
-        app.logger.error(f"DEBUG: Lesson not found: '{lesson_id}' in keys: {list(lessons.keys())}")
+        app.logger.error(
+            f"DEBUG: Lesson not found: '{lesson_id}' in keys: {list(lessons.keys())}"
+        )
         return jsonify({"error": "Lesson not found"}), 404
     except Exception as e:
         app.logger.error(f"Error fetching lesson {subject}/{subtopic}/{lesson_id}: {e}")

@@ -32,17 +32,17 @@
             >
           </li>
           <li>
-            <a href="/admin/subtopics"
+            <a href="/admin/subtopics/select-subject"
               ><i class="fas fa-sitemap"></i> Subtopics</a
             >
           </li>
           <li>
-            <a href="/admin/lessons"
+            <a href="/admin/lessons/select-subject"
               ><i class="fas fa-chalkboard-teacher"></i> Lessons</a
             >
           </li>
           <li>
-            <a href="/admin/questions" class="active"
+            <a href="/admin/questions/select-subject" class="active"
               ><i class="fas fa-question-circle"></i> Questions</a
             >
           </li>
@@ -57,19 +57,60 @@
       <!-- Main Content -->
       <main class="admin-content">
         <header class="admin-header">
+          {% if subject_filter or subtopic_filter %}
+          <!-- Breadcrumb Navigation -->
+          <div class="breadcrumb-nav">
+            <a href="/admin/questions/select-subject" class="breadcrumb-link">
+              <i class="fas fa-question-circle"></i> Questions
+            </a>
+            {% if subject_filter %}
+            <span class="breadcrumb-separator">></span>
+            <a href="/admin/questions?subject={{ subject_filter }}" class="breadcrumb-link">
+              {{ subject_name }}
+            </a>
+            {% endif %}
+            {% if subtopic_filter %}
+            <span class="breadcrumb-separator">></span>
+            <span class="breadcrumb-current">{{ subtopic_name }}</span>
+            {% endif %}
+          </div>
+          {% endif %}
+          
           <div class="header-actions">
             <div>
               <h1>
                 <i class="fas fa-question-circle"></i> Question Management
+                {% if subject_filter %}
+                  {% if subtopic_filter %}
+                  - {{ subject_name }} > {{ subtopic_name }}
+                  {% else %}
+                  - {{ subject_name }}
+                  {% endif %}
+                {% endif %}
               </h1>
-              <p>Create and manage quiz questions for all subtopics</p>
+              <p>Create and manage quiz questions 
+                {% if subject_filter %}
+                  {% if subtopic_filter %}
+                  for {{ subtopic_name }}
+                  {% else %}
+                  for {{ subject_name }}
+                  {% endif %}
+                {% else %}
+                for all subtopics
+                {% endif %}
+              </p>
             </div>
             <div class="admin-actions">
+              {% if not subject_filter and not subtopic_filter %}
+              <a href="/admin/questions/select-subject" class="admin-btn admin-btn-primary">
+                <i class="fas fa-filter"></i> Filter by Subject
+              </a>
+              {% endif %}
               <div class="filter-controls">
                 <select id="subjectFilter" class="filter-select">
                   <option value="">All Subjects</option>
                   {% for subject_id, subject_data in subjects.items() %}
-                  <option value="{{ subject_id }}">
+                  <option value="{{ subject_id }}" {% if subject_filter == subject_id %}selected{% endif %}>
                     {{ subject_data.name }}
                   </option>
                   {% endfor %}
