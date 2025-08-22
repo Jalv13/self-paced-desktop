@@ -44,19 +44,15 @@ document.addEventListener("DOMContentLoaded", function () {
       .then((response) => response.json())
       .then((data) => {
         isAdminOverride = data.is_admin || false;
-        if (isAdminOverride) {
-          console.log("Admin override enabled - video completion not required");
-        }
       })
       .catch((error) => {
-        console.log("Admin status check failed, assuming non-admin");
         isAdminOverride = false;
       });
   }
 
   // YouTube API ready callback
   function onYouTubeIframeAPIReady() {
-    console.log("YouTube API Ready");
+    // YouTube API is ready
   }
 
   // Initialize YouTube player with enhanced tracking
@@ -84,7 +80,6 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function onPlayerReady(event) {
-    console.log("YouTube player ready");
     startVideoProgressTracking();
   }
 
@@ -152,7 +147,6 @@ document.addEventListener("DOMContentLoaded", function () {
         .then((response) => response.json())
         .then((data) => {
           if (data.success) {
-            console.log(`Video marked as watched: ${subject}/${subtopic}`);
             if (typeof showNotification === "function") {
               showNotification(
                 "Video progress recorded! This counts toward quiz prerequisites.",
@@ -190,7 +184,6 @@ document.addEventListener("DOMContentLoaded", function () {
           .then((response) => response.json())
           .then((data) => {
             if (data.success) {
-              console.log(`Video marked as watched: ${subject}/${subtopic}`);
               showVideoCompletionNotification();
             }
           })
@@ -216,8 +209,6 @@ document.addEventListener("DOMContentLoaded", function () {
         "Video completed! This counts toward quiz prerequisites.",
         "success"
       );
-    } else {
-      console.log("Video completed and marked as watched!");
     }
   }
 
@@ -365,7 +356,6 @@ document.addEventListener("DOMContentLoaded", function () {
   function closeVideo() {
     // Get current topic from modal attribute
     const topic = videoModal.dataset.currentTopic;
-    console.log("Closing video modal for topic:", topic); // Debug log
 
     // Stop YouTube player if it exists
     if (ytPlayer) {
@@ -395,7 +385,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Redirect to quiz page if topic is "functions"
     if (topic === "functions") {
-      console.log("Redirecting to /quiz/functions");
       window.location.href = "/quiz/functions";
     }
   }

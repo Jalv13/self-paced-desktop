@@ -5,9 +5,7 @@
       "description": "Master function concepts, arguments, return values, and advanced techniques",
       "order": 3,
       "status": "active",
-      "prerequisites": [
-        "test"
-      ],
+      "prerequisites": [],
       "estimated_time": "2 hours",
       "video_count": 1,
       "lesson_count": 14,
@@ -34,8 +32,7 @@
         "functions",
         "lists",
         "loops",
-        "sets",
-        "test"
+        "sets"
       ],
       "estimated_time": "2 hours",
       "video_count": 0,
@@ -94,8 +91,6 @@
     "recursive functions",
     "return values",
     "syntax",
-    "terminology",
-    "test",
-    "test2"
+    "terminology"
   ]
 }

@@ -1669,9 +1669,6 @@
           .then((data) => {
             if (data.all_met) {
               // Prerequisites met or admin override active, redirect to quiz
-              if (data.admin_override) {
-                console.log("Admin override active - bypassing prerequisites");
-              }
               window.location.href = `/quiz/${subject}/${subtopic}`;
             } else {
               // Prerequisites not met, show warning and redirect to prerequisites page
