@@ -920,7 +920,9 @@ def show_results_page():
                     }
                 }
     except Exception as e:
-        app.logger.error(f"Error loading video data for {current_subject}/{current_subtopic}: {e}")
+        app.logger.error(
+            f"Error loading video data for {current_subject}/{current_subtopic}: {e}"
+        )
         # Provide empty video data as fallback
         VIDEO_DATA = {}
 
@@ -931,7 +933,9 @@ def show_results_page():
         if not lesson_plans:
             lesson_plans = {}
     except Exception as e:
-        app.logger.error(f"Error loading lesson plans for {current_subject}/{current_subtopic}: {e}")
+        app.logger.error(
+            f"Error loading lesson plans for {current_subject}/{current_subtopic}: {e}"
+        )
         lesson_plans = {}
 
     # Always return a valid response
@@ -1853,14 +1857,14 @@ def admin_quiz_editor(subject, subtopic):
         subject_config = data_loader.load_subject_config(subject)
         if not subject_config:
             return f"Subject '{subject}' not found", 404
-        
+
         # Check if subtopic exists in configuration
         if subtopic not in subject_config.get("subtopics", {}):
             return f"Subtopic '{subtopic}' not found in subject '{subject}'", 404
 
         # Check if files exist, if not we'll handle empty state gracefully
         files_exist = data_loader.validate_subject_subtopic(subject, subtopic)
-        
+
         # Load quiz data and question pool (will be None if files don't exist)
         quiz_data = data_loader.load_quiz_data(subject, subtopic)
         pool_questions = data_loader.get_question_pool_questions(subject, subtopic)
