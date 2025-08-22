@@ -222,6 +222,8 @@
             </div>
 
             <div class="card-actions">
+              {% if initial_count > 0 or pool_count > 0 %}
+              <!-- Questions exist - show edit and preview buttons -->
               <a
                 href="/admin/quiz/{{ subject_id }}/{{ subtopic_id }}"
                 class="btn-action primary"
@@ -237,6 +239,20 @@
                 <i class="fas fa-play"></i>
                 Preview Quiz
               </a>
+              {% else %}
+              <!-- No questions exist - show create button -->
+              <a
+                href="/admin/quiz/{{ subject_id }}/{{ subtopic_id }}"
+                class="btn-action primary"
+              >
+                <i class="fas fa-plus"></i>
+                Create Questions
+              </a>
+              <span class="btn-action secondary disabled" title="No questions available to preview">
+                <i class="fas fa-play"></i>
+                Preview Quiz
+              </span>
+              {% endif %}
             </div>
           </div>
           {% endfor %} {% endif %} {% endfor %}
@@ -565,6 +581,18 @@
 
       .btn-action.secondary:hover {
         background: #cbd5e0;
+      }
+
+      .btn-action.disabled {
+        background: #f7fafc;
+        color: #a0aec0;
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .btn-action.disabled:hover {
+        background: #f7fafc;
+        color: #a0aec0;
       }
 
       /* Empty State */

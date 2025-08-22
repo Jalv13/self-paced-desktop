@@ -1849,19 +1849,32 @@ def admin_questions():
 def admin_quiz_editor(subject, subtopic):
     """Quiz editor page for a specific subject/subtopic."""
     try:
-        # Validate subject/subtopic exists
-        if not data_loader.validate_subject_subtopic(subject, subtopic):
-            return f"Subject '{subject}' with subtopic '{subtopic}' not found", 404
+        # First, check if the subject exists and the subtopic is defined in subject config
+        subject_config = data_loader.load_subject_config(subject)
+        if not subject_config:
+            return f"Subject '{subject}' not found", 404
+        
+        # Check if subtopic exists in configuration
+        if subtopic not in subject_config.get("subtopics", {}):
+            return f"Subtopic '{subtopic}' not found in subject '{subject}'", 404
 
-        # Load quiz data and question pool
+        # Check if files exist, if not we'll handle empty state gracefully
+        files_exist = data_loader.validate_subject_subtopic(subject, subtopic)
+        
+        # Load quiz data and question pool (will be None if files don't exist)
         quiz_data = data_loader.load_quiz_data(subject, subtopic)
         pool_questions = data_loader.get_question_pool_questions(subject, subtopic)
+
+        # If no data exists, create empty structures
+        if not quiz_data:
+            quiz_data = {"questions": []}
+        if not pool_questions:
+            pool_questions = []
 
         # Format question pool to match template expectations
         question_pool = {"questions": pool_questions}
 
         # Get subject config for tags
-        subject_config = data_loader.load_subject_config(subject)
         allowed_tags = (
             subject_config.get(
                 "allowed_tags", subject_config.get("allowed_keywords", [])
