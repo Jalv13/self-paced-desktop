@@ -336,6 +336,13 @@ def get_video_api(subject, subtopic, topic_key):
     return jsonify({"error": "Video not found"}), 404
 
 
+@app.route("/api/video/<subject>/<subtopic>/all")
+def get_all_videos_api(subject, subtopic):
+    """Get all video data for a subject/subtopic."""
+    video_data = get_video_data(subject, subtopic)
+    return jsonify({"videos": video_data})
+
+
 @app.route("/api/progress/update", methods=["POST"])
 def update_progress_api():
     data = request.json
