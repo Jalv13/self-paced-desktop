@@ -107,8 +107,16 @@
           </div>
 
           <div class="topic-actions">
-            {% if subtopic_data.video_count > 0 %} {% endif %} {% if
-            subtopic_data.question_count > 0 %}
+            {% if subtopic_data.lesson_count > 0 %}
+            <button
+              class="button lesson-btn"
+              data-subtopic="{{ subtopic_id }}"
+              onclick="showInitialLessons('{{ subject }}', '{{ subtopic_id }}')"
+            >
+              <i class="fas fa-book-open"></i>
+              View Lessons
+            </button>
+            {% endif %} {% if subtopic_data.question_count > 0 %}
             <button
               id="quiz-btn-{{ subtopic_id }}"
               class="button quiz-btn"
@@ -121,15 +129,6 @@
                 class="quiz-status-icon"
                 style="display: none"
               ></i>
-            </button>
-            {% endif %} {% if subtopic_data.lesson_count > 0 %}
-            <button
-              class="button lesson-btn"
-              data-subtopic="{{ subtopic_id }}"
-              onclick="showInitialLessons('{{ subject }}', '{{ subtopic_id }}')"
-            >
-              <i class="fas fa-book-open"></i>
-              View Lessons
             </button>
             {% endif %}
           </div>
@@ -548,14 +547,17 @@
       /* Responsive design for smaller screens */
       @media (max-width: 768px) {
         .topic-actions {
-          flex-direction: column;
+          flex-direction: row;
           align-items: center;
+          justify-content: center;
         }
 
         .watch-btn,
-        .quiz-btn {
-          width: 180px;
+        .quiz-btn,
+        .lesson-btn {
+          width: 130px;
           height: 44px;
+          font-size: 0.85rem;
         }
       }
 
@@ -640,7 +642,8 @@
         }
 
         .topic-actions {
-          flex-direction: column;
+          flex-direction: row;
+          justify-content: center;
         }
       }
 
@@ -1019,20 +1022,32 @@
       }
 
       .lesson-btn {
-        background: #17a2b8;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
+        display: inline-flex;
         align-items: center;
-        gap: 5px;
-        transition: background 0.3s ease;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        width: 150px;
+        height: 44px;
+        justify-content: center;
+        letter-spacing: 0.025em;
+        box-sizing: border-box;
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);
+        color: white;
       }
 
       .lesson-btn:hover {
-        background: #138496;
+        background: linear-gradient(135deg, #138496 0%, #1ea080 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
       }
 
       /* Lesson Content Styles */
