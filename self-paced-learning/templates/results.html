@@ -367,8 +367,7 @@
           console.log("Weak topics extracted:", weakTopics);
 
           const scorePct = analysisData?.score?.percentage ?? null;
-          const isLowScore = scorePct !== null && scorePct <= 20; // Treat <=20% as very low
-          console.log("Score percentage:", scorePct, "isLowScore:", isLowScore);
+          console.log("Score percentage:", scorePct);
 
           // Calculate and display score
           if (analysisData.score) {
@@ -377,7 +376,7 @@
 
           statusDiv.classList.add("hidden");
 
-          if (weakTopics.length > 0 && !isLowScore) {
+          if (weakTopics.length > 0) {
             console.log("Showing welcome message and processing weak topics");
             welcomeMessageContainer.classList.remove("hidden");
             feedbackContentDiv.innerHTML = analysisData.feedback;
@@ -385,55 +384,6 @@
             buildCompletionState(weakTopics);
             await displayWeakTopicsWithTagMatching(weakTopics);
 
-            continueButton.classList.remove("hidden");
-            backToTopicsButton.classList.remove("hidden");
-            checkCompletionAndToggleButton();
-          } else if (isLowScore) {
-            console.log(
-              "Low score detected or no weak topics; falling back to ALL lessons in subtopic"
-            );
-            welcomeMessageContainer.classList.remove("hidden");
-            feedbackContentDiv.innerHTML = analysisData.feedback || "";
-
-            // Build a list of all lessons for the current subtopic (prefer remedial type if present)
-            const entries = Object.entries(REMEDIAL_LESSON_PLANS || {});
-            const remedialEntries = entries.filter(([, v]) => {
-              const t = v && v.type ? String(v.type).toLowerCase() : "";
-              return t === "remedial";
-            });
-            console.log("Low-score fallback entries:", {
-              total: entries.length,
-              remedial: remedialEntries.length,
-            });
-            const listToUse = remedialEntries.length
-              ? remedialEntries
-              : entries;
-
-            // Clear and rebuild the sidebar
-            topicsNavList.innerHTML = "";
-            listToUse.forEach(([lessonId, lessonObj]) => {
-              // Use lessonId for completion tracking to match click handlers
-              const wt = lessonId;
-              // Ensure completion state per displayed item
-              if (!completionState[wt]) {
-                completionState[wt] = { read: false, watched: false };
-              }
-              createTopicSection(
-                lessonId,
-                [
-                  {
-                    subject: CURRENT_SUBJECT,
-                    subtopic: CURRENT_SUBTOPIC,
-                    lesson_id: lessonId,
-                    title: lessonObj?.title || lessonId,
-                  },
-                ],
-                lessonObj?.title || lessonId
-              );
-            });
-
-            setupLessonEventHandlers();
-            debugRemedialLessons(); // Add programmatic debug for low score case
             continueButton.classList.remove("hidden");
             backToTopicsButton.classList.remove("hidden");
             checkCompletionAndToggleButton();
