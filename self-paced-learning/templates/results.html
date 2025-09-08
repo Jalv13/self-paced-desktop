@@ -84,77 +84,10 @@
     <script src="https://www.youtube.com/iframe_api"></script>
 
     <script>
-      // Simple global test function
-      window.simpleTest = function() {
-        console.log("Simple test function called!");
-        const links = document.querySelectorAll('a[data-action="read"]');
-        console.log("Found links:", links.length);
-        if (links.length > 0) {
-          console.log("Clicking first link...");
-          links[0].click();
-        }
-      };
-      
-      // Global test function for debugging
-      window.testClickHandler = function() {
-        console.log("=== GLOBAL CLICK TEST ===");
-        const readLinks = document.querySelectorAll('a[data-action="read"]');
-        console.log("Found read links:", readLinks.length);
-        
-        if (readLinks.length > 0) {
-          const firstLink = readLinks[0];
-          console.log("First link:", firstLink);
-          console.log("First link computed style:", window.getComputedStyle(firstLink));
-          console.log("First link visibility:", {
-            display: window.getComputedStyle(firstLink).display,
-            visibility: window.getComputedStyle(firstLink).visibility,
-            opacity: window.getComputedStyle(firstLink).opacity,
-            pointerEvents: window.getComputedStyle(firstLink).pointerEvents,
-            zIndex: window.getComputedStyle(firstLink).zIndex
-          });
-          console.log("First link bounding rect:", firstLink.getBoundingClientRect());
-          console.log("First link data:", {
-            action: firstLink.dataset.action,
-            topic: firstLink.dataset.topic,
-            subject: firstLink.dataset.subject,
-            subtopic: firstLink.dataset.subtopic,
-            weakTopic: firstLink.dataset.weakTopic
-          });
-          
-          // Check if link is actually visible and clickable
-          const rect = firstLink.getBoundingClientRect();
-          const isVisible = rect.width > 0 && rect.height > 0 && rect.top >= 0;
-          console.log("Link is visible:", isVisible);
-          
-          // Try clicking it
-          console.log("Triggering click...");
-          firstLink.click();
-          
-          // Also try dispatching a manual click event
-          console.log("Dispatching manual click event...");
-          const clickEvent = new MouseEvent('click', {
-            bubbles: true,
-            cancelable: true,
-            view: window
-          });
-          firstLink.dispatchEvent(clickEvent);
-        }
-      };
-    </script>
-
-    <script>
       const REMEDIAL_LESSON_PLANS = {{ LESSON_PLANS | tojson | safe }};
       const VIDEO_DATA = {{ VIDEO_DATA | tojson | safe }};
       const CURRENT_SUBJECT = {{ CURRENT_SUBJECT | tojson | safe }};
       const CURRENT_SUBTOPIC = {{ CURRENT_SUBTOPIC | tojson | safe }};
-
-      // Debug: Log template data
-      console.log("=== TEMPLATE DATA DEBUG ===");
-      console.log("REMEDIAL_LESSON_PLANS:", REMEDIAL_LESSON_PLANS);
-      console.log("VIDEO_DATA:", VIDEO_DATA);
-      console.log("CURRENT_SUBJECT:", CURRENT_SUBJECT);
-      console.log("CURRENT_SUBTOPIC:", CURRENT_SUBTOPIC);
-      console.log("=== END TEMPLATE DATA ===");
     </script>
 
     <script>
@@ -434,8 +367,7 @@
           console.log("Weak topics extracted:", weakTopics);
 
           const scorePct = analysisData?.score?.percentage ?? null;
-          const isLowScore = scorePct !== null && scorePct <= 20; // Treat <=20% as very low
-          console.log("Score percentage:", scorePct, "isLowScore:", isLowScore);
+          console.log("Score percentage:", scorePct);
 
           // Calculate and display score
           if (analysisData.score) {
@@ -444,7 +376,7 @@
 
           statusDiv.classList.add("hidden");
 
-          if (weakTopics.length > 0 && !isLowScore) {
+          if (weakTopics.length > 0) {
             console.log("Showing welcome message and processing weak topics");
             welcomeMessageContainer.classList.remove("hidden");
             feedbackContentDiv.innerHTML = analysisData.feedback;
@@ -452,55 +384,6 @@
             buildCompletionState(weakTopics);
             await displayWeakTopicsWithTagMatching(weakTopics);
 
-            continueButton.classList.remove("hidden");
-            backToTopicsButton.classList.remove("hidden");
-            checkCompletionAndToggleButton();
-          } else if (isLowScore) {
-            console.log(
-              "Low score detected or no weak topics; falling back to ALL lessons in subtopic"
-            );
-            welcomeMessageContainer.classList.remove("hidden");
-            feedbackContentDiv.innerHTML = analysisData.feedback || "";
-
-            // Build a list of all lessons for the current subtopic (prefer remedial type if present)
-            const entries = Object.entries(REMEDIAL_LESSON_PLANS || {});
-            const remedialEntries = entries.filter(([, v]) => {
-              const t = v && v.type ? String(v.type).toLowerCase() : "";
-              return t === "remedial";
-            });
-            console.log("Low-score fallback entries:", {
-              total: entries.length,
-              remedial: remedialEntries.length,
-            });
-            const listToUse = remedialEntries.length
-              ? remedialEntries
-              : entries;
-
-            // Clear and rebuild the sidebar
-            topicsNavList.innerHTML = "";
-            listToUse.forEach(([lessonId, lessonObj]) => {
-              // Use lessonId for completion tracking to match click handlers
-              const wt = lessonId;
-              // Ensure completion state per displayed item
-              if (!completionState[wt]) {
-                completionState[wt] = { read: false, watched: false };
-              }
-              createTopicSection(
-                lessonId,
-                [
-                  {
-                    subject: CURRENT_SUBJECT,
-                    subtopic: CURRENT_SUBTOPIC,
-                    lesson_id: lessonId,
-                    title: lessonObj?.title || lessonId,
-                  },
-                ],
-                lessonObj?.title || lessonId
-              );
-            });
-
-            setupLessonEventHandlers();
-            debugRemedialLessons(); // Add programmatic debug for low score case
             continueButton.classList.remove("hidden");
             backToTopicsButton.classList.remove("hidden");
             checkCompletionAndToggleButton();
@@ -916,7 +799,14 @@
          */
         function renderLesson(topic, subject, subtopic) {
           console.log("=== renderLesson called ===");
-          console.log("Topic:", topic, "Subject:", subject, "Subtopic:", subtopic);
+          console.log(
+            "Topic:",
+            topic,
+            "Subject:",
+            subject,
+            "Subtopic:",
+            subtopic
+          );
 
           // Only hide the analysis/welcome block when we actually have content to show
           // This prevents the welcome message from disappearing prematurely
@@ -925,7 +815,10 @@
           console.log("=== DETAILED LESSON RESOLUTION DEBUG ===");
           console.log("Calling resolveLesson with topic:", topic);
           console.log("Resolved lesson from local plans:", lesson);
-          console.log("REMEDIAL_LESSON_PLANS keys:", Object.keys(REMEDIAL_LESSON_PLANS || {}));
+          console.log(
+            "REMEDIAL_LESSON_PLANS keys:",
+            Object.keys(REMEDIAL_LESSON_PLANS || {})
+          );
           console.log("Looking for lesson with exact key:", topic);
           console.log("Direct lookup result:", REMEDIAL_LESSON_PLANS?.[topic]);
           console.log("=== END LESSON RESOLUTION DEBUG ===");

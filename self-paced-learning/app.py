@@ -281,12 +281,6 @@ def subject_page(subject):
         return redirect(url_for("subject_selection"))
 
 
-@app.route("/legacy")
-def legacy_index():
-    """Legacy route - redirects to Python subject page."""
-    return redirect(url_for("subject_page", subject="python"))
-
-
 @app.route("/python")
 def python_subject_page():
     """Direct route to Python subject - for backward compatibility."""
@@ -342,6 +336,13 @@ def get_video_api(subject, subtopic, topic_key):
     return jsonify({"error": "Video not found"}), 404
 
 
+@app.route("/api/video/<subject>/<subtopic>/all")
+def get_all_videos_api(subject, subtopic):
+    """Get all video data for a subject/subtopic."""
+    video_data = get_video_data(subject, subtopic)
+    return jsonify({"videos": video_data})
+
+
 @app.route("/api/progress/update", methods=["POST"])
 def update_progress_api():
     data = request.json
@@ -395,13 +396,6 @@ def quiz_page(subject, subtopic):
         quiz_title=quiz_title,
         admin_override=session.get("admin_override", False),
     )
-
-
-# Legacy route for backward compatibility
-@app.route("/quiz/functions")
-def quiz_functions_page():
-    """Legacy route - redirects to the new structure."""
-    return redirect(url_for("quiz_page", subject="python", subtopic="functions"))
 
 
 @app.route("/analyze", methods=["POST"])
@@ -896,25 +890,26 @@ def take_remedial_quiz_page():
 
 @app.route("/results")
 def show_results_page():
+    """Display quiz results page with personalized learning recommendations."""
     quiz_gen_error = session.pop("quiz_generation_error", None)
 
     # Get current subject/subtopic from session
     current_subject = session.get("current_subject")
     current_subtopic = session.get("current_subtopic")
 
-    # If no session context, redirect to subject selection instead of setting defaults
+    # If no session context, redirect to subject selection
     if not current_subject or not current_subtopic:
         app.logger.warning(
             "No subject/subtopic context in session for results page - redirecting to subject selection"
         )
         return redirect(url_for("subject_selection"))
 
-    # Load video data using the new system
+    # Load video data with error handling and fallbacks
+    VIDEO_DATA = {}
     try:
         video_data = get_video_data(current_subject, current_subtopic)
-        # Convert to legacy format for compatibility
-        VIDEO_DATA = {}
         if video_data:
+            # Convert to legacy format for compatibility
             for key, video_info in video_data.items():
                 VIDEO_DATA[key] = {
                     "title": video_info.get("title", ""),
@@ -922,33 +917,35 @@ def show_results_page():
                     "description": video_info.get("description", ""),
                 }
         else:
-            # Fallback to default Python topics if no video data
-            VIDEO_DATA = {
-                "functions": {
-                    "title": "Python Functions Masterclass",
-                    "url": "https://www.youtube.com/embed/kvO_nHnvPtQ?enablejsapi=1",
-                    "description": "Master Python functions, parameters, return values, and scope.",
-                },
-                "loops": {
-                    "title": "Python Loops: For and While",
-                    "url": "https://www.youtube.com/watch?v=94UHCEmprCY",
-                    "description": "Learn how to automate repetitive tasks using for and while loops.",
-                },
-            }
+            # Fallback to default videos for Python functions
+            if current_subject == "python" and current_subtopic == "functions":
+                VIDEO_DATA = {
+                    "functions": {
+                        "title": "Python Functions Masterclass",
+                        "url": "https://www.youtube.com/embed/kvO_nHnvPtQ?enablejsapi=1",
+                        "description": "Master Python functions, parameters, return values, and scope.",
+                    }
+                }
     except Exception as e:
-        app.logger.error(f"Error loading video data for results page: {e}")
+        app.logger.error(
+            f"Error loading video data for {current_subject}/{current_subtopic}: {e}"
+        )
+        # Provide empty video data as fallback
         VIDEO_DATA = {}
 
-    # Try to get lesson plans from the new system
+    # Load lesson plans with error handling and fallbacks
+    lesson_plans = {}
     try:
         lesson_plans = get_lesson_plans(current_subject, current_subtopic)
-        app.logger.info(
-            f"DEBUG: lesson_plans loaded for {current_subject}/{current_subtopic}: {list(lesson_plans.keys()) if lesson_plans else 'None'}"
-        )
+        if not lesson_plans:
+            lesson_plans = {}
     except Exception as e:
-        app.logger.error(f"DEBUG: Exception loading lesson plans: {e}")
+        app.logger.error(
+            f"Error loading lesson plans for {current_subject}/{current_subtopic}: {e}"
+        )
         lesson_plans = {}
 
+    # Always return a valid response
     return render_template(
         "results.html",
         quiz_generation_error=quiz_gen_error,
@@ -1863,19 +1860,32 @@ def admin_questions():
 def admin_quiz_editor(subject, subtopic):
     """Quiz editor page for a specific subject/subtopic."""
     try:
-        # Validate subject/subtopic exists
-        if not data_loader.validate_subject_subtopic(subject, subtopic):
-            return f"Subject '{subject}' with subtopic '{subtopic}' not found", 404
+        # First, check if the subject exists and the subtopic is defined in subject config
+        subject_config = data_loader.load_subject_config(subject)
+        if not subject_config:
+            return f"Subject '{subject}' not found", 404
 
-        # Load quiz data and question pool
+        # Check if subtopic exists in configuration
+        if subtopic not in subject_config.get("subtopics", {}):
+            return f"Subtopic '{subtopic}' not found in subject '{subject}'", 404
+
+        # Check if files exist, if not we'll handle empty state gracefully
+        files_exist = data_loader.validate_subject_subtopic(subject, subtopic)
+
+        # Load quiz data and question pool (will be None if files don't exist)
         quiz_data = data_loader.load_quiz_data(subject, subtopic)
         pool_questions = data_loader.get_question_pool_questions(subject, subtopic)
+
+        # If no data exists, create empty structures
+        if not quiz_data:
+            quiz_data = {"questions": []}
+        if not pool_questions:
+            pool_questions = []
 
         # Format question pool to match template expectations
         question_pool = {"questions": pool_questions}
 
         # Get subject config for tags
-        subject_config = data_loader.load_subject_config(subject)
         allowed_tags = (
             subject_config.get(
                 "allowed_tags", subject_config.get("allowed_keywords", [])
@@ -2200,75 +2210,26 @@ def admin_migrate_tags():
         )
 
 
-@app.route("/debug/lesson-data/<subject>/<subtopic>")
-def debug_lesson_data(subject, subtopic):
-    """Debug endpoint to see what lesson data is being loaded."""
-    try:
-        lesson_plans = get_lesson_plans(subject, subtopic)
-        return jsonify(
-            {
-                "lesson_plans": lesson_plans,
-                "lesson_count": len(lesson_plans) if lesson_plans else 0,
-                "lesson_keys": list(lesson_plans.keys()) if lesson_plans else [],
-                "remedial_lessons": (
-                    {
-                        k: v
-                        for k, v in lesson_plans.items()
-                        if v.get("type") == "remedial"
-                    }
-                    if lesson_plans
-                    else {}
-                ),
-                "initial_lessons": (
-                    {
-                        k: v
-                        for k, v in lesson_plans.items()
-                        if v.get("type") == "initial"
-                    }
-                    if lesson_plans
-                    else {}
-                ),
-            }
-        )
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
 @app.route("/api/lessons/<subject>/<subtopic>/<lesson_id>")
 def api_get_lesson(subject, subtopic, lesson_id):
     """Return a specific lesson by subject/subtopic/lesson_id."""
     try:
-        app.logger.info(
-            f"DEBUG: api_get_lesson called with {subject}/{subtopic}/{lesson_id}"
-        )
-
         # Validate subject/subtopic exists
         if not data_loader.validate_subject_subtopic(subject, subtopic):
-            app.logger.error(
-                f"DEBUG: Subject/subtopic validation failed for {subject}/{subtopic}"
-            )
             return jsonify({"error": "Subject or subtopic not found"}), 404
 
         lesson_plans = data_loader.load_lesson_plans(subject, subtopic)
         lessons = lesson_plans.get("lessons", {}) if lesson_plans else {}
 
-        app.logger.info(f"DEBUG: Available lesson keys: {list(lessons.keys())}")
-        app.logger.info(f"DEBUG: Looking for lesson_id: '{lesson_id}'")
-
         if lesson_id in lessons:
-            app.logger.info(f"DEBUG: Found lesson directly: {lesson_id}")
             return jsonify({"lesson": lessons[lesson_id]})
 
         # Fallback: try resolving by case-insensitive title match
         for key, value in lessons.items():
             title = value.get("title")
             if title and title.lower() == lesson_id.lower():
-                app.logger.info(f"DEBUG: Found lesson by title match: {key} -> {title}")
                 return jsonify({"lesson": value})
 
-        app.logger.error(
-            f"DEBUG: Lesson not found: '{lesson_id}' in keys: {list(lessons.keys())}"
-        )
         return jsonify({"error": "Lesson not found"}), 404
     except Exception as e:
         app.logger.error(f"Error fetching lesson {subject}/{subtopic}/{lesson_id}: {e}")
