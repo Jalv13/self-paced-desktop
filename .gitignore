@@ -1,0 +1,35 @@
+# Ignore everything at the root level
+/*
+
+# Don't ignore the self-pace-learning dir
+!/self-paced-learning/
+
+# Don't ignore this .gitignore file itself
+!.gitignore
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.log
+.env
+
+# Virtual environment
+venv/
+*/venv/
+# Virtual environment metadata
+pyvenv.cfg
