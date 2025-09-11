@@ -27,9 +27,12 @@ Thumbs.db
 # Project specific
 *.log
 .env
+**/.env
+
 
 # Virtual environment
 venv/
 */venv/
 # Virtual environment metadata
 pyvenv.cfg
+
