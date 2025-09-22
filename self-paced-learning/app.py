@@ -78,6 +78,27 @@ def get_lesson_plans(subject: str, subtopic: str) -> dict:
     return lessons_data.get("lessons", {}) if lessons_data else {}
 
 
+def extract_video_id_from_url(url: str) -> str:
+    """Extract YouTube video ID from various YouTube URL formats."""
+    if not url:
+        return ""
+    
+    # Handle different YouTube URL formats
+    patterns = [
+        r'(?:https?://)?(?:www\.)?youtube\.com/watch\?v=([^&\n?#]+)',
+        r'(?:https?://)?(?:www\.)?youtube\.com/embed/([^&\n?#]+)',
+        r'(?:https?://)?(?:www\.)?youtu\.be/([^&\n?#]+)',
+        r'(?:https?://)?(?:www\.)?youtube\.com/v/([^&\n?#]+)'
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            return match.group(1)
+    
+    return ""
+
+
 def get_video_data(subject: str, subtopic: str) -> dict:
     """Get video data for a subject/subtopic."""
     videos_data = data_loader.load_videos(subject, subtopic)
@@ -567,9 +588,6 @@ def analyze_quiz():
         session[get_session_key(current_subject, current_subtopic, "weak_topics")] = (
             validated_weak_topics
         )
-        app.logger.info(
-            f"AI identified weak topics for {current_subject}/{current_subtopic}: {validated_weak_topics}"
-        )
 
         # Calculate score percentage
         score_percentage = (
@@ -578,17 +596,25 @@ def analyze_quiz():
             else 0
         )
 
-        return jsonify(
-            {
-                "feedback": feedback,
-                "weak_topics": validated_weak_topics,
-                "score": {
-                    "correct": correct_answers,
-                    "total": total_questions,
-                    "percentage": score_percentage,
-                },
-            }
+        # Store complete analysis results in session for results page
+        analysis_results = {
+            "feedback": feedback,
+            "weak_topics": validated_weak_topics,
+            "score": {
+                "correct": correct_answers,
+                "total": total_questions,
+                "percentage": score_percentage,
+            },
+        }
+        session[
+            get_session_key(current_subject, current_subtopic, "analysis_results")
+        ] = analysis_results
+
+        app.logger.info(
+            f"AI identified weak topics for {current_subject}/{current_subtopic}: {validated_weak_topics}"
         )
+
+        return jsonify(analysis_results)
 
     except json.JSONDecodeError as e:
         app.logger.error(
@@ -911,9 +937,13 @@ def show_results_page():
         if video_data:
             # Convert to legacy format for compatibility
             for key, video_info in video_data.items():
+                # Extract video ID from existing URL field
+                video_url = video_info.get('url', '')
+                video_id = extract_video_id_from_url(video_url)
+                
                 VIDEO_DATA[key] = {
                     "title": video_info.get("title", ""),
-                    "url": f"https://www.youtube.com/embed/{video_info.get('videoId', '')}?enablejsapi=1",
+                    "url": f"https://www.youtube.com/embed/{video_id}?enablejsapi=1" if video_id else video_url,
                     "description": video_info.get("description", ""),
                 }
         else:
@@ -923,7 +953,7 @@ def show_results_page():
                     "functions": {
                         "title": "Python Functions Masterclass",
                         "url": "https://www.youtube.com/embed/kvO_nHnvPtQ?enablejsapi=1",
-                        "description": "Master Python functions, parameters, return values, and scope.",
+                        "description": "",
                     }
                 }
     except Exception as e:
@@ -945,6 +975,11 @@ def show_results_page():
         )
         lesson_plans = {}
 
+    # Get analysis results from Flask session
+    analysis_results = session.get(
+        get_session_key(current_subject, current_subtopic, "analysis_results"), None
+    )
+
     # Always return a valid response
     return render_template(
         "results.html",
@@ -953,6 +988,7 @@ def show_results_page():
         LESSON_PLANS=lesson_plans,
         CURRENT_SUBJECT=current_subject,
         CURRENT_SUBTOPIC=current_subtopic,
+        ANALYSIS_RESULTS=analysis_results,
     )
 
 
@@ -1259,6 +1295,10 @@ def save_lesson_to_file(subject, subtopic, lesson_id, lesson_data):
         with open(lesson_plans_path, "w", encoding="utf-8") as f:
             json.dump(lesson_plans, f, indent=2)
 
+        # Clear cache for this subject/subtopic to ensure fresh data is loaded
+        data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
+        app.logger.info(f"Cleared cache for {subject}/{subtopic} after saving lesson {lesson_id}")
+
         return True
     except Exception as e:
         app.logger.error(f"Error saving lesson {lesson_id}: {e}")
@@ -1283,6 +1323,10 @@ def delete_lesson_from_file(subject, subtopic, lesson_id):
 
             with open(lesson_plans_path, "w", encoding="utf-8") as f:
                 json.dump(lesson_plans, f, indent=2)
+
+            # Clear cache for this subject/subtopic to ensure fresh data is loaded
+            data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
+            app.logger.info(f"Cleared cache for {subject}/{subtopic} after deleting lesson {lesson_id}")
 
             return True
         return False
@@ -1942,6 +1986,10 @@ def admin_quiz_initial(subject, subtopic):
             with open(quiz_file_path, "w", encoding="utf-8") as f:
                 json.dump(quiz_data, f, indent=2)
 
+            # Clear cache for this subject/subtopic to ensure fresh data is loaded
+            data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
+            app.logger.info(f"Cleared cache for {subject}/{subtopic} after updating quiz data")
+
             return jsonify(
                 {"success": True, "message": "Initial quiz updated successfully"}
             )
@@ -1984,6 +2032,10 @@ def admin_quiz_pool(subject, subtopic):
 
             with open(pool_file_path, "w", encoding="utf-8") as f:
                 json.dump(pool_data, f, indent=2)
+
+            # Clear cache for this subject/subtopic to ensure fresh data is loaded
+            data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
+            app.logger.info(f"Cleared cache for {subject}/{subtopic} after updating question pool")
 
             return jsonify(
                 {"success": True, "message": "Question pool updated successfully"}

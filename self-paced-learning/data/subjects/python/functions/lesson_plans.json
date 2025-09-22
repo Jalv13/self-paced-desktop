@@ -60,12 +60,6 @@
     "function definition": {
       "title": "Defining Functions: Syntax and Terminology",
       "videoId": "kvO_nHnvPtQ",
-      "tags": [
-        "function definition",
-        "syntax",
-        "terminology"
-      ],
-      "type": "initial",
       "content": [
         {
           "type": "header",
@@ -104,7 +98,7 @@
           "items": [
             "<strong>Definition/Declaration:</strong> The process of creating a function using `def`.",
             "<strong>Call/Invocation:</strong> The act of executing the function by using its name followed by parentheses, e.g., `get_full_name('john', 'doe')`.",
-            "<strong>Parameter:</strong> The variable name in the function's definition (e.g., `first_name`).",
+            "<strong>Parameter:</strong> The variable name in the function's definition (e.g., `first_name`). TEST EDIT",
             "<strong>Argument:</strong> The actual data passed into the function when it is called (e.g., `'john'`).",
             "<strong>Return Value:</strong> The data that a function sends back using the `return` statement."
           ]
@@ -113,7 +107,14 @@
           "type": "summary",
           "text": "<strong>Key takeaway:</strong> A function definition binds a name to a block of code. Every part, from `def` to the colon to the indentation, is syntactically required."
         }
-      ]
+      ],
+      "tags": [
+        "function definition",
+        "syntax",
+        "terminology"
+      ],
+      "type": "initial",
+      "updated_date": "2025-01-01"
     },
     "syntax": {
       "title": "Reviewing Core Function Syntax",
