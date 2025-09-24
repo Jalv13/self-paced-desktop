@@ -120,13 +120,13 @@
           e.preventDefault();
 
           // Get the submit button and disable it immediately
-          const submitButton = e.target.querySelector('.quiz-submit-button');
+          const submitButton = e.target.querySelector(".quiz-submit-button");
           const originalText = submitButton.textContent;
-          
+
           // Disable button and show processing state
           submitButton.disabled = true;
-          submitButton.textContent = 'Submitting...';
-          submitButton.classList.add('disabled');
+          submitButton.textContent = "Submitting...";
+          submitButton.classList.add("disabled");
 
           const formData = new FormData(e.target);
           const responses = {};
@@ -152,7 +152,7 @@
               // Re-enable button on error
               submitButton.disabled = false;
               submitButton.textContent = originalText;
-              submitButton.classList.remove('disabled');
+              submitButton.classList.remove("disabled");
             }
           } catch (error) {
             console.error("Error during analysis:", error);
@@ -160,7 +160,7 @@
             // Re-enable button on error
             submitButton.disabled = false;
             submitButton.textContent = originalText;
-            submitButton.classList.remove('disabled');
+            submitButton.classList.remove("disabled");
           }
         });
 

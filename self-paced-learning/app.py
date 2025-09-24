@@ -82,20 +82,20 @@ def extract_video_id_from_url(url: str) -> str:
     """Extract YouTube video ID from various YouTube URL formats."""
     if not url:
         return ""
-    
+
     # Handle different YouTube URL formats
     patterns = [
-        r'(?:https?://)?(?:www\.)?youtube\.com/watch\?v=([^&\n?#]+)',
-        r'(?:https?://)?(?:www\.)?youtube\.com/embed/([^&\n?#]+)',
-        r'(?:https?://)?(?:www\.)?youtu\.be/([^&\n?#]+)',
-        r'(?:https?://)?(?:www\.)?youtube\.com/v/([^&\n?#]+)'
+        r"(?:https?://)?(?:www\.)?youtube\.com/watch\?v=([^&\n?#]+)",
+        r"(?:https?://)?(?:www\.)?youtube\.com/embed/([^&\n?#]+)",
+        r"(?:https?://)?(?:www\.)?youtu\.be/([^&\n?#]+)",
+        r"(?:https?://)?(?:www\.)?youtube\.com/v/([^&\n?#]+)",
     ]
-    
+
     for pattern in patterns:
         match = re.search(pattern, url)
         if match:
             return match.group(1)
-    
+
     return ""
 
 
@@ -938,12 +938,16 @@ def show_results_page():
             # Convert to legacy format for compatibility
             for key, video_info in video_data.items():
                 # Extract video ID from existing URL field
-                video_url = video_info.get('url', '')
+                video_url = video_info.get("url", "")
                 video_id = extract_video_id_from_url(video_url)
-                
+
                 VIDEO_DATA[key] = {
                     "title": video_info.get("title", ""),
-                    "url": f"https://www.youtube.com/embed/{video_id}?enablejsapi=1" if video_id else video_url,
+                    "url": (
+                        f"https://www.youtube.com/embed/{video_id}?enablejsapi=1"
+                        if video_id
+                        else video_url
+                    ),
                     "description": video_info.get("description", ""),
                 }
         else:
@@ -1297,7 +1301,9 @@ def save_lesson_to_file(subject, subtopic, lesson_id, lesson_data):
 
         # Clear cache for this subject/subtopic to ensure fresh data is loaded
         data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
-        app.logger.info(f"Cleared cache for {subject}/{subtopic} after saving lesson {lesson_id}")
+        app.logger.info(
+            f"Cleared cache for {subject}/{subtopic} after saving lesson {lesson_id}"
+        )
 
         return True
     except Exception as e:
@@ -1326,7 +1332,9 @@ def delete_lesson_from_file(subject, subtopic, lesson_id):
 
             # Clear cache for this subject/subtopic to ensure fresh data is loaded
             data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
-            app.logger.info(f"Cleared cache for {subject}/{subtopic} after deleting lesson {lesson_id}")
+            app.logger.info(
+                f"Cleared cache for {subject}/{subtopic} after deleting lesson {lesson_id}"
+            )
 
             return True
         return False
@@ -1988,7 +1996,9 @@ def admin_quiz_initial(subject, subtopic):
 
             # Clear cache for this subject/subtopic to ensure fresh data is loaded
             data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
-            app.logger.info(f"Cleared cache for {subject}/{subtopic} after updating quiz data")
+            app.logger.info(
+                f"Cleared cache for {subject}/{subtopic} after updating quiz data"
+            )
 
             return jsonify(
                 {"success": True, "message": "Initial quiz updated successfully"}
@@ -2035,7 +2045,9 @@ def admin_quiz_pool(subject, subtopic):
 
             # Clear cache for this subject/subtopic to ensure fresh data is loaded
             data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
-            app.logger.info(f"Cleared cache for {subject}/{subtopic} after updating question pool")
+            app.logger.info(
+                f"Cleared cache for {subject}/{subtopic} after updating question pool"
+            )
 
             return jsonify(
                 {"success": True, "message": "Question pool updated successfully"}

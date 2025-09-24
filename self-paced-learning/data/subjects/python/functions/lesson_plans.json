@@ -3,12 +3,6 @@
     "python function basics": {
       "title": "A Comprehensive Guide to Python Functions",
       "videoId": "kvO_nHnvPtQ",
-      "tags": [
-        "python function basics",
-        "function definition",
-        "syntax"
-      ],
-      "type": "remedial",
       "content": [
         {
           "type": "header",
@@ -54,8 +48,22 @@
         {
           "type": "summary",
           "text": "<strong>Key takeaway:</strong> Master argument passing with defaults, `*args`, and `**kwargs` for ultimate flexibility. Use scope correctly to avoid bugs, and leverage lambda functions for concise, simple operations."
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\nprint(\"Hello, World!\")",
+          "expected_output": "Hello, World",
+          "hints": [],
+          "solution": "def hello_world:\n    print(\"Hello, World\")\nreturn\n"
         }
-      ]
+      ],
+      "tags": [
+        "python function basics",
+        "function definition",
+        "syntax"
+      ],
+      "type": "initial",
+      "updated_date": "2025-01-01"
     },
     "function definition": {
       "title": "Defining Functions: Syntax and Terminology",
