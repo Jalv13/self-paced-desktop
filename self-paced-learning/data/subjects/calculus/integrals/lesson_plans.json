@@ -1,6 +1,6 @@
 {
   "lessons": {
-    "introduction to integrals": {
+    "integrals": {
       "title": "Introduction to Integrals",
       "videoId": "5yfh5cf4-0w&t=2661s",
       "tags": ["integrals", "integration", "calculus", "antiderivative"],
@@ -40,7 +40,7 @@
       ],
       "type": "remedial"
     },
-    "basic integration rules": {
+    "integration": {
       "title": "Basic Integration Rules",
       "videoId": "5yfh5cf4-0w&t=2661s",
       "content": [
@@ -75,7 +75,7 @@
       "updated_date": "2025-01-01",
       "type": "remedial"
     },
-    "definite integrals": {
+    "fundamental theorem": {
       "title": "Understanding Definite Integrals",
       "videoId": "5yfh5cf4-0w&t=2661s",
       "tags": [
@@ -110,6 +110,86 @@
           "text": "<strong>Key takeaway:</strong> Definite integrals give exact numerical values and represent the net area between the curve and the x-axis over a given interval."
         }
       ],
+      "type": "remedial"
+    },
+    "logarithmic": {
+      "title": "Basic Integration Rules",
+      "videoId": "5yfh5cf4-0w&t=2661s",
+      "content": [
+        {
+          "type": "header",
+          "text": "Essential Integration Formulas"
+        },
+        {
+          "type": "paragraph",
+          "text": "Just as there are rules for differentiation, there are corresponding rules for integration. These basic formulas form the foundation for solving more complex integrals."
+        },
+        {
+          "type": "code",
+          "text": "# Power Rule for Integration:\n# ∫ x^n dx = (x^(n+1))/(n+1) + C, where n ≠ -1\n\n# Examples:\n# ∫ x³ dx = x⁴/4 + C\n# ∫ x^(-2) dx = -1/x + C\n# ∫ √x dx = ∫ x^(1/2) dx = (2/3)x^(3/2) + C"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>Constant Rule:</strong> ∫ c dx = cx + C",
+            "<strong>Power Rule:</strong> ∫ x^n dx = x^(n+1)/(n+1) + C (n ≠ -1)",
+            "<strong>Exponential:</strong> ∫ e^x dx = e^x + C",
+            "<strong>Logarithmic:</strong> ∫ (1/x) dx = ln|x| + C",
+            "<strong>Trigonometric:</strong> ∫ sin(x) dx = -cos(x) + C, ∫ cos(x) dx = sin(x) + C"
+          ]
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> Master these basic integration rules as they are the building blocks for more advanced integration techniques."
+        }
+      ],
+      "tags": [
+        "integration techniques",
+        "integration",
+        "calculus",
+        "logarithmic"
+      ],
+      "updated_date": "2025-01-01",
+      "type": "remedial"
+    },
+    "power rule": {
+      "title": "Basic Integration Rules",
+      "videoId": "5yfh5cf4-0w&t=2661s",
+      "content": [
+        {
+          "type": "header",
+          "text": "Essential Integration Formulas"
+        },
+        {
+          "type": "paragraph",
+          "text": "Just as there are rules for differentiation, there are corresponding rules for integration. These basic formulas form the foundation for solving more complex integrals."
+        },
+        {
+          "type": "code",
+          "text": "# Power Rule for Integration:\n# ∫ x^n dx = (x^(n+1))/(n+1) + C, where n ≠ -1\n\n# Examples:\n# ∫ x³ dx = x⁴/4 + C\n# ∫ x^(-2) dx = -1/x + C\n# ∫ √x dx = ∫ x^(1/2) dx = (2/3)x^(3/2) + C"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>Constant Rule:</strong> ∫ c dx = cx + C",
+            "<strong>Power Rule:</strong> ∫ x^n dx = x^(n+1)/(n+1) + C (n ≠ -1)",
+            "<strong>Exponential:</strong> ∫ e^x dx = e^x + C",
+            "<strong>Logarithmic:</strong> ∫ (1/x) dx = ln|x| + C",
+            "<strong>Trigonometric:</strong> ∫ sin(x) dx = -cos(x) + C, ∫ cos(x) dx = sin(x) + C"
+          ]
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> Master these basic integration rules as they are the building blocks for more advanced integration techniques."
+        }
+      ],
+      "tags": [
+        "integration techniques",
+        "integration",
+        "calculus",
+        "power rule"
+      ],
+      "updated_date": "2025-01-01",
       "type": "remedial"
     },
     "testest": {
