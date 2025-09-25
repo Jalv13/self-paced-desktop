@@ -150,6 +150,9 @@
                             <button type="button" class="btn-add-content" data-type="code">
                                 <i class="fas fa-code"></i> Add Code
                             </button>
+                            <button type="button" class="btn-add-content" data-type="code_runner">
+                                <i class="fas fa-play-circle"></i> Add Code Runner
+                            </button>
                             <button type="button" class="btn-add-content" data-type="list">
                                 <i class="fas fa-list-ul"></i> Add List
                             </button>
@@ -1225,6 +1228,7 @@
                 'header': 'fas fa-heading',
                 'paragraph': 'fas fa-paragraph',
                 'code': 'fas fa-code',
+                'code_runner': 'fas fa-play-circle',
                 'list': 'fas fa-list-ul',
                 'summary': 'fas fa-lightbulb'
             };
@@ -1241,6 +1245,28 @@
                 
                 case 'code':
                     return `<textarea placeholder="Enter code content..." style="font-family: monospace;">${existingData ? existingData.text || '' : ''}</textarea>`;
+                
+                case 'code_runner':
+                    return `
+                        <div class="code-runner-config">
+                            <div class="form-row">
+                                <label>Starter Code:</label>
+                                <textarea placeholder="# Enter starter code for students..." style="font-family: monospace; min-height: 120px;">${existingData ? existingData.starter_code || '' : '# Write your Python code here\nprint("Hello, World!")'}</textarea>
+                            </div>
+                            <div class="form-row">
+                                <label>Expected Output (optional):</label>
+                                <textarea placeholder="Expected output when code is run correctly...">${existingData ? existingData.expected_output || '' : ''}</textarea>
+                            </div>
+                            <div class="form-row">
+                                <label>Hints (optional):</label>
+                                <textarea placeholder="Helpful hints for students, one per line...">${existingData ? (existingData.hints || []).join('\n') : ''}</textarea>
+                            </div>
+                            <div class="form-row">
+                                <label>Solution (optional):</label>
+                                <textarea placeholder="Complete solution code..." style="font-family: monospace;">${existingData ? existingData.solution || '' : ''}</textarea>
+                            </div>
+                        </div>
+                    `;
                 
                 case 'summary':
                     return `<textarea placeholder="Enter summary content...">${existingData ? existingData.text || '' : ''}</textarea>`;
@@ -1404,6 +1430,17 @@
                         blockData.text = textElement ? textElement.value : '';
                         break;
                     
+                    case 'code_runner':
+                        const codeRunnerDiv = block.querySelector('.code-runner-config');
+                        if (codeRunnerDiv) {
+                            const textareas = codeRunnerDiv.querySelectorAll('textarea');
+                            blockData.starter_code = textareas[0] ? textareas[0].value : '';
+                            blockData.expected_output = textareas[1] ? textareas[1].value : '';
+                            blockData.hints = textareas[2] ? textareas[2].value.split('\n').filter(h => h.trim()) : [];
+                            blockData.solution = textareas[3] ? textareas[3].value : '';
+                        }
+                        break;
+                    
                     case 'list':
                         const listItems = block.querySelectorAll('.list-item textarea');
                         blockData.items = Array.from(listItems)
@@ -1413,7 +1450,8 @@
                 }
 
                 if ((type === 'list' && blockData.items.length > 0) || 
-                    (type !== 'list' && blockData.text && blockData.text.trim() !== '')) {
+                    (type === 'code_runner' && blockData.starter_code && blockData.starter_code.trim() !== '') ||
+                    (type !== 'list' && type !== 'code_runner' && blockData.text && blockData.text.trim() !== '')) {
                     content.push(blockData);
                 }
             });
@@ -1531,6 +1569,25 @@
             }
         `;
         document.head.appendChild(style);
+
+        // Add tab support to all textareas (especially for code editing)
+        document.addEventListener('keydown', function(e) {
+            // Handle Tab key in textareas
+            if (e.target.tagName === 'TEXTAREA' && e.key === 'Tab') {
+                e.preventDefault();
+                
+                const textarea = e.target;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                
+                // Insert 4 spaces (or a tab character) at cursor position
+                const tab = '    '; // 4 spaces for Python indentation
+                textarea.value = textarea.value.substring(0, start) + tab + textarea.value.substring(end);
+                
+                // Move cursor after the inserted tab
+                textarea.selectionStart = textarea.selectionEnd = start + tab.length;
+            }
+        });
     </script>
 </body>
 </html>

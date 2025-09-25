@@ -8,6 +8,8 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/styles.css') }}"
     />
+    <!-- Pyodide for Python code execution -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
   </head>
   <body>
     <div class="blackboard-layout">
@@ -88,6 +90,7 @@
       const VIDEO_DATA = {{ VIDEO_DATA | tojson | safe }};
       const CURRENT_SUBJECT = {{ CURRENT_SUBJECT | tojson | safe }};
       const CURRENT_SUBTOPIC = {{ CURRENT_SUBTOPIC | tojson | safe }};
+      const ANALYSIS_RESULTS = {{ ANALYSIS_RESULTS | tojson | safe }};
     </script>
 
     <script>
@@ -114,137 +117,43 @@
           "adminMarkCompleteButton"
         );
 
-        // Build a quick index to resolve remedial lessons by key, id, or title
-        let LESSON_INDEX = null;
-        function buildLessonIndex() {
-          LESSON_INDEX = { byKey: {}, byId: {}, byTitleLC: {} };
-          try {
-            Object.entries(REMEDIAL_LESSON_PLANS || {}).forEach(
-              ([key, lesson]) => {
-                LESSON_INDEX.byKey[String(key)] = lesson;
-                if (lesson) {
-                  if (lesson.lesson_id) {
-                    LESSON_INDEX.byId[String(lesson.lesson_id)] = lesson;
-                  }
-                  if (lesson.title) {
-                    LESSON_INDEX.byTitleLC[String(lesson.title).toLowerCase()] =
-                      lesson;
-                  }
-                }
-              }
-            );
-          } catch (e) {
-            console.warn("Could not build LESSON_INDEX:", e);
-          }
-        }
-        function resolveLesson(keyOrId) {
-          if (!keyOrId) return null;
-          const k = String(keyOrId);
-          if (REMEDIAL_LESSON_PLANS && REMEDIAL_LESSON_PLANS[k])
-            return REMEDIAL_LESSON_PLANS[k];
-          if (!LESSON_INDEX) buildLessonIndex();
-          if (LESSON_INDEX.byId[k]) return LESSON_INDEX.byId[k];
-          const lc = k.toLowerCase();
-          if (LESSON_INDEX.byTitleLC[lc]) return LESSON_INDEX.byTitleLC[lc];
-          if (LESSON_INDEX.byKey[k]) return LESSON_INDEX.byKey[k];
-          return null;
-        }
-
-        // Initialize lesson index early
-        buildLessonIndex();
-
-        // --- REGISTER CLICK HANDLER EARLY TO ENSURE IT'S ALWAYS AVAILABLE ---
-        console.log("=== REGISTERING DOCUMENT CLICK HANDLER EARLY ===");
-        document.addEventListener("click", function (e) {
-          console.log("Document click detected on:", e.target);
-          console.log("Looking for closest a[data-action]...");
-
-          // Only handle clicks on links with data-action attribute (our lesson links)
-          const link = e.target.closest("a[data-action]");
-          console.log("Found link:", link);
-
-          if (!link) {
-            console.log("No link with data-action found, returning");
-            return;
-          }
-
-          console.log("=== LESSON CLICK DETECTED ===");
-          console.log("Link found:", link);
-          console.log("Link dataset:", link.dataset);
-
-          e.preventDefault();
-
-          const action = link.dataset.action;
-          const topic = link.dataset.topic;
-          const weakTopic = link.dataset.weakTopic;
-          const subject = link.dataset.subject || CURRENT_SUBJECT;
-          const subtopic = link.dataset.subtopic || CURRENT_SUBTOPIC;
-
-          if (!topic || !action) {
-            console.warn("Sidebar click without topic/action:", link);
-            return;
-          }
-
-          const completionKey = weakTopic || topic;
-
-          // Clear previous active state
-          const currentActive = document.querySelector("a.active");
-          if (currentActive) currentActive.classList.remove("active");
-          link.classList.add("active");
-
-          console.log("Processing lesson click:", {
-            action,
-            topic,
-            weakTopic,
-            completionKey,
-            subject,
-            subtopic,
-          });
-
-          if (action === "read") {
-            if (currentPlayer) {
-              currentPlayer.destroy();
-              currentPlayer = null;
-            }
-            if (videoProgressChecker) {
-              clearInterval(videoProgressChecker);
-              videoProgressChecker = null;
-            }
-            currentVideoTopic = null;
-
-            console.log("About to render lesson with:", {
-              topic,
-              subject,
-              subtopic,
-              completionKey,
-            });
-
-            renderLesson(topic, subject, subtopic);
-            updateCompletionState(completionKey, "read");
-          } else if (action === "watch") {
-            console.log("About to render video with:", {
-              topic,
-              completionKey,
-              subject,
-              subtopic,
-            });
-
-            renderVideo(topic, completionKey, subject, subtopic);
-          }
-        });
-
         // --- State Tracking ---
         let completionState = {};
         let currentPlayer = null;
-        let currentVideoTopic = null; // Track current video topic separately
-        let videoProgressChecker = null; // For periodic progress checking
+        let currentVideoTopic = null;
+        let videoProgressChecker = null;
 
         // --- YouTube API Ready Handler ---
         window.onYouTubeIframeAPIReady = function () {
           console.log("YouTube Player API is ready.");
         };
 
+        // --- Main Analysis Logic - Use Flask session data instead of sessionStorage ---
+        console.log("Processing analysis results from Flask session");
+
+        if (!ANALYSIS_RESULTS) {
+          statusDiv.textContent =
+            "No quiz analysis found. Please take a quiz first.";
+          statusDiv.className = "status status-error";
+          backToTopicsButton.classList.remove("hidden");
+          return;
+        }
+
+        // Process the analysis results immediately
+        statusDiv.textContent = "Analysis complete!";
+        statusDiv.className = "status status-success";
+
+        await processAnalysisResults(ANALYSIS_RESULTS);
+
         // --- Helper Functions ---
+        function resolveLesson(keyOrId) {
+          if (!keyOrId) return null;
+          const k = String(keyOrId);
+          return REMEDIAL_LESSON_PLANS && REMEDIAL_LESSON_PLANS[k]
+            ? REMEDIAL_LESSON_PLANS[k]
+            : null;
+        }
+
         function extractVideoIdFromUrl(url) {
           const regExp =
             /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -252,122 +161,70 @@
           return match && match[2].length === 11 ? match[2] : null;
         }
 
-        // --- Main Analysis Logic ---
-        // Namespace sessionStorage keys by subject/subtopic to avoid stale cross-topic data
-        const STORAGE_PREFIX = `${CURRENT_SUBJECT || "unknown"}:$${
-          CURRENT_SUBTOPIC || "unknown"
-        }:`;
-        const keyFor = (base) =>
-          `${CURRENT_SUBJECT || "unknown"}:${
-            CURRENT_SUBTOPIC || "unknown"
-          }:${base}`;
+        // Map conceptual topics to actual video keys
+        function getVideoKeyForTopic(topic) {
+          const topicMappings = {
+            "keyword arguments": "functions",
+            "function parameters": "functions",
+            "function arguments": "functions",
+            "parameter passing": "functions",
+            "default parameters": "functions",
+            "function definition": "functions",
+            "function calls": "functions",
+            "return statements": "functions",
+            "function scope": "functions",
+            "for loops": "loops",
+            "while loops": "loops",
+            "loop iteration": "loops",
+            "break statements": "loops",
+            "continue statements": "loops",
+            "nested loops": "loops",
+            "list operations": "lists",
+            "list methods": "lists",
+            "list comprehension": "lists",
+            "list indexing": "lists",
+            "array operations": "arrays",
+            "numpy arrays": "arrays",
+            "set operations": "sets",
+            "dictionary operations": "dictionaries",
+            "dict methods": "dictionaries",
+          };
 
-        // Prefer namespaced keys; do NOT fall back to global keys to prevent cross-subject contamination
-        const answersFromSession = sessionStorage.getItem(
-          keyFor("quizAnswers")
-        );
-        const cachedAnalysis = sessionStorage.getItem(
-          keyFor("analysisResults")
-        );
+          const normalizedTopic = topic.toLowerCase();
+          return topicMappings[normalizedTopic] || topic;
+        }
 
-        // Debug: show which keys are being used
-        console.log("Storage keys:", {
-          answersKey: keyFor("quizAnswers"),
-          analysisKey: keyFor("analysisResults"),
-          hasAnswers: !!answersFromSession,
-          hasAnalysis: !!cachedAnalysis,
+        // --- Simplified Click Handler ---
+        document.addEventListener("click", function (e) {
+          const link = e.target.closest("a[data-action]");
+          if (!link) return;
+
+          e.preventDefault();
+          const action = link.dataset.action;
+          const topic = link.dataset.topic;
+          const weakTopic = link.dataset.weakTopic;
+          const completionKey = weakTopic || topic;
+
+          if (!topic || !action) return;
+
+          // Clear previous active state
+          const currentActive = document.querySelector("a.active");
+          if (currentActive) currentActive.classList.remove("active");
+          link.classList.add("active");
+
+          if (action === "read") {
+            renderLesson(topic);
+            updateCompletionState(completionKey, "read");
+          } else if (action === "watch") {
+            renderVideo(topic, completionKey);
+          }
         });
-
-        if (!answersFromSession) {
-          // One-time migration: if old global key exists for this subtopic, move it
-          const legacyAnswers = sessionStorage.getItem("quizAnswers");
-          const legacyAnalysis = sessionStorage.getItem("analysisResults");
-          if (legacyAnswers) {
-            console.warn("Migrating legacy cached answers to namespaced key");
-            sessionStorage.setItem(keyFor("quizAnswers"), legacyAnswers);
-            sessionStorage.removeItem("quizAnswers");
-          }
-          if (legacyAnalysis) {
-            console.warn("Migrating legacy cached analysis to namespaced key");
-            sessionStorage.setItem(keyFor("analysisResults"), legacyAnalysis);
-            sessionStorage.removeItem("analysisResults");
-          }
-
-          const retryAnswers = sessionStorage.getItem(keyFor("quizAnswers"));
-          if (!retryAnswers) {
-            statusDiv.textContent =
-              "No quiz data found. Please take a quiz first.";
-            statusDiv.className = "status status-error";
-            return;
-          }
-        }
-
-        let analysisData;
-
-        // Check if we have cached analysis results first
-        if (cachedAnalysis) {
-          try {
-            analysisData = JSON.parse(cachedAnalysis);
-            console.log("Using cached analysis results");
-
-            // Update status immediately
-            statusDiv.textContent = "Analysis complete!";
-            statusDiv.className = "status status-success";
-
-            // Process the results
-            await processAnalysisResults(analysisData);
-            return;
-          } catch (error) {
-            console.error("Error parsing cached analysis:", error);
-            // Fall through to fresh analysis
-          }
-        }
-
-        // Perform fresh analysis if no cache available
-        try {
-          const analyzeRes = await fetch("/analyze", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ answers: JSON.parse(answersFromSession) }),
-          });
-
-          if (!analyzeRes.ok) throw new Error("Analysis request failed");
-
-          analysisData = await analyzeRes.json();
-          // Ensure answers stay cached for this subject/subtopic during session
-          try {
-            const parsedAnswers = JSON.parse(answersFromSession);
-            sessionStorage.setItem(
-              keyFor("quizAnswers"),
-              JSON.stringify(parsedAnswers)
-            );
-          } catch (e) {
-            // ignore
-          }
-
-          // Cache the analysis results for future use
-          sessionStorage.setItem(
-            keyFor("analysisResults"),
-            JSON.stringify(analysisData)
-          );
-
-          // Process the results
-          await processAnalysisResults(analysisData);
-        } catch (err) {
-          statusDiv.textContent = `Error: ${err.message}`;
-          statusDiv.className = "status status-error";
-        }
 
         // --- Analysis Results Processing Function ---
         async function processAnalysisResults(analysisData) {
-          console.log("=== PROCESSING ANALYSIS RESULTS ===");
-          console.log("Analysis data:", analysisData);
+          console.log("Processing analysis results:", analysisData);
 
           const weakTopics = analysisData.weak_topics || [];
-          console.log("Weak topics extracted:", weakTopics);
-
-          const scorePct = analysisData?.score?.percentage ?? null;
-          console.log("Score percentage:", scorePct);
 
           // Calculate and display score
           if (analysisData.score) {
@@ -377,21 +234,43 @@
           statusDiv.classList.add("hidden");
 
           if (weakTopics.length > 0) {
-            console.log("Showing welcome message and processing weak topics");
             welcomeMessageContainer.classList.remove("hidden");
             feedbackContentDiv.innerHTML = analysisData.feedback;
 
             buildCompletionState(weakTopics);
-            await displayWeakTopicsWithTagMatching(weakTopics);
+            displayWeakTopics(weakTopics);
 
             continueButton.classList.remove("hidden");
             backToTopicsButton.classList.remove("hidden");
             checkCompletionAndToggleButton();
           } else {
-            console.log("No weak topics, showing mastery message");
             masteryMessageContainer.classList.remove("hidden");
             backToTopicsButton.classList.remove("hidden");
+            // Show continue button for perfect scores too
+            continueButton.classList.remove("hidden");
+            continueButton.disabled = false; // Enable button when no weak topics
           }
+        }
+
+        // --- Simplified Topic Display ---
+        function displayWeakTopics(topics) {
+          topicsNavList.innerHTML = "";
+          topics.forEach((topic) => {
+            const lesson = REMEDIAL_LESSON_PLANS[topic];
+            if (!lesson) return;
+
+            const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
+            const groupLi = document.createElement("li");
+            groupLi.className = "topic-group";
+            groupLi.innerHTML = `
+             <span>${lesson.title || topic}</span>
+             <ul>
+               <li id="read-${safeTopicId}"><a href="#" data-topic="${topic}" data-weak-topic="${topic}" data-action="read">Read Remedial Lesson</a></li>
+               <li id="watch-${safeTopicId}"><a href="#" data-topic="${topic}" data-weak-topic="${topic}" data-action="watch">Watch Video</a></li>
+             </ul>
+           `;
+            topicsNavList.appendChild(groupLi);
+          });
         }
 
         // --- Helper Functions ---
@@ -400,299 +279,6 @@
             completionState[topic] = { read: false, watched: false };
           });
         }
-
-        function displayWeakTopics(topics) {
-          console.log("=== FALLBACK displayWeakTopics called ===");
-          console.log("Topics:", topics);
-          console.log(
-            "REMEDIAL_LESSON_PLANS keys:",
-            Object.keys(REMEDIAL_LESSON_PLANS || {})
-          );
-
-          topicsNavList.innerHTML = "";
-          topics.forEach((topic) => {
-            console.log(`Processing topic: "${topic}"`);
-            const lesson = REMEDIAL_LESSON_PLANS[topic];
-            console.log(`Lesson found for "${topic}":`, lesson);
-
-            if (!lesson) {
-              console.log(`No lesson found for topic: "${topic}"`);
-              return;
-            }
-
-            // Create a safe ID by replacing spaces and special characters
-            const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
-
-            const groupLi = document.createElement("li");
-            groupLi.className = "topic-group";
-            groupLi.innerHTML = `
-             <span>${lesson.title || topic}</span>
-             <ul>
-               <li id="read-${safeTopicId}"><a href="#" data-topic="${topic}" data-action="read">Read Remedial Lesson</a></li>
-               <li id="watch-${safeTopicId}"><a href="#" data-topic="${topic}" data-action="watch">Watch Video</a></li>
-             </ul>
-           `;
-            topicsNavList.appendChild(groupLi);
-          });
-
-          // Debug: Log the generated structure
-          console.log("Generated topic navigation structure:");
-          console.log(topicsNavList.innerHTML);
-        }
-
-        // --- NEW: Intelligent Tag-Based Lesson Matching ---
-        async function displayWeakTopicsWithTagMatching(weakTopics) {
-          console.log(
-            "Starting tag-based lesson matching for topics:",
-            weakTopics
-          );
-          topicsNavList.innerHTML = "";
-
-          const weakLCSet = new Set(
-            (weakTopics || []).map((t) => String(t).toLowerCase())
-          );
-
-          // First, try to fetch remedial lessons using tag-based matching from the server
-          try {
-            console.log("Attempting to fetch lessons by tags with data:", {
-              subject: CURRENT_SUBJECT,
-              tags: weakTopics,
-            });
-
-            const response = await fetch("/api/lessons/find-by-tags", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                subject: CURRENT_SUBJECT,
-                tags: weakTopics,
-              }),
-            });
-
-            console.log("API response status:", response.status);
-            console.log("API response ok:", response.ok);
-
-            if (response.ok) {
-              const matchingLessons = await response.json();
-              console.log("API response data:", matchingLessons);
-
-              if (
-                matchingLessons.lessons &&
-                matchingLessons.lessons.length > 0
-              ) {
-                console.log(
-                  `Found ${matchingLessons.lessons.length} remedial lessons using tag-based matching`
-                );
-
-                // Group lessons by matching tags (case-insensitive)
-                const lessonsByTopic = {};
-                matchingLessons.lessons.forEach((lesson) => {
-                  const tags = (lesson.matching_tags || lesson.tags || []).map(
-                    (t) => String(t)
-                  );
-                  tags.forEach((tag) => {
-                    const tagLC = tag.toLowerCase();
-                    if (weakLCSet.has(tagLC)) {
-                      const originalTopic = weakTopics.find(
-                        (w) => String(w).toLowerCase() === tagLC
-                      );
-                      if (!lessonsByTopic[originalTopic]) {
-                        lessonsByTopic[originalTopic] = [];
-                      }
-                      lessonsByTopic[originalTopic].push(lesson);
-                    }
-                  });
-                });
-
-                console.log("Lessons grouped by topic:", lessonsByTopic);
-
-                console.log("=== STARTING WEAK TOPICS FOREACH LOOP ===");
-                // Display lessons organized by weak topics; prefer remedial where available
-                weakTopics.forEach((topic) => {
-                  console.log("Processing weak topic:", topic);
-                  const lessons = lessonsByTopic[topic] || [];
-                  console.log("Lessons for topic:", topic, lessons);
-                  if (lessons.length > 0) {
-                    const remedialFirst = (() => {
-                      const rem = lessons.filter(
-                        (l) =>
-                          String(l?.type || "").toLowerCase() === "remedial"
-                      );
-                      return rem.length ? rem : lessons;
-                    })();
-                    createTopicSection(topic, remedialFirst);
-                  } else {
-                    // Fallback: try direct key lookup from REMEDIAL_LESSON_PLANS using resolver
-                    const directLesson = resolveLesson(topic);
-                    if (directLesson) {
-                      createTopicSection(topic, [
-                        {
-                          title: directLesson.title || topic,
-                          lesson_id: directLesson.lesson_id || topic,
-                          subject: CURRENT_SUBJECT,
-                          subtopic: CURRENT_SUBTOPIC,
-                          matching_tags: [topic],
-                        },
-                      ]);
-                    }
-                  }
-                });
-
-                setupLessonEventHandlers();
-                debugRemedialLessons(); // Add programmatic debug after lessons are built
-                return;
-              } else {
-                console.log("API returned no lessons");
-              }
-            } else {
-              console.log("API request failed with status:", response.status);
-            }
-          } catch (error) {
-            console.error("Error fetching lessons by tags:", error);
-          }
-
-          // Fallback to original direct key lookup method
-          console.log("Falling back to direct key lookup method");
-          displayWeakTopics(weakTopics);
-          setupLessonEventHandlers();
-          debugRemedialLessons(); // Add programmatic debug for fallback case too
-        }
-
-        // --- NEW HELPERS: Build sidebar sections and attach handlers ---
-        function createTopicSection(weakTopic, lessons) {
-          // Build a section matching displayWeakTopics structure:
-          // li IDs based on weak topic, and anchors carry lesson/video targeting.
-          const safeTopicId = weakTopic.replace(/[^a-zA-Z0-9]/g, "_");
-
-          const groupLi = document.createElement("li");
-          groupLi.className = "topic-group";
-
-          const headerSpan = document.createElement("span");
-          headerSpan.textContent = weakTopic;
-          groupLi.appendChild(headerSpan);
-
-          const innerList = document.createElement("ul");
-
-          // Choose a primary lesson for the "Read" action (first match)
-          const primary = lessons && lessons.length ? lessons[0] : null;
-          const primaryLessonId = String(
-            (primary && (primary.lesson_id || primary.id || primary.title)) ||
-              weakTopic
-          );
-
-          // Ensure completion state exists for this weak topic
-          if (!completionState[weakTopic]) {
-            completionState[weakTopic] = { read: false, watched: false };
-          }
-
-          // Read item (data-topic is lesson_id; data-weak-topic maps completion to weak topic)
-          const readLi = document.createElement("li");
-          readLi.id = `read-${safeTopicId}`;
-          readLi.innerHTML = `<a href="#" data-topic="${primaryLessonId}" data-subject="${
-            primary?.subject || CURRENT_SUBJECT
-          }" data-subtopic="${
-            primary?.subtopic || CURRENT_SUBTOPIC
-          }" data-weak-topic="${weakTopic}" data-action="read">Read Remedial Lesson</a>`;
-          innerList.appendChild(readLi);
-
-          // Watch item (use the same primary lesson for video fallback)
-          const watchLi = document.createElement("li");
-          watchLi.id = `watch-${safeTopicId}`;
-          watchLi.innerHTML = `<a href="#" data-topic="${primaryLessonId}" data-subject="${
-            primary?.subject || CURRENT_SUBJECT
-          }" data-subtopic="${
-            primary?.subtopic || CURRENT_SUBTOPIC
-          }" data-weak-topic="${weakTopic}" data-action="watch">Watch Video</a>`;
-          innerList.appendChild(watchLi);
-
-          groupLi.appendChild(innerList);
-          topicsNavList.appendChild(groupLi);
-        }
-
-        function setupLessonEventHandlers() {
-          // The delegated click handler on topicsNavList already manages all clicks
-          // and prevents default navigation, so no additional handlers needed here.
-        }
-
-        // --- PROGRAMMATIC REMEDIAL LESSON DEBUGGING ---
-        function debugRemedialLessons() {
-          console.log("=== PROGRAMMATIC REMEDIAL LESSON DEBUG ===");
-
-          // Find all remedial lesson links
-          const allLinks = document.querySelectorAll("a[data-action]");
-          console.log(
-            `Found ${allLinks.length} links with data-action attribute:`
-          );
-
-          allLinks.forEach((link, index) => {
-            console.log(`Link ${index + 1}:`, {
-              element: link,
-              text: link.textContent.trim(),
-              action: link.dataset.action,
-              topic: link.dataset.topic,
-              subject: link.dataset.subject,
-              subtopic: link.dataset.subtopic,
-              weakTopic: link.dataset.weakTopic,
-              href: link.href,
-              parent: link.parentElement,
-              isVisible: link.offsetParent !== null,
-            });
-          });
-
-          // Try to trigger a click on the first "read" action link programmatically
-          const readLinks = Array.from(allLinks).filter(
-            (link) => link.dataset.action === "read"
-          );
-          if (readLinks.length > 0) {
-            console.log(
-              "Found read links, but NOT auto-clicking to preserve UI flow"
-            );
-            const firstReadLink = readLinks[0];
-
-            // Test if we can access the data
-            console.log("First read link data:", {
-              action: firstReadLink.dataset.action,
-              topic: firstReadLink.dataset.topic,
-              subject: firstReadLink.dataset.subject,
-              subtopic: firstReadLink.dataset.subtopic,
-              weakTopic: firstReadLink.dataset.weakTopic,
-            });
-
-            // Log that renderLesson function exists and is callable
-            console.log(
-              "renderLesson function exists:",
-              typeof renderLesson === "function"
-            );
-          } else {
-            console.log("No read links found!");
-          }
-
-          console.log("=== END PROGRAMMATIC DEBUG ===");
-        }
-
-        // --- MANUAL CLICK TEST FUNCTION ---
-        window.testRemedialClick = function () {
-          console.log("=== MANUAL CLICK TEST ===");
-          const readLinks = document.querySelectorAll('a[data-action="read"]');
-          console.log("Found read links:", readLinks.length);
-
-          if (readLinks.length > 0) {
-            const firstLink = readLinks[0];
-            console.log("Attempting to click first read link:", firstLink);
-            console.log("Link attributes:", {
-              action: firstLink.dataset.action,
-              topic: firstLink.dataset.topic,
-              subject: firstLink.dataset.subject,
-              subtopic: firstLink.dataset.subtopic,
-              weakTopic: firstLink.dataset.weakTopic,
-            });
-
-            // Try triggering click event
-            firstLink.click();
-            console.log("Click triggered");
-          } else {
-            console.log("No read links found");
-          }
-        };
 
         // --- Score Display Function ---
         function displayScore(scoreData) {
@@ -797,81 +383,15 @@
         /**
          * Renders lesson content in the main content area.
          */
-        function renderLesson(topic, subject, subtopic) {
-          console.log("=== renderLesson called ===");
-          console.log(
-            "Topic:",
-            topic,
-            "Subject:",
-            subject,
-            "Subtopic:",
-            subtopic
-          );
-
-          // Only hide the analysis/welcome block when we actually have content to show
-          // This prevents the welcome message from disappearing prematurely
-
-          let lesson = resolveLesson(topic);
-          console.log("=== DETAILED LESSON RESOLUTION DEBUG ===");
-          console.log("Calling resolveLesson with topic:", topic);
-          console.log("Resolved lesson from local plans:", lesson);
-          console.log(
-            "REMEDIAL_LESSON_PLANS keys:",
-            Object.keys(REMEDIAL_LESSON_PLANS || {})
-          );
-          console.log("Looking for lesson with exact key:", topic);
-          console.log("Direct lookup result:", REMEDIAL_LESSON_PLANS?.[topic]);
-          console.log("=== END LESSON RESOLUTION DEBUG ===");
-
-          if (!lesson && subject && subtopic) {
-            console.log("Lesson not in local plans; fetching:", {
-              subject,
-              subtopic,
-              topic,
-            });
-            // Fetch lesson from backend API
-            fetch(
-              `/api/lessons/${encodeURIComponent(subject)}/${encodeURIComponent(
-                subtopic
-              )}/${encodeURIComponent(topic)}`
-            )
-              .then((res) => {
-                console.log("Fetch response status:", res.status);
-                return res.ok ? res.json() : null;
-              })
-              .then((data) => {
-                console.log("Fetched lesson data:", data);
-                if (!data || !data.lesson) {
-                  contentDisplayArea.innerHTML = `<h2>Content Not Found</h2><p>Sorry, we couldn't find a lesson for "${topic}".</p><p>Tried fetching from: /api/lessons/${subject}/${subtopic}/${topic}</p>`;
-                  return;
-                }
-                renderLessonFromObject(data.lesson);
-              })
-              .catch((err) => {
-                console.error("Failed to fetch lesson:", err);
-                contentDisplayArea.innerHTML = `<h2>Fetch Error</h2><p>Failed to fetch lesson "${topic}": ${err.message}</p><p>Tried fetching from: /api/lessons/${subject}/${subtopic}/${topic}</p>`;
-              });
-            return;
-          }
+        function renderLesson(topic) {
+          const lesson = resolveLesson(topic);
 
           if (!lesson) {
-            console.log("No lesson found anywhere for topic:", topic);
-            contentDisplayArea.innerHTML = `<h2>Content Not Found</h2><p>Sorry, we couldn't find a lesson for "${topic}".</p><p>Available lessons: ${Object.keys(
-              REMEDIAL_LESSON_PLANS || {}
-            ).join(", ")}</p>`;
+            contentDisplayArea.innerHTML = `<h2>Content Not Found</h2><p>Sorry, we couldn't find a lesson for "${topic}".</p>`;
             return;
           }
 
-          console.log("Rendering lesson from local plans:", lesson);
-          renderLessonFromObject(lesson);
-        }
-
-        function renderLessonFromObject(lesson) {
-          console.log("=== RENDERING LESSON OBJECT ===");
-          console.log("Lesson object:", lesson);
-
-          // Hide the main welcome/feedback message now that we're showing lesson content
-          welcomeMessageContainer.classList.add("hidden");
+          // Hide the welcome message and show lesson content
           welcomeMessageContainer.classList.add("hidden");
 
           let contentHtml = `<h2>${lesson.title}</h2>`;
@@ -891,453 +411,175 @@
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;");
               contentHtml += `<pre><code>${escapedCode}</code></pre>`;
+            } else if (item.type === "code_runner") {
+              const blockId = Math.random().toString(36).substr(2, 9);
+              contentHtml += `
+                <div class="code-runner-block" id="code-runner-${blockId}">
+                  <div class="code-runner-header">
+                    <h4><i class="fas fa-play-circle"></i> Interactive Python Code</h4>
+                  </div>
+                  <div class="code-runner-content">
+                    <div class="code-editor">
+                      <textarea id="code-editor-${blockId}" class="python-editor" placeholder="Write your Python code here...">${item.starter_code || '# Write your Python code here\nprint("Hello, World!")'}</textarea>
+                    </div>
+                    <div class="code-controls">
+                      <button class="run-code-btn" onclick="runPythonCode('${blockId}')">
+                        <i class="fas fa-play"></i> Run Code
+                      </button>
+                      <button class="clear-output-btn" onclick="clearOutput('${blockId}')">
+                        <i class="fas fa-trash"></i> Clear Output
+                      </button>
+                      ${item.solution ? `<button class="show-solution-btn" onclick="showSolution('${blockId}')"><i class="fas fa-lightbulb"></i> Show Solution</button>` : ''}
+                      ${item.hints && item.hints.length > 0 ? `<button class="show-hints-btn" onclick="showHints('${blockId}')"><i class="fas fa-question-circle"></i> Show Hints</button>` : ''}
+                    </div>
+                    <div class="code-output">
+                      <div class="output-header">Output:</div>
+                      <pre id="code-output-${blockId}" class="output-content"></pre>
+                    </div>
+                    ${item.expected_output ? `<div class="expected-output"><strong>Expected Output:</strong><pre>${item.expected_output}</pre></div>` : ''}
+                    ${item.hints && item.hints.length > 0 ? `<div class="hints-content" id="hints-${blockId}" style="display: none;"><strong>Hints:</strong><ul>${item.hints.map(hint => `<li>${hint}</li>`).join('')}</ul></div>` : ''}
+                    ${item.solution ? `<div class="solution-content" id="solution-${blockId}" style="display: none;"><strong>Solution:</strong><pre><code>${item.solution}</code></pre></div>` : ''}
+                  </div>
+                </div>
+              `;
             } else if (item.type === "summary") {
               contentHtml += `<p><strong>${item.text}</strong></p>`;
             }
           });
 
-          console.log("Generated HTML content length:", contentHtml.length);
           contentDisplayArea.innerHTML = contentHtml;
         }
 
         /**
          * Renders the YouTube video player in the main content area.
          */
-        function renderVideo(topic, completionKey, subject, subtopic) {
-          console.log("=== renderVideo called ===");
-          console.log(
-            "Topic:",
-            topic,
-            "CompletionKey:",
-            completionKey,
-            "Subject:",
-            subject,
-            "Subtopic:",
-            subtopic
-          );
-
-          // Hide analysis/welcome block when switching to video
-          welcomeMessageContainer.classList.add("hidden");
-
-          // topic may be a lesson id/title; completionKey is the weak topic to mark completion under
+        function renderVideo(topic, completionKey) {
           const completionKeyToUse = completionKey || topic;
 
-          // Try to find video by weak-topic key first, then by topic
-          let videoData = VIDEO_DATA[completionKeyToUse] || VIDEO_DATA[topic];
-          console.log("Video data found:", videoData);
-          console.log(
-            "Available VIDEO_DATA keys:",
-            Object.keys(VIDEO_DATA || {})
-          );
+          // Hide welcome message
+          welcomeMessageContainer.classList.add("hidden");
 
-          let lessonForVideo = null;
-          let explicitVideoId = null;
+          // Map the topic to an actual video key
+          const videoKey = getVideoKeyForTopic(completionKeyToUse);
+          const fallbackVideoKey = getVideoKeyForTopic(topic);
 
-          const tryRenderWithVideoData = () => {
-            if (!videoData) {
-              contentDisplayArea.innerHTML = `<h2>Video Not Found</h2><p>Sorry, we couldn't find a video for "${completionKeyToUse}".</p>`;
-              return;
-            }
+          // Find video data using mapped keys
+          let videoData =
+            VIDEO_DATA[videoKey] ||
+            VIDEO_DATA[fallbackVideoKey] ||
+            VIDEO_DATA[completionKeyToUse] ||
+            VIDEO_DATA[topic];
 
-            if (currentPlayer) {
-              currentPlayer.destroy();
-              currentPlayer = null;
-            }
+          // If still no video found, try to find any functions video as a default for function-related topics
+          if (
+            !videoData &&
+            (completionKeyToUse.includes("function") ||
+              topic.includes("function") ||
+              completionKeyToUse.includes("parameter") ||
+              completionKeyToUse.includes("argument"))
+          ) {
+            videoData = VIDEO_DATA["functions"];
+          }
 
-            if (videoProgressChecker) {
-              clearInterval(videoProgressChecker);
-              videoProgressChecker = null;
-            }
+          if (!videoData) {
+            contentDisplayArea.innerHTML = `
+              <h2>Video Not Available</h2>
+              <p>Sorry, we couldn't find a specific video for "${completionKeyToUse}".</p>
+              <p>Available video topics: ${Object.keys(VIDEO_DATA).join(
+                ", "
+              )}</p>
+              <p>Please try selecting a related topic from the list above or contact support.</p>
+            `;
+            return;
+          }
 
-            // Track completion against weak topic
-            currentVideoTopic = completionKeyToUse;
+          // Clean up previous player
+          if (currentPlayer) {
+            currentPlayer.destroy();
+            currentPlayer = null;
+          }
 
-            // Extract video ID from YouTube URL or use explicit video id
-            let videoId = null;
-            if (videoData.url) {
-              videoId = extractVideoIdFromUrl(videoData.url);
-            }
-            if (!videoId && explicitVideoId) {
-              videoId = explicitVideoId;
-            }
+          // Track completion
+          currentVideoTopic = completionKeyToUse;
 
-            if (!videoId) {
-              contentDisplayArea.innerHTML = `<h2>Invalid Video</h2><p>The video data for "${completionKeyToUse}" is not valid.</p>`;
-              return;
-            }
+          // Extract video ID
+          const videoId = extractVideoIdFromUrl(videoData.url);
+          if (!videoId) {
+            contentDisplayArea.innerHTML = `<h2>Invalid Video</h2><p>The video data is not valid.</p>`;
+            return;
+          }
 
-            // Create enhanced video player structure with loading state
-            contentDisplayArea.innerHTML = `            <div id="video-player-container">
+          // Create simple video player
+          contentDisplayArea.innerHTML = `
+            <div id="video-player-container">
               <div class="video-header">
-                <div class="video-title">${
-                  videoData.title || completionKeyToUse
-                }</div>
-                <div class="video-description">${
-                  videoData.description || ""
-                }</div>
+                <h2>${videoData.title || completionKeyToUse}</h2>
+                ${
+                  videoKey !== completionKeyToUse
+                    ? `<p><em>Note: Showing "${videoData.title}" which covers topics related to "${completionKeyToUse}"</em></p>`
+                    : ""
+                }
               </div>
               <div class="video-wrapper">
-                <div class="video-loading">Loading video...</div>
-                <div id="youtube-player" style="display: none;"></div>
-              </div>
-              <div class="video-progress-container">
-                <div class="video-progress-bar">
-                  <div class="video-progress-fill" id="video-progress-fill"></div>
-                </div>
-                <div class="video-progress-text">
-                  <div class="video-stats">
-                    <div class="video-stat">
-                      <div class="video-stat-icon time-icon"></div>
-                      <span id="video-time">0:00 / 0:00</span>
-                    </div>
-                    <div class="video-stat">
-                      <div class="video-stat-icon progress-icon"></div>
-                      <span id="video-percentage">0%</span>
-                    </div>
-                    <div class="video-stat">
-                      <div class="video-stat-icon completion-icon"></div>
-                      <span id="completion-status">Watching...</span>
-                    </div>
-                  </div>
-                </div>
+                <div id="youtube-player"></div>
               </div>
             </div>
           `;
 
-            // Wait for YouTube API to be ready
-            const createPlayer = () => {
-              if (window.YT && window.YT.Player) {
-                currentPlayer = new YT.Player("youtube-player", {
-                  height: "100%",
-                  width: "100%",
-                  videoId: videoId,
-                  playerVars: {
-                    playsinline: 1,
-                    autoplay: 0,
-                    rel: 0,
-                    modestbranding: 1,
-                    controls: 1,
-                  },
-                  events: {
-                    onStateChange: onPlayerStateChange,
-                    onReady: onPlayerReady,
-                  },
-                });
-              } else {
-                console.error("YouTube Player API not ready, retrying...");
-                setTimeout(createPlayer, 500);
-              }
-            };
-
-            createPlayer();
-          };
-
-          if (!videoData) {
-            // Fallback: resolve lesson and use its videoId
-            lessonForVideo = resolveLesson(topic);
-            if (
-              lessonForVideo &&
-              (lessonForVideo.videoId || lessonForVideo.video_id)
-            ) {
-              explicitVideoId =
-                lessonForVideo.videoId || lessonForVideo.video_id;
-              // strip any query fragments like &t=...
-              if (typeof explicitVideoId === "string") {
-                explicitVideoId = explicitVideoId.split("&")[0].split("?")[0];
-              }
-              videoData = {
-                title: lessonForVideo.title || completionKeyToUse,
-                url: `https://www.youtube.com/embed/${explicitVideoId}?enablejsapi=1`,
-                description: "",
-              };
-              tryRenderWithVideoData();
-              return;
-            }
-
-            // If still not found and we have subject/subtopic, fetch lesson JSON
-            if (subject && subtopic) {
-              fetch(
-                `/api/lessons/${encodeURIComponent(
-                  subject
-                )}/${encodeURIComponent(subtopic)}/${encodeURIComponent(topic)}`
-              )
-                .then((res) => (res.ok ? res.json() : null))
-                .then((data) => {
-                  if (
-                    data &&
-                    data.lesson &&
-                    (data.lesson.videoId || data.lesson.video_id)
-                  ) {
-                    explicitVideoId =
-                      data.lesson.videoId || data.lesson.video_id;
-                    if (typeof explicitVideoId === "string") {
-                      explicitVideoId = explicitVideoId
-                        .split("&")[0]
-                        .split("?")[0];
-                    }
-                    videoData = {
-                      title: data.lesson.title || completionKeyToUse,
-                      url: `https://www.youtube.com/embed/${explicitVideoId}?enablejsapi=1`,
-                      description: "",
-                    };
-                  }
-                  tryRenderWithVideoData();
-                })
-                .catch((err) => {
-                  console.error("Failed to fetch lesson for video:", err);
-                  tryRenderWithVideoData();
-                });
-              return;
-            }
-          }
-
-          // We have videoData or we could not enhance it; try rendering
-          tryRenderWithVideoData();
-        }
-
-        /**
-         * Called when the YouTube player is ready
-         */
-        function onPlayerReady(event) {
-          console.log("YouTube player is ready for topic:", currentVideoTopic);
-
-          // Hide loading state and show video player
-          const loadingElement = document.querySelector(".video-loading");
-          const playerElement = document.getElementById("youtube-player");
-
-          if (loadingElement) {
-            loadingElement.style.display = "none";
-          }
-          if (playerElement) {
-            playerElement.style.display = "block";
-          }
-
-          // Initialize progress bar elements
-          const completionStatus = document.getElementById("completion-status");
-          if (completionStatus) {
-            completionStatus.textContent = "Watching...";
-            completionStatus.style.color = "#bdc3c7";
-            completionStatus.style.fontWeight = "normal";
-          }
-
-          // Start periodic progress checking
-          if (videoProgressChecker) {
-            clearInterval(videoProgressChecker);
-          }
-
-          videoProgressChecker = setInterval(checkVideoProgress, 2000); // Check every 2 seconds
-        }
-
-        /**
-         * Periodically check video progress
-         */
-        function checkVideoProgress() {
-          if (!currentPlayer || !currentVideoTopic) {
-            return;
-          }
-
-          try {
-            const playerState = currentPlayer.getPlayerState();
-            const duration = currentPlayer.getDuration();
-            const currentTime = currentPlayer.getCurrentTime();
-            if (duration > 0 && currentTime > 0) {
-              const percentWatched = (currentTime / duration) * 100;
-
-              // Update custom progress bar
-              updateCustomProgressBar(currentTime, duration, percentWatched);
-
-              // Mark as complete if they've watched 85% or more
-              if (
-                percentWatched >= 85 &&
-                !completionState[currentVideoTopic]?.watched
-              ) {
-                console.log(
-                  `Video ${percentWatched.toFixed(
-                    1
-                  )}% complete, marking as watched:`,
-                  currentVideoTopic
-                );
-                updateCompletionState(currentVideoTopic, "watched");
-
-                // Update completion status
-                const completionStatus =
-                  document.getElementById("completion-status");
-                if (completionStatus) {
-                  completionStatus.textContent = "Completed!";
-                  completionStatus.style.color = "#27ae60";
-                  completionStatus.style.fontWeight = "bold";
-                }
-
-                // Clear the interval since we've marked it complete
-                if (videoProgressChecker) {
-                  clearInterval(videoProgressChecker);
-                  videoProgressChecker = null;
-                }
-              }
-            }
-          } catch (e) {
-            console.log("Error checking video progress:", e);
+          // Create YouTube player
+          if (window.YT && window.YT.Player) {
+            currentPlayer = new YT.Player("youtube-player", {
+              height: "315",
+              width: "560",
+              videoId: videoId,
+              playerVars: {
+                autoplay: 0,
+                rel: 0,
+                modestbranding: 1,
+                controls: 1,
+              },
+              events: {
+                onStateChange: onPlayerStateChange,
+              },
+            });
           }
         }
-
-        /**
-         * Update the custom progress bar and time displays
-         */
-        function updateCustomProgressBar(currentTime, duration, percentage) {
-          const progressFill = document.getElementById("video-progress-fill");
-          const timeDisplay = document.getElementById("video-time");
-          const percentageDisplay = document.getElementById("video-percentage");
-
-          if (progressFill) {
-            progressFill.style.width = `${percentage}%`;
-          }
-
-          if (timeDisplay) {
-            const currentMinutes = Math.floor(currentTime / 60);
-            const currentSeconds = Math.floor(currentTime % 60);
-            const durationMinutes = Math.floor(duration / 60);
-            const durationSeconds = Math.floor(duration % 60);
-
-            const formatTime = (minutes, seconds) =>
-              `${minutes}:${seconds.toString().padStart(2, "0")}`;
-
-            timeDisplay.textContent = `${formatTime(
-              currentMinutes,
-              currentSeconds
-            )} / ${formatTime(durationMinutes, durationSeconds)}`;
-          }
-
-          if (percentageDisplay) {
-            percentageDisplay.textContent = `${Math.round(percentage)}%`;
-          }
-        }
-
-        // DEBUG: Add a manual test function (remove this in production)
-        window.testVideoCompletion = function (topic) {
-          console.log("=== MANUAL TEST: Marking video as watched ===");
-          if (!topic && currentVideoTopic) {
-            topic = currentVideoTopic;
-          }
-          if (topic) {
-            updateCompletionState(topic, "watched");
-          } else {
-            console.log("No topic specified and no current video topic");
-          }
-        };
 
         /**
          * Handles video player state changes to detect when a video is finished.
          */
         function onPlayerStateChange(event) {
-          console.log(
-            "Player state changed:",
-            event.data,
-            "for topic:",
-            currentVideoTopic
-          );
-
-          // Log the actual state constants for debugging
-          if (window.YT && window.YT.PlayerState) {
-            console.log("YT.PlayerState.ENDED =", YT.PlayerState.ENDED);
-            console.log("Current event.data =", event.data);
-          }
-
+          // Mark as complete when video ends
           if (event.data === YT.PlayerState.ENDED && currentVideoTopic) {
-            console.log("Video ended for topic:", currentVideoTopic);
             updateCompletionState(currentVideoTopic, "watched");
-          }
-
-          // Alternative: Also mark as complete when video reaches near the end (e.g., 90%)
-          // This is a fallback in case the ENDED event doesn't fire reliably
-          if (currentPlayer && currentVideoTopic) {
-            try {
-              const duration = currentPlayer.getDuration();
-              const currentTime = currentPlayer.getCurrentTime();
-              if (duration > 0 && currentTime > 0) {
-                const percentWatched = (currentTime / duration) * 100;
-                console.log(`Video progress: ${percentWatched.toFixed(1)}%`);
-
-                // Mark as complete if they've watched 90% or more
-                if (
-                  percentWatched >= 90 &&
-                  !completionState[currentVideoTopic]?.watched
-                ) {
-                  console.log(
-                    "Video 90% complete, marking as watched:",
-                    currentVideoTopic
-                  );
-                  updateCompletionState(currentVideoTopic, "watched");
-                }
-              }
-            } catch (e) {
-              console.log("Could not get video duration/time:", e);
-            }
           }
         }
 
         /**
          * Updates the completion state and the UI for the corresponding item.
          */
+        /**
+         * Updates the completion state and the UI for the corresponding item.
+         */
         function updateCompletionState(topic, action) {
-          console.log("=== updateCompletionState called ===");
-          console.log("Topic:", topic);
-          console.log("Action:", action);
-          console.log("Current completionState:", completionState);
-
           if (!completionState[topic]) {
-            // Robustness: initialize missing completion state (e.g., when topic is a lesson_id)
-            console.log(
-              "No completion state found for topic, initializing:",
-              topic
-            );
             completionState[topic] = { read: false, watched: false };
           }
 
           if (completionState[topic][action]) {
-            console.log("Already marked as complete, skipping.");
-            return;
+            return; // Already completed
           }
 
           completionState[topic][action] = true;
 
-          // Create the same safe ID as used in displayWeakTopics
+          // Update UI
           const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
-
-          // Map the action to the correct element ID prefix
-          // The completion state uses "watched" but the HTML elements use "watch"
           const elementAction = action === "watched" ? "watch" : action;
           const elementId = `${elementAction}-${safeTopicId}`;
           const elementToMark = document.getElementById(elementId);
 
-          console.log("Looking for element with ID:", elementId);
-          console.log("Element found:", elementToMark);
-
           if (elementToMark) {
             elementToMark.classList.add("completed");
-            console.log("Added 'completed' class to element");
-            console.log(
-              "Element classes after update:",
-              elementToMark.className
-            );
-
-            // Force a style refresh to make sure the CSS takes effect
-            elementToMark.style.display = "none";
-            elementToMark.offsetHeight; // Trigger reflow
-            elementToMark.style.display = "";
-          } else {
-            console.log("ERROR: Could not find element to mark as completed!");
-            // Try to find it with a different approach
-            const allElements = document.querySelectorAll(
-              `[id*="${safeTopicId}"]`
-            );
-            console.log("All elements with safe topic ID in ID:", allElements);
-            const originalElements = document.querySelectorAll(
-              `[id*="${topic}"]`
-            );
-            console.log(
-              "All elements with original topic in ID:",
-              originalElements
-            );
           }
 
           checkCompletionAndToggleButton();
@@ -1347,34 +589,164 @@
          * Checks the overall completion state and enables/disables the continue button.
          */
         function checkCompletionAndToggleButton() {
-          console.log("Checking completion state:", completionState);
+          // If no topics to complete (empty state), enable the button
+          if (Object.keys(completionState).length === 0) {
+            continueButton.disabled = false;
+            return;
+          }
 
           let allCompleted = true;
-          let completedCount = 0;
-          let totalCount = 0;
 
           for (const topic in completionState) {
-            totalCount += 2; // read + watch
-            if (completionState[topic].read) completedCount++;
-            if (completionState[topic].watched) completedCount++;
-
             if (
               !completionState[topic].read ||
               !completionState[topic].watched
             ) {
               allCompleted = false;
+              break;
             }
           }
 
-          console.log(`Completion progress: ${completedCount}/${totalCount}`);
-
           continueButton.disabled = !allCompleted;
-          if (allCompleted) {
-            continueButton.title = "You can now proceed to the next quiz!";
-          } else {
-            continueButton.title = `Please complete all activities. Progress: ${completedCount}/${totalCount}`;
+        }
+
+        // Pyodide functionality for code execution
+        let pyodide = null;
+        let pyodideLoading = false;
+
+        async function initPyodide() {
+          if (pyodide) return pyodide;
+          if (pyodideLoading) {
+            // Wait for existing initialization to complete
+            while (pyodideLoading) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            return pyodide;
+          }
+
+          pyodideLoading = true;
+          try {
+            pyodide = await loadPyodide({
+              indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
+            });
+            console.log("Pyodide loaded successfully");
+            return pyodide;
+          } catch (error) {
+            console.error("Failed to load Pyodide:", error);
+            throw error;
+          } finally {
+            pyodideLoading = false;
           }
         }
+
+        async function runPythonCode(blockId) {
+          const codeElement = document.getElementById(`code-editor-${blockId}`);
+          const outputElement = document.getElementById(`code-output-${blockId}`);
+          const runButton = document.querySelector(`#code-runner-${blockId} .run-code-btn`);
+          
+          if (!codeElement || !outputElement) return;
+
+          const code = codeElement.value;
+          if (!code.trim()) {
+            outputElement.textContent = "Please enter some Python code to run.";
+            return;
+          }
+
+          // Update button state
+          runButton.disabled = true;
+          runButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+          outputElement.textContent = "Initializing Python environment...";
+
+          try {
+            // Initialize Pyodide if not already done
+            const py = await initPyodide();
+            
+            // Capture stdout
+            py.runPython(`
+import sys
+from io import StringIO
+sys.stdout = StringIO()
+`);
+
+            // Run the user's code
+            try {
+              py.runPython(code);
+              
+              // Get the output
+              const output = py.runPython("sys.stdout.getvalue()");
+              outputElement.textContent = output || "Code executed successfully (no output)";
+              outputElement.className = "output-content success";
+            } catch (pythonError) {
+              outputElement.textContent = `Error: ${pythonError.message}`;
+              outputElement.className = "output-content error";
+            }
+
+          } catch (error) {
+            outputElement.textContent = `Failed to run code: ${error.message}`;
+            outputElement.className = "output-content error";
+          } finally {
+            // Reset button state
+            runButton.disabled = false;
+            runButton.innerHTML = '<i class="fas fa-play"></i> Run Code';
+          }
+        }
+
+        function clearOutput(blockId) {
+          const outputElement = document.getElementById(`code-output-${blockId}`);
+          if (outputElement) {
+            outputElement.textContent = "";
+            outputElement.className = "output-content";
+          }
+        }
+
+        function showSolution(blockId) {
+          const solutionElement = document.getElementById(`solution-${blockId}`);
+          const button = document.querySelector(`#code-runner-${blockId} .show-solution-btn`);
+          
+          if (solutionElement && button) {
+            if (solutionElement.style.display === 'none') {
+              solutionElement.style.display = 'block';
+              button.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Solution';
+            } else {
+              solutionElement.style.display = 'none';
+              button.innerHTML = '<i class="fas fa-lightbulb"></i> Show Solution';
+            }
+          }
+        }
+
+        function showHints(blockId) {
+          const hintsElement = document.getElementById(`hints-${blockId}`);
+          const button = document.querySelector(`#code-runner-${blockId} .show-hints-btn`);
+          
+          if (hintsElement && button) {
+            if (hintsElement.style.display === 'none') {
+              hintsElement.style.display = 'block';
+              button.innerHTML = '<i class="fas fa-question-circle"></i> Hide Hints';
+            } else {
+              hintsElement.style.display = 'none';
+              button.innerHTML = '<i class="fas fa-question-circle"></i> Show Hints';
+            }
+          }
+        }
+
+        // Add tab support to all textareas (especially for code editing)
+        document.addEventListener('keydown', function(e) {
+            // Handle Tab key in textareas
+            if (e.target.tagName === 'TEXTAREA' && e.key === 'Tab') {
+                e.preventDefault();
+                
+                const textarea = e.target;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                
+                // Insert 4 spaces (or a tab character) at cursor position
+                const tab = '    '; // 4 spaces for Python indentation
+                textarea.value = textarea.value.substring(0, start) + tab + textarea.value.substring(end);
+                
+                // Move cursor after the inserted tab
+                textarea.selectionStart = textarea.selectionEnd = start + tab.length;
+            }
+        });
       });
     </script>
   </body>

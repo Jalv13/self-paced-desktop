@@ -1,0 +1,25 @@
+{
+  "lessons": {
+    "test": {
+      "title": "testtest",
+      "videoId": "kvO_nHnvPtQ",
+      "content": [
+        {
+          "type": "header",
+          "text": "default parameter values"
+        },
+        {
+          "type": "paragraph",
+          "text": "default parameter values\n"
+        },
+        {
+          "type": "code",
+          "text": "default parameter values\n"
+        }
+      ],
+      "tags": ["default parameter values"],
+      "type": "initial",
+      "created_date": "2025-01-01"
+    }
+  }
+}

@@ -120,10 +120,10 @@
             <button
               id="quiz-btn-{{ subtopic_id }}"
               class="button quiz-btn"
-              onclick="checkQuizPrerequisites('{{ subject }}', '{{ subtopic_id }}')"
+              onclick="showInitialLessons('{{ subject }}', '{{ subtopic_id }}')"
             >
               <i id="quiz-icon-{{ subtopic_id }}" class="fas fa-brain"></i>
-              <span>Take Quiz</span>
+              <span>Learn & Quiz</span>
               <i
                 id="quiz-status-{{ subtopic_id }}"
                 class="quiz-status-icon"
@@ -156,7 +156,7 @@
         </ul>
 
         <div class="sidebar-footer">
-          <button id="backToTopicsFromInitial" class="action-button">
+          <button id="backToTopicsFromInitial" class="action-button" onclick="backToTopicsFromInitial()">
             <i class="fas fa-arrow-left"></i>
             Back to Topics
           </button>
@@ -1215,10 +1215,141 @@
         width: 16px;
         text-align: center;
       }
+
+      .lesson-order-number {
+        background-color: #007bff;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: bold;
+        flex-shrink: 0;
+      }
+
+      .progress-indicator {
+        color: #28a745;
+        font-size: 16px;
+        margin-left: auto;
+      }
+
+      .progress-indicator.completed {
+        color: #28a745;
+      }
+
+      .progress-indicator.incomplete {
+        color: #ddd;
+      }
+
+      #initial-topics-nav a.completed {
+        background-color: #f8f9fa;
+        border-left: 4px solid #28a745;
+      }
+
+      .quiz-section {
+        margin-top: 30px;
+        padding: 20px;
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        border-radius: 12px;
+        color: white;
+        text-align: center;
+      }
+
+      .quiz-section.disabled {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        opacity: 0.7;
+      }
+
+      .quiz-section h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+      }
+
+      .quiz-section p {
+        margin-bottom: 20px;
+        opacity: 0.9;
+      }
+
+      .quiz-progress {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        font-size: 14px;
+      }
+
+      .quiz-button {
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 12px 30px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+      }
+
+      .quiz-button:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.5);
+      }
+
+      .quiz-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      .completion-trigger {
+        height: 1px;
+        width: 100%;
+        margin-top: 20px;
+        position: relative;
+      }
+
+      .completion-indicator {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 15px 20px;
+        border-radius: 50px;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        font-weight: bold;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        animation: slideInUp 0.5s ease, pulse 2s infinite;
+        z-index: 1000;
+      }
+
+      @keyframes slideInUp {
+        from {
+          transform: translateY(100px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes pulse {
+        0%, 100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
     </style>
 
     <script>
-      // Lesson Modal Functions
+      // Global variables
       let currentSubject = "";
       let currentSubtopic = "";
       let currentLesson = null;
@@ -1249,14 +1380,14 @@
         navList.innerHTML =
           '<li><div class="loading">Loading content...</div></li>';
 
-        // Load both lessons and videos
+        // Load lessons and videos
         Promise.all([
           fetch(`/api/lesson-plans/${subject}/${subtopic}`)
             .then((r) => r.json())
             .catch(() => ({ lessons: {} })),
           fetch(`/api/video/${subject}/${subtopic}/all`)
             .then((r) => r.json())
-            .catch(() => ({ videos: {} })),
+            .catch(() => ({ videos: {} }))
         ])
           .then(([lessonData, videoData]) => {
             navList.innerHTML = "";
@@ -1266,30 +1397,41 @@
               lessonData.lessons &&
               Object.keys(lessonData.lessons).length > 0
             ) {
-              Object.entries(lessonData.lessons).forEach(
-                ([lessonId, lesson]) => {
+              // Convert to array and sort by order for guaranteed ordering
+              const lessonEntries = Object.entries(lessonData.lessons);
+              const initialLessons = lessonEntries
+                .filter(([lessonId, lesson]) => {
                   const lessonTypeValue = lesson.type || "initial";
-                  if (
-                    lessonTypeValue === "initial" ||
-                    lessonTypeValue === "all"
-                  ) {
-                    const li = document.createElement("li");
-                    const a = document.createElement("a");
-                    a.href = "#";
-                    a.innerHTML = `<i class="fas fa-book"></i> ${lesson.title}`;
-                    a.onclick = (e) => {
-                      e.preventDefault();
-                      document
-                        .querySelectorAll("#initial-topics-nav a")
-                        .forEach((link) => link.classList.remove("active"));
-                      e.target.closest("a").classList.add("active");
-                      displayInitialLesson(lesson);
-                    };
-                    li.appendChild(a);
-                    navList.appendChild(li);
-                  }
-                }
-              );
+                  return lessonTypeValue === "initial" || lessonTypeValue === "all";
+                })
+                .sort(([, a], [, b]) => {
+                  const orderA = a.order || 999;
+                  const orderB = b.order || 999;
+                  return orderA - orderB;
+                });
+
+              initialLessons.forEach(([lessonId, lesson]) => {
+                const li = document.createElement("li");
+                const a = document.createElement("a");
+                a.href = "#";
+                
+                // Add order number for initial lessons
+                const orderPrefix = lesson.order 
+                  ? `<span class="lesson-order-number">${lesson.order}</span>` 
+                  : '';
+                
+                a.innerHTML = `${orderPrefix}<i class="fas fa-book"></i> ${lesson.title}`;
+                a.onclick = (e) => {
+                  e.preventDefault();
+                  document
+                    .querySelectorAll("#initial-topics-nav a")
+                    .forEach((link) => link.classList.remove("active"));
+                  e.target.closest("a").classList.add("active");
+                  displayInitialLesson(lesson, lessonId, subject, subtopic);
+                };
+                li.appendChild(a);
+                navList.appendChild(li);
+              });
             }
 
             // Add videos to sidebar
@@ -1298,6 +1440,7 @@
                 const li = document.createElement("li");
                 const a = document.createElement("a");
                 a.href = "#";
+                
                 a.innerHTML = `<i class="fas fa-play"></i> ${
                   video.title || videoId
                 }`;
@@ -1307,7 +1450,7 @@
                     .querySelectorAll("#initial-topics-nav a")
                     .forEach((link) => link.classList.remove("active"));
                   e.target.closest("a").classList.add("active");
-                  displayInitialVideo(video, videoId);
+                  displayInitialVideo(video, videoId, subject, subtopic);
                 };
                 li.appendChild(a);
                 navList.appendChild(li);
@@ -1327,7 +1470,7 @@
       }
 
       // Function to display lesson content
-      function displayInitialLesson(lesson) {
+      function displayInitialLesson(lesson, lessonId, subject, subtopic) {
         const contentDisplay = document.getElementById(
           "initial-content-display"
         );
@@ -1348,15 +1491,10 @@
         }
 
         contentDisplay.innerHTML = `
-          <div class="lesson-content">
+          <div class="lesson-content" id="lesson-content-${lessonId}">
             <h2>${lesson.title}</h2>
             <div class="lesson-body">
               ${lessonHTML}
-            </div>
-            <div class="lesson-actions" style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
-              <button onclick="markInitialLessonComplete('${lesson.lesson_id}')" class="action-button" style="background: #28a745;">
-                <i class="fas fa-check"></i> Mark as Complete
-              </button>
             </div>
           </div>
         `;
@@ -1395,7 +1533,7 @@
       }
 
       // Function to display video content
-      function displayInitialVideo(video, videoId) {
+      function displayInitialVideo(video, videoId, subject, subtopic) {
         const contentDisplay = document.getElementById(
           "initial-content-display"
         );
@@ -1410,11 +1548,12 @@
           : "";
 
         contentDisplay.innerHTML = `
-          <div class="video-content">
+          <div class="video-content" id="video-content-${videoId}">
             <h2>${video.title || videoId}</h2>
             <div class="video-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
               <iframe 
-                src="${embedUrl}" 
+                id="lesson-video-iframe"
+                src="${embedUrl}?enablejsapi=1" 
                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
                 frameborder="0" 
                 allowfullscreen>
@@ -1435,30 +1574,6 @@
         document.getElementById("initial-learning-layout").style.display =
           "none";
         document.querySelector(".topics-grid").style.display = "block";
-      }
-
-      // Function to mark lesson as complete (simplified for initial learning)
-      function markInitialLessonComplete(lessonId) {
-        fetch("/api/lesson-progress/mark-complete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            subject: currentSubject,
-            subtopic: currentSubtopic,
-            lesson_id: lessonId,
-          }),
-        })
-          .then((response) => {
-            if (response.ok) {
-              alert("Lesson marked as complete!");
-            } else {
-              alert("Error marking lesson as complete.");
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-            alert("Error marking lesson as complete.");
-          });
       }
 
       function showLessonSelector(subject, subtopic) {

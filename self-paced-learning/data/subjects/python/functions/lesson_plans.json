@@ -3,12 +3,6 @@
     "python function basics": {
       "title": "A Comprehensive Guide to Python Functions",
       "videoId": "kvO_nHnvPtQ",
-      "tags": [
-        "python function basics",
-        "function definition",
-        "syntax"
-      ],
-      "type": "remedial",
       "content": [
         {
           "type": "header",
@@ -54,18 +48,27 @@
         {
           "type": "summary",
           "text": "<strong>Key takeaway:</strong> Master argument passing with defaults, `*args`, and `**kwargs` for ultimate flexibility. Use scope correctly to avoid bugs, and leverage lambda functions for concise, simple operations."
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\nprint(\"Hello, World!\")",
+          "expected_output": "Hello, World",
+          "hints": [],
+          "solution": "def hello_world:\n    print(\"Hello, World\")\nreturn\n"
         }
-      ]
+      ],
+      "tags": [
+        "python function basics",
+        "function definition",
+        "syntax"
+      ],
+      "type": "initial",
+      "updated_date": "2025-01-01",
+      "order": 3
     },
     "function definition": {
       "title": "Defining Functions: Syntax and Terminology",
       "videoId": "kvO_nHnvPtQ",
-      "tags": [
-        "function definition",
-        "syntax",
-        "terminology"
-      ],
-      "type": "initial",
       "content": [
         {
           "type": "header",
@@ -104,7 +107,7 @@
           "items": [
             "<strong>Definition/Declaration:</strong> The process of creating a function using `def`.",
             "<strong>Call/Invocation:</strong> The act of executing the function by using its name followed by parentheses, e.g., `get_full_name('john', 'doe')`.",
-            "<strong>Parameter:</strong> The variable name in the function's definition (e.g., `first_name`).",
+            "<strong>Parameter:</strong> The variable name in the function's definition (e.g., `first_name`). TEST EDIT",
             "<strong>Argument:</strong> The actual data passed into the function when it is called (e.g., `'john'`).",
             "<strong>Return Value:</strong> The data that a function sends back using the `return` statement."
           ]
@@ -113,7 +116,15 @@
           "type": "summary",
           "text": "<strong>Key takeaway:</strong> A function definition binds a name to a block of code. Every part, from `def` to the colon to the indentation, is syntactically required."
         }
-      ]
+      ],
+      "tags": [
+        "function definition",
+        "syntax",
+        "terminology"
+      ],
+      "type": "initial",
+      "updated_date": "2025-01-01",
+      "order": 1
     },
     "syntax": {
       "title": "Reviewing Core Function Syntax",
@@ -153,7 +164,8 @@
           "type": "summary",
           "text": "<strong>Key takeaway:</strong> Always double-check for the colon (`:`) after the function's parameter list and ensure every line of the function's body is properly indented."
         }
-      ]
+      ],
+      "order": 2
     },
     "terminology": {
       "title": "Function Terminology and Concepts",
@@ -194,7 +206,8 @@
           "type": "summary",
           "text": "<strong>Remember:</strong> Parameters are in the definition, arguments are in the call."
         }
-      ]
+      ],
+      "order": 6
     },
     "passing function arguments": {
       "title": "Advanced Argument Passing Techniques",
@@ -235,7 +248,8 @@
           "type": "summary",
           "text": "<strong>Key takeaway:</strong> Master these argument types to create flexible, reusable functions that can handle various input scenarios."
         }
-      ]
+      ],
+      "order": 4
     },
     "keyword arguments": {
       "title": "Using Keyword Arguments Effectively",
@@ -279,7 +293,8 @@
           "type": "summary",
           "text": "<strong>Key takeaway:</strong> Keyword arguments make your function calls more readable and less error-prone, especially for functions with many parameters. Once you use a keyword argument, all subsequent arguments in that call must also be keyword arguments."
         }
-      ]
+      ],
+      "order": 5
     },
     "default parameter values": {
       "title": "Using Default Parameter Values",
@@ -330,7 +345,8 @@
           "type": "summary",
           "text": "<strong>Key takeaway:</strong> Default values make your functions more flexible and user-friendly. Any parameters with default values must be listed *after* any parameters that do not have defaults."
         }
-      ]
+      ],
+      "order": 7
     },
     "*args and **kwargs": {
       "title": "Mastering *args and **kwargs",
@@ -385,7 +401,8 @@
           "type": "summary",
           "text": "<strong>Key takeaway:</strong> Use `*args` to capture extra positional arguments as a tuple. Use `**kwargs` to capture extra keyword arguments as a dictionary. They must appear in that order after standard arguments."
         }
-      ]
+      ],
+      "order": 8
     },
     "positional-only and keyword-only arguments": {
       "title": "Controlling Argument Types",
@@ -444,7 +461,8 @@
           "type": "summary",
           "text": "<strong>Key takeaway:</strong> Use `/` to force arguments to be positional. Use `*` to force subsequent arguments to be keyword-only. This improves the clarity and reliability of your functions."
         }
-      ]
+      ],
+      "order": 9
     },
     "return values": {
       "title": "Understanding Return Values",
@@ -491,7 +509,8 @@
           "type": "summary",
           "text": "<strong>Key takeaway:</strong> The `return` statement is the primary way for a function to output data. Understanding that it stops execution and that multiple returned items form a tuple is crucial."
         }
-      ]
+      ],
+      "order": 10
     },
     "function return values": {
       "title": "Understanding Return Values",
@@ -530,7 +549,8 @@
           "type": "summary",
           "text": "<strong>Key takeaway:</strong> The `return` statement is the primary way for a function to output data. Understanding that it stops execution and that multiple returned items form a tuple is crucial."
         }
-      ]
+      ],
+      "order": 11
     },
     "recursive functions": {
       "title": "The Concept of Recursive Functions",
@@ -584,7 +604,8 @@
           "type": "summary",
           "text": "<strong>Key takeaway:</strong> Every recursive function needs a base case to stop the process and a recursive step to continue it. It's a powerful but sometimes less efficient alternative to loops."
         }
-      ]
+      ],
+      "order": 12
     },
     "error handling": {
       "title": "Error Handling in Functions",
@@ -636,7 +657,8 @@
           "type": "summary",
           "text": "<strong>Key takeaway:</strong> Wrap risky operations (like division, file access, or type conversions) in a `try...except` block to gracefully manage potential errors and make your functions more reliable."
         }
-      ]
+      ],
+      "order": 13
     },
     "functions": {
       "title": "Functions",
@@ -684,7 +706,8 @@
         "*args and **kwargs"
       ],
       "type": "initial",
-      "created_date": "2025-01-01"
+      "created_date": "2025-01-01",
+      "order": 14
     },
     "testtest": {
       "title": "testest",
@@ -715,7 +738,8 @@
         "testetst"
       ],
       "type": "initial",
-      "created_date": "2025-01-01"
+      "created_date": "2025-01-01",
+      "order": 15
     }
   }
 }
