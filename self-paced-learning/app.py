@@ -1107,6 +1107,7 @@ def show_results_page():
         CURRENT_SUBJECT=current_subject,
         CURRENT_SUBTOPIC=current_subtopic,
         ANALYSIS_RESULTS=analysis_results,
+        is_admin=session.get("admin_override", False),
     )
 
 
@@ -2371,6 +2372,24 @@ def api_admin_status():
     except Exception as e:
         app.logger.error(f"Error getting admin status: {e}")
         return jsonify({"success": True, "admin_override": False})
+
+
+@app.route("/api/admin/mark_complete", methods=["POST"])
+def api_admin_mark_complete():
+    """Mark a topic as complete for admin override functionality."""
+    try:
+        data = request.get_json()
+        topic = data.get("topic")
+        
+        if not topic:
+            return jsonify({"success": False, "error": "Topic is required"}), 400
+            
+        app.logger.info(f"Admin marking topic '{topic}' as complete")
+        return jsonify({"success": True, "topic": topic})
+        
+    except Exception as e:
+        app.logger.error(f"Error in admin mark complete: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route("/api/lesson-plans/<subject>/<subtopic>")

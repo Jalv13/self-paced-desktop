@@ -246,6 +246,9 @@
           } else {
             masteryMessageContainer.classList.remove("hidden");
             backToTopicsButton.classList.remove("hidden");
+            // Show continue button for perfect scores too
+            continueButton.classList.remove("hidden");
+            continueButton.disabled = false; // Enable button when no weak topics
           }
         }
 
@@ -586,6 +589,12 @@
          * Checks the overall completion state and enables/disables the continue button.
          */
         function checkCompletionAndToggleButton() {
+          // If no topics to complete (empty state), enable the button
+          if (Object.keys(completionState).length === 0) {
+            continueButton.disabled = false;
+            return;
+          }
+
           let allCompleted = true;
 
           for (const topic in completionState) {
