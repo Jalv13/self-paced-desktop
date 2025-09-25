@@ -2,6 +2,7 @@ import os
 import json
 import shutil
 import re  # For parsing AI responses
+from datetime import datetime
 from flask import (
     Flask,
     render_template,
@@ -375,6 +376,119 @@ def update_progress_api():
     user_progress[topic_key] = progress
     session["progress"] = user_progress
     return jsonify({"success": True, "progress": user_progress})
+
+
+@app.route("/api/lesson-progress/mark-complete", methods=["POST"])
+def mark_lesson_complete():
+    """Mark a specific lesson as completed."""
+    data = request.json
+    subject = data.get("subject")
+    subtopic = data.get("subtopic") 
+    lesson_id = data.get("lesson_id")
+    
+    if not all([subject, subtopic, lesson_id]):
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    # Create progress key for this lesson
+    progress_key = f"{subject}_{subtopic}_lesson_{lesson_id}"
+    user_progress = session.get("progress", {})
+    user_progress[progress_key] = {
+        "type": "lesson",
+        "completed": True,
+        "completed_at": datetime.now().isoformat(),
+        "subject": subject,
+        "subtopic": subtopic,
+        "lesson_id": lesson_id
+    }
+    session["progress"] = user_progress
+    
+    return jsonify({"success": True, "message": "Lesson marked as complete"})
+
+
+@app.route("/api/video-progress/mark-complete", methods=["POST"]) 
+def mark_video_complete():
+    """Mark a specific video as watched."""
+    data = request.json
+    subject = data.get("subject")
+    subtopic = data.get("subtopic")
+    video_id = data.get("video_id")
+    
+    if not all([subject, subtopic, video_id]):
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    # Create progress key for this video
+    progress_key = f"{subject}_{subtopic}_video_{video_id}"
+    user_progress = session.get("progress", {})
+    user_progress[progress_key] = {
+        "type": "video", 
+        "completed": True,
+        "completed_at": datetime.now().isoformat(),
+        "subject": subject,
+        "subtopic": subtopic,
+        "video_id": video_id
+    }
+    session["progress"] = user_progress
+    
+    return jsonify({"success": True, "message": "Video marked as complete"})
+
+
+@app.route("/api/progress/check/<subject>/<subtopic>")
+def check_subtopic_progress(subject, subtopic):
+    """Check completion status of all lessons and videos for a subject/subtopic."""
+    try:
+        # Get lesson and video data
+        lessons = get_lesson_plans(subject, subtopic)
+        videos = get_video_data(subject, subtopic)
+        user_progress = session.get("progress", {})
+        
+        # Count initial lessons and videos
+        initial_lessons = {k: v for k, v in lessons.items() 
+                          if v.get("type", "initial") in ["initial", "all"]}
+        
+        lesson_progress = {}
+        video_progress = {}
+        
+        # Check lesson completion
+        for lesson_id in initial_lessons.keys():
+            progress_key = f"{subject}_{subtopic}_lesson_{lesson_id}"
+            lesson_progress[lesson_id] = progress_key in user_progress
+        
+        # Check video completion
+        for video_id in videos.keys():
+            progress_key = f"{subject}_{subtopic}_video_{video_id}"
+            video_progress[video_id] = progress_key in user_progress
+        
+        # Calculate totals
+        lessons_completed = sum(lesson_progress.values())
+        videos_completed = sum(video_progress.values()) 
+        total_lessons = len(initial_lessons)
+        total_videos = len(videos)
+        
+        all_content_complete = (
+            lessons_completed == total_lessons and 
+            videos_completed == total_videos and 
+            total_lessons > 0  # Must have at least some lessons
+        )
+        
+        return jsonify({
+            "subject": subject,
+            "subtopic": subtopic,
+            "lessons": {
+                "progress": lesson_progress,
+                "completed": lessons_completed,
+                "total": total_lessons
+            },
+            "videos": {
+                "progress": video_progress, 
+                "completed": videos_completed,
+                "total": total_videos
+            },
+            "all_complete": all_content_complete
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error checking progress for {subject}/{subtopic}: {e}")
+        return jsonify({"error": "Failed to check progress"}), 500
 
 
 @app.route("/api/progress")
@@ -1350,36 +1464,84 @@ def admin_lessons():
     subject_filter = request.args.get("subject")
     subtopic_filter = request.args.get("subtopic")
 
-    lessons = get_all_lessons()
-
     # Use auto-discovery for subjects dropdown
     subjects = data_loader.discover_subjects()
 
-    # Get subject and subtopic names for display
-    subject_name = None
-    subtopic_name = None
+    # Check if we're in filtered view mode
+    filtered_view = bool(subject_filter and subtopic_filter)
+    
+    if filtered_view:
+        # Filtered view: Load lessons for specific subject/subtopic
+        if subject_filter not in subjects:
+            return f"Subject '{subject_filter}' not found", 404
+            
+        # Validate subject and subtopic exist
+        if not data_loader.validate_subject_subtopic(subject_filter, subtopic_filter):
+            return f"Subject '{subject_filter}' with subtopic '{subtopic_filter}' not found", 404
+            
+        # Load lessons for this specific subject/subtopic
+        lessons = get_lesson_plans(subject_filter, subtopic_filter)
+        
+        # Get subject info
+        subject_info = subjects[subject_filter]
+        subject_name = subject_info.get("name", subject_filter.title())
+        
+        # Get subtopic info
+        subject_config = data_loader.load_subject_config(subject_filter)
+        subtopic_name = None
+        if subject_config and "subtopics" in subject_config:
+            subtopics = subject_config["subtopics"]
+            if subtopic_filter in subtopics:
+                subtopic_name = subtopics[subtopic_filter].get(
+                    "name", subtopic_filter.title()
+                )
+        
+        if not subtopic_name:
+            subtopic_name = subtopic_filter.title()
+            
+        return render_template(
+            "admin/lessons.html",
+            lessons=lessons,
+            subjects=subjects,
+            subject_filter=subject_filter,
+            subtopic_filter=subtopic_filter,
+            subject_name=subject_name,
+            subtopic_name=subtopic_name,
+            subject_info=subject_info,
+            filtered_view=True,
+            subject=subject_filter,
+            subtopic=subtopic_filter,
+        )
+    else:
+        # Unfiltered view: Show all lessons
+        lessons = get_all_lessons()
 
-    if subject_filter and subject_filter in subjects:
-        subject_name = subjects[subject_filter].get("name", subject_filter.title())
+        # Get subject and subtopic names for display (for breadcrumbs if needed)
+        subject_name = None
+        subtopic_name = None
 
-        if subtopic_filter:
-            subject_config = data_loader.load_subject_config(subject_filter)
-            if subject_config and "subtopics" in subject_config:
-                subtopics = subject_config["subtopics"]
-                if subtopic_filter in subtopics:
-                    subtopic_name = subtopics[subtopic_filter].get(
-                        "name", subtopic_filter.title()
-                    )
+        if subject_filter and subject_filter in subjects:
+            subject_name = subjects[subject_filter].get("name", subject_filter.title())
 
-    return render_template(
-        "admin/lessons.html",
-        lessons=lessons,
-        subjects=subjects,
-        subject_filter=subject_filter,
-        subtopic_filter=subtopic_filter,
-        subject_name=subject_name,
-        subtopic_name=subtopic_name,
-    )
+            if subtopic_filter:
+                subject_config = data_loader.load_subject_config(subject_filter)
+                if subject_config and "subtopics" in subject_config:
+                    subtopics = subject_config["subtopics"]
+                    if subtopic_filter in subtopics:
+                        subtopic_name = subtopics[subtopic_filter].get(
+                            "name", subtopic_filter.title()
+                        )
+
+        return render_template(
+            "admin/lessons.html",
+            lessons=lessons,
+            subjects=subjects,
+            subject_filter=subject_filter,
+            subtopic_filter=subtopic_filter,
+            subject_name=subject_name,
+            subtopic_name=subtopic_name,
+            filtered_view=False,
+        )
 
 
 @app.route("/admin/lessons/create", methods=["GET", "POST"])
@@ -1441,6 +1603,15 @@ def admin_create_lesson():
             if lesson_id in existing_lessons:
                 return jsonify({"error": "Lesson already exists"}), 400
 
+            # Get next order number for initial lessons
+            order_number = 1
+            if lesson_type == "initial":
+                existing_lessons = get_lesson_plans(subject, subtopic)
+                initial_lessons = [l for l in existing_lessons.values() if l.get("type") == "initial"]
+                if initial_lessons:
+                    max_order = max((l.get("order", 0) for l in initial_lessons), default=0)
+                    order_number = max_order + 1
+
             # Create lesson data
             lesson_data = {
                 "title": lesson_title,
@@ -1448,6 +1619,7 @@ def admin_create_lesson():
                 "content": content,
                 "tags": tags,
                 "type": lesson_type,
+                "order": order_number if lesson_type == "initial" else None,
                 "created_date": "2025-01-01",
             }
 
@@ -1565,6 +1737,54 @@ def admin_delete_lesson(subject, subtopic, lesson_id):
 
     except Exception as e:
         app.logger.error(f"Error deleting lesson: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/lessons/<subject>/<subtopic>/reorder", methods=["POST"])
+def admin_reorder_lessons(subject, subtopic):
+    """Reorder lessons for a specific subject/subtopic."""
+    try:
+        data = request.json
+        lesson_orders = data.get("lesson_orders", [])  # List of {id, order} objects
+        
+        if not lesson_orders:
+            return jsonify({"error": "No lesson order data provided"}), 400
+
+        # Load existing lessons
+        lessons = get_lesson_plans(subject, subtopic)
+        if not lessons:
+            return jsonify({"error": "No lessons found"}), 404
+
+        # Update the order for each lesson
+        updated = False
+        for lesson_order in lesson_orders:
+            lesson_id = lesson_order.get("id")
+            new_order = lesson_order.get("order")
+            
+            if lesson_id in lessons and new_order is not None:
+                lessons[lesson_id]["order"] = new_order
+                updated = True
+
+        if not updated:
+            return jsonify({"error": "No valid lesson orders to update"}), 400
+
+        # Save updated lessons back to file
+        lesson_plans_path = os.path.join(
+            DATA_ROOT_PATH, "subjects", subject, subtopic, "lesson_plans.json"
+        )
+        
+        lesson_plans_data = {"lessons": lessons}
+        with open(lesson_plans_path, "w", encoding="utf-8") as f:
+            json.dump(lesson_plans_data, f, indent=2)
+
+        # Clear cache for this subject/subtopic to ensure fresh data is loaded
+        data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
+        app.logger.info(f"Reordered lessons for {subject}/{subtopic}")
+
+        return jsonify({"success": True, "message": "Lessons reordered successfully"})
+
+    except Exception as e:
+        app.logger.error(f"Error reordering lessons: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -2155,7 +2375,7 @@ def api_admin_status():
 
 @app.route("/api/lesson-plans/<subject>/<subtopic>")
 def api_lesson_plans(subject, subtopic):
-    """Return lesson plans for a subject/subtopic in a stable shape."""
+    """Return lesson plans for a subject/subtopic in a stable shape, with lessons ordered appropriately."""
     try:
         if not data_loader.validate_subject_subtopic(subject, subtopic):
             return jsonify({"lessons": {}}), 404
@@ -2164,6 +2384,34 @@ def api_lesson_plans(subject, subtopic):
         # Ensure consistent shape
         if "lessons" not in lesson_plans:
             lesson_plans = {"lessons": {}}
+        
+        # Sort lessons by order for initial lessons, keep others as-is
+        lessons = lesson_plans["lessons"]
+        if lessons:
+            # Separate initial and non-initial lessons
+            initial_lessons = {}
+            other_lessons = {}
+            
+            for lesson_id, lesson_data in lessons.items():
+                lesson_type = lesson_data.get("type", "remedial")
+                if lesson_type == "initial":
+                    initial_lessons[lesson_id] = lesson_data
+                else:
+                    other_lessons[lesson_id] = lesson_data
+            
+            # Sort initial lessons by order
+            sorted_initial = dict(sorted(
+                initial_lessons.items(),
+                key=lambda x: x[1].get("order", 999)
+            ))
+            
+            # Combine back together: initial lessons first (ordered), then others
+            ordered_lessons = {}
+            ordered_lessons.update(sorted_initial)
+            ordered_lessons.update(other_lessons)
+            
+            lesson_plans["lessons"] = ordered_lessons
+        
         return jsonify(lesson_plans)
     except Exception as e:
         app.logger.error(f"Error getting lesson plans for {subject}/{subtopic}: {e}")
