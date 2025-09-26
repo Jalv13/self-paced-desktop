@@ -1,24 +1,384 @@
 {
   "lessons": {
-    "test": {
-      "title": "testtest",
-      "videoId": "kvO_nHnvPtQ",
+    "while-loop-syntax": {
+      "title": "The While Loop Syntax",
+      "videoId": "",
       "content": [
         {
-          "type": "header",
-          "text": "default parameter values"
+          "type": "paragraph",
+          "text": "🔄 **What is a While Loop?**"
         },
         {
           "type": "paragraph",
-          "text": "default parameter values\n"
+          "text": "A while loop uses a condition to determine whether to execute the body of the loop or not. It keeps running as long as the condition is **True**."
+        },
+        {
+          "type": "paragraph",
+          "text": "**Syntax:**"
         },
         {
           "type": "code",
-          "text": "default parameter values\n"
+          "text": "while condition:\n    # body of the loop\n    # code to execute repeatedly"
+        },
+        {
+          "type": "paragraph",
+          "text": "**How it works:** The loop tests the condition first. If True, it runs the body. Then it goes back and tests the condition again. This continues until the condition becomes False."
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Basic while loop example\n# Print numbers from 1 to 4\ni = 1\nwhile i < 5:\n    print(i)\n    i = i + 1  # Important: increment i to avoid infinite loop\n\nprint(\"Loop finished!\")",
+          "expected_output": "1\n2\n3\n4\nLoop finished!",
+          "solution": "# Basic while loop example\n# Print numbers from 1 to 4\ni = 1\nwhile i < 5:\n    print(i)\n    i = i + 1  # Important: increment i to avoid infinite loop\n\nprint(\"Loop finished!\")",
+          "hints": [
+            "The condition i < 5 is checked before each iteration",
+            "Remember to increment i inside the loop",
+            "When i becomes 5, the condition becomes False and the loop stops"
+          ]
         }
       ],
-      "tags": ["default parameter values"],
+      "tags": ["loops", "while", "syntax", "conditions"],
       "type": "initial",
+      "order": 1,
+      "created_date": "2025-01-01"
+    },
+    "while-loop-practice": {
+      "title": "While Loop Practice",
+      "videoId": "",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "📝 **Practice — While Loop Basics**"
+        },
+        {
+          "type": "paragraph",
+          "text": "Let's practice creating while loops with different conditions and operations."
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Task 1: Count down from 5 to 1\ncount = 5\nwhile count > 0:\n    print(f\"Countdown: {count}\")\n    count = count - 1\nprint(\"Blast off!\")\n\nprint(\"\\n\" + \"=\"*20 + \"\\n\")\n\n# Task 2: Sum numbers from 1 to 10\ntotal = 0\nnum = 1\nwhile num <= 10:\n    total = total + num\n    num = num + 1\nprint(f\"Sum of 1 to 10: {total}\")",
+          "expected_output": "Countdown: 5\nCountdown: 4\nCountdown: 3\nCountdown: 2\nCountdown: 1\nBlast off!\n\n====================\n\nSum of 1 to 10: 55",
+          "solution": "# Task 1: Count down from 5 to 1\ncount = 5\nwhile count > 0:\n    print(f\"Countdown: {count}\")\n    count = count - 1\nprint(\"Blast off!\")\n\nprint(\"\\n\" + \"=\"*20 + \"\\n\")\n\n# Task 2: Sum numbers from 1 to 10\ntotal = 0\nnum = 1\nwhile num <= 10:\n    total = total + num\n    num = num + 1\nprint(f\"Sum of 1 to 10: {total}\")",
+          "hints": [
+            "For countdown: decrease the counter each iteration",
+            "For sum: add the current number to total, then increment the number",
+            "Always ensure the loop variable changes to avoid infinite loops"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "📝 **Practice — Your Turn**"
+        },
+        {
+          "type": "paragraph",
+          "text": "**Task**: Create a while loop that prints even numbers from 2 to 10."
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Task: Print even numbers from 2 to 10\n# Start with num = 2\n# Use condition: while num <= 10\n# Print num and increment by 2\n\n# num = ...\n# while ...:\n#     print(...)\n#     num = ...",
+          "expected_output": "2\n4\n6\n8\n10",
+          "solution": "# Task: Print even numbers from 2 to 10\nnum = 2\nwhile num <= 10:\n    print(num)\n    num = num + 2",
+          "hints": [
+            "Start with num = 2",
+            "Increment by 2 each time: num = num + 2",
+            "Condition should be: while num <= 10"
+          ]
+        }
+      ],
+      "tags": ["loops", "while", "practice"],
+      "type": "initial",
+      "order": 2,
+      "created_date": "2025-01-01"
+    },
+    "infinite-while-loop": {
+      "title": "Infinite While Loop",
+      "videoId": "",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "⚠️ **Infinite While Loop**"
+        },
+        {
+          "type": "paragraph",
+          "text": "If the condition of a while loop is always **True**, then the loop will run for infinite time. This creates an **infinite while loop**."
+        },
+        {
+          "type": "paragraph",
+          "text": "**Example of infinite loop (DO NOT RUN):**"
+        },
+        {
+          "type": "code",
+          "text": "count = 0\nwhile True:  # Always True!\n    print(count)\n    count = count + 1\n    # This will run forever!"
+        },
+        {
+          "type": "paragraph",
+          "text": "**Common mistake causing infinite loops:**"
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# This demonstrates what NOT to do\n# We'll limit it to show the concept safely\ncount = 0\nwhile count < 5:  # This SHOULD stop at 5\n    print(f\"Count: {count}\")\n    # MISTAKE: forgot to increment count!\n    # count = count + 1  # <-- This line is missing!\n    \n    # Safety break to prevent infinite loop in demo\n    if count == 0:\n        print(\"Breaking to prevent infinite loop!\")\n        break\n        \nprint(\"This shows why you must increment the loop variable!\")",
+          "expected_output": "Count: 0\nBreaking to prevent infinite loop!\nThis shows why you must increment the loop variable!",
+          "solution": "# This demonstrates what NOT to do\n# We'll limit it to show the concept safely\ncount = 0\nwhile count < 5:  # This SHOULD stop at 5\n    print(f\"Count: {count}\")\n    # MISTAKE: forgot to increment count!\n    # count = count + 1  # <-- This line is missing!\n    \n    # Safety break to prevent infinite loop in demo\n    if count == 0:\n        print(\"Breaking to prevent infinite loop!\")\n        break\n        \nprint(\"This shows why you must increment the loop variable!\")",
+          "hints": [
+            "Always change the loop variable inside the loop",
+            "If the condition never becomes False, the loop runs forever",
+            "Use Ctrl+C to stop an infinite loop in the terminal"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "🔧 **Controlled Infinite Loop with while True:**"
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Sometimes we intentionally use 'while True' with break statements\ncount = 0\nwhile True:  # Infinite loop\n    print(f\"Count: {count}\")\n    count = count + 1\n    \n    # Exit condition using break\n    if count >= 3:\n        print(\"Exiting loop with break!\")\n        break\n        \nprint(\"Loop ended successfully\")",
+          "expected_output": "Count: 0\nCount: 1\nCount: 2\nExiting loop with break!\nLoop ended successfully",
+          "solution": "# Sometimes we intentionally use 'while True' with break statements\ncount = 0\nwhile True:  # Infinite loop\n    print(f\"Count: {count}\")\n    count = count + 1\n    \n    # Exit condition using break\n    if count >= 3:\n        print(\"Exiting loop with break!\")\n        break\n        \nprint(\"Loop ended successfully\")",
+          "hints": [
+            "while True creates an intentional infinite loop",
+            "Use 'break' statement to exit when needed",
+            "This pattern is useful for user input loops"
+          ]
+        }
+      ],
+      "tags": ["loops", "while", "infinite", "break"],
+      "type": "initial",
+      "order": 3,
+      "created_date": "2025-01-01"
+    },
+    "break-statement": {
+      "title": "Break Statement",
+      "videoId": "",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "🛑 **Break Statement**"
+        },
+        {
+          "type": "paragraph",
+          "text": "We can use the **break** statement to stop the loop, even if the condition is still True. When Python encounters 'break', it immediately exits the loop."
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Example: Find the first number divisible by 7\nnum = 1\nwhile num <= 50:\n    if num % 7 == 0:  # Found a number divisible by 7\n        print(f\"First number divisible by 7: {num}\")\n        break  # Exit the loop immediately\n    num = num + 1\n    \nprint(f\"Loop stopped at num = {num}\")",
+          "expected_output": "First number divisible by 7: 7\nLoop stopped at num = 7",
+          "solution": "# Example: Find the first number divisible by 7\nnum = 1\nwhile num <= 50:\n    if num % 7 == 0:  # Found a number divisible by 7\n        print(f\"First number divisible by 7: {num}\")\n        break  # Exit the loop immediately\n    num = num + 1\n    \nprint(f\"Loop stopped at num = {num}\")",
+          "hints": [
+            "break immediately exits the current loop",
+            "% is the modulo operator (remainder after division)",
+            "num % 7 == 0 means num is divisible by 7"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "📝 **Practice — Break Statement**"
+        },
+        {
+          "type": "paragraph",
+          "text": "**Task**: Create a number guessing simulation that stops when the 'guess' equals the target."
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Number guessing simulation\ntarget = 7\nguess = 1\n\nprint(\"Guessing game started!\")\nwhile True:  # Infinite loop\n    print(f\"Guess: {guess}\")\n    \n    if guess == target:\n        print(f\"Correct! The number was {target}\")\n        break  # Exit when found\n    elif guess > target:\n        print(\"Too high!\")\n    else:\n        print(\"Too low!\")\n    \n    guess = guess + 1\n    \n    # Safety check to prevent real infinite loop\n    if guess > 10:\n        print(\"Stopping at guess 10 for safety\")\n        break\n        \nprint(\"Game ended!\")",
+          "expected_output": "Guessing game started!\nGuess: 1\nToo low!\nGuess: 2\nToo low!\nGuess: 3\nToo low!\nGuess: 4\nToo low!\nGuess: 5\nToo low!\nGuess: 6\nToo low!\nGuess: 7\nCorrect! The number was 7\nGame ended!",
+          "solution": "# Number guessing simulation\ntarget = 7\nguess = 1\n\nprint(\"Guessing game started!\")\nwhile True:  # Infinite loop\n    print(f\"Guess: {guess}\")\n    \n    if guess == target:\n        print(f\"Correct! The number was {target}\")\n        break  # Exit when found\n    elif guess > target:\n        print(\"Too high!\")\n    else:\n        print(\"Too low!\")\n    \n    guess = guess + 1\n    \n    # Safety check to prevent real infinite loop\n    if guess > 10:\n        print(\"Stopping at guess 10 for safety\")\n        break\n        \nprint(\"Game ended!\")",
+          "hints": [
+            "Use while True for continuous guessing",
+            "break when guess equals target",
+            "Include feedback: too high, too low, or correct"
+          ]
+        }
+      ],
+      "tags": ["loops", "break", "control", "exit"],
+      "type": "initial",
+      "order": 4,
+      "created_date": "2025-01-01"
+    },
+    "continue-statement": {
+      "title": "The Continue Statement",
+      "videoId": "",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "⏭️ **Continue Statement**"
+        },
+        {
+          "type": "paragraph",
+          "text": "The **continue** statement skips the rest of the current iteration and jumps back to the beginning of the loop to check the condition again."
+        },
+        {
+          "type": "list",
+          "items": [
+            "**break**: exits the loop completely",
+            "**continue**: skips to the next iteration"
+          ]
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Example: Print only odd numbers from 1 to 10\nnum = 0\nwhile num < 10:\n    num = num + 1\n    \n    # Skip even numbers\n    if num % 2 == 0:\n        continue  # Skip the rest of this iteration\n    \n    # This only prints for odd numbers\n    print(f\"Odd number: {num}\")\n    \nprint(\"Done!\")",
+          "expected_output": "Odd number: 1\nOdd number: 3\nOdd number: 5\nOdd number: 7\nOdd number: 9\nDone!",
+          "solution": "# Example: Print only odd numbers from 1 to 10\nnum = 0\nwhile num < 10:\n    num = num + 1\n    \n    # Skip even numbers\n    if num % 2 == 0:\n        continue  # Skip the rest of this iteration\n    \n    # This only prints for odd numbers\n    print(f\"Odd number: {num}\")\n    \nprint(\"Done!\")",
+          "hints": [
+            "continue skips the remaining code in the current iteration",
+            "The loop condition is checked again after continue",
+            "num % 2 == 0 checks if a number is even"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "📝 **Practice — Continue Statement**"
+        },
+        {
+          "type": "paragraph",
+          "text": "**Task**: Print numbers 1-15, but skip multiples of 3 and 5."
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Task: Print numbers 1-15, skip multiples of 3 and 5\n# Use continue to skip numbers divisible by 3 or 5\n\n# num = 0\n# while num < 15:\n#     num = num + 1\n#     \n#     # Skip multiples of 3 or 5\n#     if ... or ...:\n#         continue\n#     \n#     print(num)",
+          "expected_output": "1\n2\n4\n7\n8\n11\n13\n14",
+          "solution": "# Task: Print numbers 1-15, skip multiples of 3 and 5\nnum = 0\nwhile num < 15:\n    num = num + 1\n    \n    # Skip multiples of 3 or 5\n    if num % 3 == 0 or num % 5 == 0:\n        continue\n    \n    print(num)",
+          "hints": [
+            "Use 'or' to check multiple conditions",
+            "num % 3 == 0 checks if divisible by 3",
+            "num % 5 == 0 checks if divisible by 5"
+          ]
+        }
+      ],
+      "tags": ["loops", "continue", "skip", "control"],
+      "type": "initial",
+      "order": 5,
+      "created_date": "2025-01-01"
+    },
+    "for-loop-syntax": {
+      "title": "The FOR Loop Syntax",
+      "videoId": "",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "🔄 **For Loop Introduction**"
+        },
+        {
+          "type": "paragraph",
+          "text": "A **for loop** is used to iterate over a sequence (like a list, tuple, string, or range). It's often more convenient than while loops when you know how many times you want to repeat something."
+        },
+        {
+          "type": "paragraph",
+          "text": "**Syntax:**"
+        },
+        {
+          "type": "code",
+          "text": "for variable in sequence:\n    # body of the loop\n    # code to execute for each item"
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Example 1: Loop through a list\nfruits = ['apple', 'banana', 'cherry']\nfor fruit in fruits:\n    print(f\"I like {fruit}\")\n\nprint(\"\\n\" + \"=\"*25 + \"\\n\")\n\n# Example 2: Loop through a string\nword = \"Python\"\nfor letter in word:\n    print(f\"Letter: {letter}\")",
+          "expected_output": "I like apple\nI like banana\nI like cherry\n\n=========================\n\nLetter: P\nLetter: y\nLetter: t\nLetter: h\nLetter: o\nLetter: n",
+          "solution": "# Example 1: Loop through a list\nfruits = ['apple', 'banana', 'cherry']\nfor fruit in fruits:\n    print(f\"I like {fruit}\")\n\nprint(\"\\n\" + \"=\"*25 + \"\\n\")\n\n# Example 2: Loop through a string\nword = \"Python\"\nfor letter in word:\n    print(f\"Letter: {letter}\")",
+          "hints": [
+            "for loops automatically handle iteration",
+            "The variable takes each value from the sequence",
+            "Works with lists, strings, tuples, and more"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "📝 **Practice — Basic For Loops**"
+        },
+        {
+          "type": "paragraph",
+          "text": "**Task**: Create for loops to iterate over different types of sequences."
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Task 1: Loop through a list of numbers and print their squares\nnumbers = [1, 2, 3, 4, 5]\nprint(\"Squares:\")\n# for num in numbers:\n#     square = ...\n#     print(f\"{num} squared is {square}\")\n\n# Task 2: Count vowels in a word\nword = \"programming\"\nvowel_count = 0\nprint(f\"\\nChecking vowels in '{word}':\")\n# for letter in word:\n#     if letter in 'aeiou':\n#         print(f\"Found vowel: {letter}\")\n#         vowel_count = vowel_count + 1\n# print(f\"Total vowels: {vowel_count}\")",
+          "expected_output": "Squares:\n1 squared is 1\n2 squared is 4\n3 squared is 9\n4 squared is 16\n5 squared is 25\n\nChecking vowels in 'programming':\nFound vowel: o\nFound vowel: a\nFound vowel: i\nTotal vowels: 3",
+          "solution": "# Task 1: Loop through a list of numbers and print their squares\nnumbers = [1, 2, 3, 4, 5]\nprint(\"Squares:\")\nfor num in numbers:\n    square = num * num\n    print(f\"{num} squared is {square}\")\n\n# Task 2: Count vowels in a word\nword = \"programming\"\nvowel_count = 0\nprint(f\"\\nChecking vowels in '{word}':\")\nfor letter in word:\n    if letter in 'aeiou':\n        print(f\"Found vowel: {letter}\")\n        vowel_count = vowel_count + 1\nprint(f\"Total vowels: {vowel_count}\")",
+          "hints": [
+            "Square a number: num * num or num ** 2",
+            "Check if letter is in vowels: letter in 'aeiou'",
+            "Increment counter: vowel_count = vowel_count + 1"
+          ]
+        }
+      ],
+      "tags": ["loops", "for", "iteration", "sequences"],
+      "type": "initial",
+      "order": 6,
+      "created_date": "2025-01-01"
+    },
+    "range-function": {
+      "title": "The Range Function",
+      "videoId": "",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "🔢 **Range Function**"
+        },
+        {
+          "type": "paragraph",
+          "text": "The **range()** function generates a sequence of numbers. It's perfect for for loops when you need to repeat something a specific number of times."
+        },
+        {
+          "type": "paragraph",
+          "text": "**Three ways to use range():**"
+        },
+        {
+          "type": "list",
+          "items": [
+            "**range(stop)**: 0 to stop-1",
+            "**range(start, stop)**: start to stop-1",
+            "**range(start, stop, step)**: start to stop-1, incrementing by step"
+          ]
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Example 1: range(stop) - from 0 to stop-1\nprint(\"range(5):\")\nfor i in range(5):\n    print(i, end=\" \")\nprint()  # New line\n\n# Example 2: range(start, stop) - from start to stop-1\nprint(\"\\nrange(3, 8):\")\nfor i in range(3, 8):\n    print(i, end=\" \")\nprint()  # New line\n\n# Example 3: range(start, stop, step) - with custom step\nprint(\"\\nrange(0, 10, 2):\")\nfor i in range(0, 10, 2):\n    print(i, end=\" \")\nprint()  # New line\n\n# Example 4: Counting backwards\nprint(\"\\nrange(10, 0, -1):\")\nfor i in range(10, 0, -1):\n    print(i, end=\" \")\nprint()  # New line",
+          "expected_output": "range(5):\n0 1 2 3 4 \n\nrange(3, 8):\n3 4 5 6 7 \n\nrange(0, 10, 2):\n0 2 4 6 8 \n\nrange(10, 0, -1):\n10 9 8 7 6 5 4 3 2 1",
+          "solution": "# Example 1: range(stop) - from 0 to stop-1\nprint(\"range(5):\")\nfor i in range(5):\n    print(i, end=\" \")\nprint()  # New line\n\n# Example 2: range(start, stop) - from start to stop-1\nprint(\"\\nrange(3, 8):\")\nfor i in range(3, 8):\n    print(i, end=\" \")\nprint()  # New line\n\n# Example 3: range(start, stop, step) - with custom step\nprint(\"\\nrange(0, 10, 2):\")\nfor i in range(0, 10, 2):\n    print(i, end=\" \")\nprint()  # New line\n\n# Example 4: Counting backwards\nprint(\"\\nrange(10, 0, -1):\")\nfor i in range(10, 0, -1):\n    print(i, end=\" \")\nprint()  # New line",
+          "hints": [
+            "range(n) starts at 0 and goes to n-1",
+            "Use negative step to count backwards",
+            "end=\" \" prints items on the same line with spaces"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "📝 **Practice — Range Function**"
+        },
+        {
+          "type": "paragraph",
+          "text": "**Task**: Use range() for different counting scenarios."
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Task 1: Print multiplication table for 7\nprint(\"Multiplication table for 7:\")\n# for i in range(1, 11):  # 1 to 10\n#     result = 7 * i\n#     print(f\"7 x {i} = {result}\")\n\nprint(\"\\n\" + \"=\"*25 + \"\\n\")\n\n# Task 2: Sum of even numbers from 2 to 20\ntotal = 0\nprint(\"Even numbers from 2 to 20:\")\n# for num in range(2, 21, 2):  # start=2, stop=21, step=2\n#     print(num, end=\" \")\n#     total = total + num\n# print(f\"\\nSum: {total}\")",
+          "expected_output": "Multiplication table for 7:\n7 x 1 = 7\n7 x 2 = 14\n7 x 3 = 21\n7 x 4 = 28\n7 x 5 = 35\n7 x 6 = 42\n7 x 7 = 49\n7 x 8 = 56\n7 x 9 = 63\n7 x 10 = 70\n\n=========================\n\nEven numbers from 2 to 20:\n2 4 6 8 10 12 14 16 18 20 \nSum: 110",
+          "solution": "# Task 1: Print multiplication table for 7\nprint(\"Multiplication table for 7:\")\nfor i in range(1, 11):  # 1 to 10\n    result = 7 * i\n    print(f\"7 x {i} = {result}\")\n\nprint(\"\\n\" + \"=\"*25 + \"\\n\")\n\n# Task 2: Sum of even numbers from 2 to 20\ntotal = 0\nprint(\"Even numbers from 2 to 20:\")\nfor num in range(2, 21, 2):  # start=2, stop=21, step=2\n    print(num, end=\" \")\n    total = total + num\nprint(f\"\\nSum: {total}\")",
+          "hints": [
+            "range(1, 11) gives numbers 1 through 10",
+            "range(2, 21, 2) gives even numbers: 2, 4, 6, ..., 20",
+            "Add to running total: total = total + num"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "🧾 **Quick Reference — Python Loops**"
+        },
+        {
+          "type": "list",
+          "items": [
+            "**while condition:** - Repeat while condition is True",
+            "**for item in sequence:** - Iterate through each item",
+            "**range(n)** - Numbers 0 to n-1",
+            "**range(start, stop)** - Numbers start to stop-1",
+            "**range(start, stop, step)** - Numbers with custom increment",
+            "**break** - Exit loop immediately",
+            "**continue** - Skip to next iteration",
+            "**while True:** - Infinite loop (use with break)"
+          ]
+        }
+      ],
+      "tags": ["loops", "range", "numbers", "iteration"],
+      "type": "initial",
+      "order": 7,
       "created_date": "2025-01-01"
     }
   }
