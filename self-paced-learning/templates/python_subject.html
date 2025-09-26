@@ -14,6 +14,8 @@
     />
     <!-- YouTube API -->
     <script src="https://www.youtube.com/iframe_api"></script>
+    <!-- Pyodide for Python code execution -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
   </head>
   <body>
     <header>
@@ -156,7 +158,11 @@
         </ul>
 
         <div class="sidebar-footer">
-          <button id="backToTopicsFromInitial" class="action-button" onclick="backToTopicsFromInitial()">
+          <button
+            id="backToTopicsFromInitial"
+            class="action-button"
+            onclick="backToTopicsFromInitial()"
+          >
             <i class="fas fa-arrow-left"></i>
             Back to Topics
           </button>
@@ -1339,7 +1345,8 @@
       }
 
       @keyframes pulse {
-        0%, 100% {
+        0%,
+        100% {
           transform: scale(1);
         }
         50% {
@@ -1387,7 +1394,7 @@
             .catch(() => ({ lessons: {} })),
           fetch(`/api/video/${subject}/${subtopic}/all`)
             .then((r) => r.json())
-            .catch(() => ({ videos: {} }))
+            .catch(() => ({ videos: {} })),
         ])
           .then(([lessonData, videoData]) => {
             navList.innerHTML = "";
@@ -1402,7 +1409,9 @@
               const initialLessons = lessonEntries
                 .filter(([lessonId, lesson]) => {
                   const lessonTypeValue = lesson.type || "initial";
-                  return lessonTypeValue === "initial" || lessonTypeValue === "all";
+                  return (
+                    lessonTypeValue === "initial" || lessonTypeValue === "all"
+                  );
                 })
                 .sort(([, a], [, b]) => {
                   const orderA = a.order || 999;
@@ -1414,12 +1423,12 @@
                 const li = document.createElement("li");
                 const a = document.createElement("a");
                 a.href = "#";
-                
+
                 // Add order number for initial lessons
-                const orderPrefix = lesson.order 
-                  ? `<span class="lesson-order-number">${lesson.order}</span>` 
-                  : '';
-                
+                const orderPrefix = lesson.order
+                  ? `<span class="lesson-order-number">${lesson.order}</span>`
+                  : "";
+
                 a.innerHTML = `${orderPrefix}<i class="fas fa-book"></i> ${lesson.title}`;
                 a.onclick = (e) => {
                   e.preventDefault();
@@ -1440,7 +1449,7 @@
                 const li = document.createElement("li");
                 const a = document.createElement("a");
                 a.href = "#";
-                
+
                 a.innerHTML = `<i class="fas fa-play"></i> ${
                   video.title || videoId
                 }`;
@@ -1516,6 +1525,62 @@
                   .map((listItem) => `<li>${processInlineCode(listItem)}</li>`)
                   .join("");
                 return `<ul>${listItems}</ul>`;
+              case "code_runner":
+                const blockId = Math.random().toString(36).substr(2, 9);
+                return `
+                  <div class="code-runner-block" id="code-runner-${blockId}">
+                    <div class="code-runner-header">
+                      <h4><i class="fas fa-play-circle"></i> Interactive Python Code</h4>
+                    </div>
+                    <div class="code-runner-content">
+                      <div class="code-editor">
+                        <textarea id="code-editor-${blockId}" class="python-editor" placeholder="Write your Python code here...">${
+                  item.starter_code ||
+                  '# Write your Python code here\nprint("Hello, World!")'
+                }</textarea>
+                      </div>
+                      <div class="code-controls">
+                        <button class="run-code-btn" onclick="runPythonCode('${blockId}')">
+                          <i class="fas fa-play"></i> Run Code
+                        </button>
+                        <button class="clear-output-btn" onclick="clearOutput('${blockId}')">
+                          <i class="fas fa-trash"></i> Clear Output
+                        </button>
+                        ${
+                          item.solution
+                            ? `<button class="show-solution-btn" onclick="showSolution('${blockId}')"><i class="fas fa-lightbulb"></i> Show Solution</button>`
+                            : ""
+                        }
+                        ${
+                          item.hints && item.hints.length > 0
+                            ? `<button class="show-hints-btn" onclick="showHints('${blockId}')"><i class="fas fa-question-circle"></i> Show Hints</button>`
+                            : ""
+                        }
+                      </div>
+                      <div class="code-output">
+                        <div class="output-header">Output:</div>
+                        <pre id="code-output-${blockId}" class="output-content"></pre>
+                      </div>
+                      ${
+                        item.expected_output
+                          ? `<div class="expected-output"><strong>Expected Output:</strong><pre>${item.expected_output}</pre></div>`
+                          : ""
+                      }
+                      ${
+                        item.hints && item.hints.length > 0
+                          ? `<div class="hints-content" id="hints-${blockId}" style="display: none;"><strong>Hints:</strong><ul>${item.hints
+                              .map((hint) => `<li>${hint}</li>`)
+                              .join("")}</ul></div>`
+                          : ""
+                      }
+                      ${
+                        item.solution
+                          ? `<div class="solution-content" id="solution-${blockId}" style="display: none;"><strong>Solution:</strong><pre><code>${item.solution}</code></pre></div>`
+                          : ""
+                      }
+                    </div>
+                  </div>
+                `;
               default:
                 return `<p>${processInlineCode(
                   item.text || JSON.stringify(item)
@@ -2296,6 +2361,156 @@
       // Update quiz button status on page load and periodically
       updateQuizButtonStatus();
       setInterval(updateQuizButtonStatus, 30000); // Check every 30 seconds
+
+      // Pyodide functionality for code execution
+      let pyodide = null;
+      let pyodideLoading = false;
+
+      async function initPyodide() {
+        if (pyodide) return pyodide;
+        if (pyodideLoading) {
+          // Wait for existing initialization to complete
+          while (pyodideLoading) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+          return pyodide;
+        }
+
+        pyodideLoading = true;
+        try {
+          pyodide = await loadPyodide({
+            indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/",
+          });
+          console.log("Pyodide loaded successfully");
+          return pyodide;
+        } catch (error) {
+          console.error("Failed to load Pyodide:", error);
+          throw error;
+        } finally {
+          pyodideLoading = false;
+        }
+      }
+
+      async function runPythonCode(blockId) {
+        const codeElement = document.getElementById(`code-editor-${blockId}`);
+        const outputElement = document.getElementById(`code-output-${blockId}`);
+        const runButton = document.querySelector(
+          `#code-runner-${blockId} .run-code-btn`
+        );
+
+        if (!codeElement || !outputElement) return;
+
+        const code = codeElement.value;
+        if (!code.trim()) {
+          outputElement.textContent = "Please enter some Python code to run.";
+          return;
+        }
+
+        // Update button state
+        runButton.disabled = true;
+        runButton.innerHTML =
+          '<i class="fas fa-spinner fa-spin"></i> Running...';
+        outputElement.textContent = "Initializing Python environment...";
+
+        try {
+          // Initialize Pyodide if not already done
+          const py = await initPyodide();
+
+          // Capture stdout
+          py.runPython(`
+import sys
+from io import StringIO
+sys.stdout = StringIO()
+`);
+
+          // Run the user's code
+          try {
+            py.runPython(code);
+
+            // Get the output
+            const output = py.runPython("sys.stdout.getvalue()");
+            outputElement.textContent =
+              output || "Code executed successfully (no output)";
+            outputElement.className = "output-content success";
+          } catch (pythonError) {
+            outputElement.textContent = `Error: ${pythonError.message}`;
+            outputElement.className = "output-content error";
+          }
+        } catch (error) {
+          outputElement.textContent = `Failed to run code: ${error.message}`;
+          outputElement.className = "output-content error";
+        } finally {
+          // Reset button state
+          runButton.disabled = false;
+          runButton.innerHTML = '<i class="fas fa-play"></i> Run Code';
+        }
+      }
+
+      function clearOutput(blockId) {
+        const outputElement = document.getElementById(`code-output-${blockId}`);
+        if (outputElement) {
+          outputElement.textContent = "";
+          outputElement.className = "output-content";
+        }
+      }
+
+      function showSolution(blockId) {
+        const solutionElement = document.getElementById(`solution-${blockId}`);
+        const button = document.querySelector(
+          `#code-runner-${blockId} .show-solution-btn`
+        );
+
+        if (solutionElement && button) {
+          if (solutionElement.style.display === "none") {
+            solutionElement.style.display = "block";
+            button.innerHTML = '<i class="fas fa-lightbulb"></i> Hide Solution';
+          } else {
+            solutionElement.style.display = "none";
+            button.innerHTML = '<i class="fas fa-lightbulb"></i> Show Solution';
+          }
+        }
+      }
+
+      function showHints(blockId) {
+        const hintsElement = document.getElementById(`hints-${blockId}`);
+        const button = document.querySelector(
+          `#code-runner-${blockId} .show-hints-btn`
+        );
+
+        if (hintsElement && button) {
+          if (hintsElement.style.display === "none") {
+            hintsElement.style.display = "block";
+            button.innerHTML =
+              '<i class="fas fa-question-circle"></i> Hide Hints';
+          } else {
+            hintsElement.style.display = "none";
+            button.innerHTML =
+              '<i class="fas fa-question-circle"></i> Show Hints';
+          }
+        }
+      }
+
+      // Add tab support to all textareas (especially for code editing)
+      document.addEventListener("keydown", function (e) {
+        // Handle Tab key in textareas
+        if (e.target.tagName === "TEXTAREA" && e.key === "Tab") {
+          e.preventDefault();
+
+          const textarea = e.target;
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+
+          // Insert 4 spaces (or a tab character) at cursor position
+          const tab = "    "; // 4 spaces for Python indentation
+          textarea.value =
+            textarea.value.substring(0, start) +
+            tab +
+            textarea.value.substring(end);
+
+          // Move cursor after the inserted tab
+          textarea.selectionStart = textarea.selectionEnd = start + tab.length;
+        }
+      });
     </script>
 
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>

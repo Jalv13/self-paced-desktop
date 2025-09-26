@@ -111,6 +111,16 @@
                             </div>
                             
                             <div class="form-group">
+                                <label for="order">Lesson Order</label>
+                                <input type="number" id="order" name="order" min="1" max="100"
+                                       placeholder="e.g., 1, 2, 3..."
+                                       {% if edit_mode and lesson_data.order %}value="{{ lesson_data.order }}"{% endif %}>
+                                <small>Optional: Display order for initial lessons (1 = first, 2 = second, etc.)</small>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
                                 <label for="videoId">YouTube Video ID</label>
                                 <input type="text" id="videoId" name="videoId" 
                                        placeholder="e.g., kvO_nHnvPtQ (from youtube.com/watch?v=kvO_nHnvPtQ)"
