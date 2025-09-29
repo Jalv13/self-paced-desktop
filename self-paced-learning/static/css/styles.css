@@ -1247,6 +1247,8 @@ body.quiz-page {
 .code-runner-header h4 {
   margin: 0;
   font-size: 1.1em;
+  color: white !important;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .code-runner-header i {
@@ -1352,7 +1354,8 @@ body.quiz-page {
 
 .output-content {
   padding: 12px;
-  color: #f8f9fa;
+  background: #343a40 !important;
+  color: #f8f9fa !important;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 14px;
   min-height: 60px;
@@ -1367,7 +1370,8 @@ body.quiz-page {
 
 .output-content.error {
   border-left: 4px solid #dc3545;
-  color: #f5c6cb;
+  background: #343a40 !important;
+  color: #ff6b6b !important;
 }
 
 .expected-output, .hints-content, .solution-content {
