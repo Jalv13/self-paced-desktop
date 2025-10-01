@@ -431,6 +431,9 @@
                       </button>
                       ${item.solution ? `<button class="show-solution-btn" onclick="showSolution('${blockId}')"><i class="fas fa-lightbulb"></i> Show Solution</button>` : ''}
                       ${item.hints && item.hints.length > 0 ? `<button class="show-hints-btn" onclick="showHints('${blockId}')"><i class="fas fa-question-circle"></i> Show Hints</button>` : ''}
+                      <button class="expand-code-btn" onclick="expandCodeRunner('${blockId}')">
+                        <i class="fas fa-expand"></i> Expand
+                      </button>
                     </div>
                     <div class="code-output">
                       <div class="output-header">Output:</div>
@@ -748,6 +751,221 @@ sys.stdout = StringIO()
             }
         });
       });
+
+      // Modal functions for expanding code runners
+      function expandCodeRunner(blockId) {
+        const originalContainer = document.getElementById(`code-runner-${blockId}`);
+        if (!originalContainer) return;
+
+        // Create modal if it doesn't exist
+        let modal = document.getElementById('code-runner-modal');
+        if (!modal) {
+          modal = document.createElement('div');
+          modal.id = 'code-runner-modal';
+          modal.className = 'code-runner-modal';
+          modal.innerHTML = `
+            <div class="code-runner-modal-content">
+              <div class="code-runner-modal-header">
+                <h3><i class="fas fa-expand"></i> Expanded Code Editor</h3>
+                <button class="code-runner-modal-close" onclick="closeCodeRunnerModal()">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <div class="code-runner-modal-body" id="modal-code-content">
+                <!-- Code runner content will be inserted here -->
+              </div>
+            </div>
+          `;
+          document.body.appendChild(modal);
+          
+          // Close modal when clicking outside
+          modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+              closeCodeRunnerModal();
+            }
+          });
+          
+          // Close modal with Escape key
+          document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+              closeCodeRunnerModal();
+            }
+          });
+        }
+
+        // Clone and modify the code runner content
+        const originalContent = originalContainer.querySelector('.code-runner-content');
+        const modalBody = modal.querySelector('#modal-code-content');
+        modalBody.innerHTML = originalContent.innerHTML;
+
+        // Update IDs and event handlers for modal version
+        const modalTextarea = modalBody.querySelector(`#code-editor-${blockId}`);
+        const modalButtons = modalBody.querySelectorAll('button');
+        
+        if (modalTextarea) {
+          modalTextarea.id = `code-editor-${blockId}-modal`;
+        }
+        
+        modalButtons.forEach(button => {
+          const onclick = button.getAttribute('onclick');
+          if (onclick) {
+            // Update function calls to use modal versions
+            const newOnclick = onclick
+              .replace(`runPythonCode('${blockId}')`, `runPythonCodeModal('${blockId}')`)
+              .replace(`clearOutput('${blockId}')`, `clearOutputModal('${blockId}')`)
+              .replace(`showSolution('${blockId}')`, `showSolutionModal('${blockId}')`)
+              .replace(`showHints('${blockId}')`, `showHintsModal('${blockId}')`);
+            button.setAttribute('onclick', newOnclick);
+          }
+        });
+
+        // Update output element ID
+        const modalOutput = modalBody.querySelector(`#code-output-${blockId}`);
+        if (modalOutput) {
+          modalOutput.id = `code-output-${blockId}-modal`;
+        }
+
+        // Update hints and solution IDs
+        const modalHints = modalBody.querySelector(`#hints-${blockId}`);
+        if (modalHints) {
+          modalHints.id = `hints-${blockId}-modal`;
+        }
+        
+        const modalSolution = modalBody.querySelector(`#solution-${blockId}`);
+        if (modalSolution) {
+          modalSolution.id = `solution-${blockId}-modal`;
+        }
+
+        // Sync content
+        syncToModal(blockId);
+        
+        // Show modal
+        modal.classList.add('active');
+        
+        // Focus on textarea
+        setTimeout(() => {
+          const modalTextareaFinal = modal.querySelector(`#code-editor-${blockId}-modal`);
+          if (modalTextareaFinal) {
+            modalTextareaFinal.focus();
+          }
+        }, 100);
+      }
+
+      function closeCodeRunnerModal() {
+        const modal = document.getElementById('code-runner-modal');
+        if (!modal) return;
+        
+        // Sync content back before closing
+        syncFromModal();
+        
+        modal.classList.remove('active');
+      }
+
+      function syncToModal(blockId) {
+        const original = document.getElementById(`code-editor-${blockId}`);
+        const modal = document.getElementById(`code-editor-${blockId}-modal`);
+        
+        if (original && modal) {
+          modal.value = original.value;
+        }
+      }
+
+      function syncFromModal() {
+        const modal = document.getElementById('code-runner-modal');
+        if (!modal) return;
+        
+        const modalTextarea = modal.querySelector('textarea[id$="-modal"]');
+        if (!modalTextarea) return;
+        
+        const blockId = modalTextarea.id.replace('code-editor-', '').replace('-modal', '');
+        const original = document.getElementById(`code-editor-${blockId}`);
+        
+        if (original && modalTextarea) {
+          original.value = modalTextarea.value;
+        }
+      }
+
+      // Modal versions of the code runner functions
+      window.runPythonCodeModal = async function(blockId) {
+        const codeElement = document.getElementById(`code-editor-${blockId}-modal`);
+        const outputElement = document.getElementById(`code-output-${blockId}-modal`);
+        const runButton = document.querySelector(`#modal-code-content .run-code-btn`);
+        
+        if (!codeElement || !outputElement) return;
+        
+        const code = codeElement.value;
+        if (!code.trim()) {
+          outputElement.textContent = "Please enter some Python code to run.";
+          return;
+        }
+        
+        runButton.disabled = true;
+        runButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+        outputElement.textContent = "Initializing Python environment...";
+        
+        try {
+          const py = await initPyodide();
+          py.runPython(\`
+import sys
+from io import StringIO
+sys.stdout = StringIO()
+\`);
+          
+          try {
+            py.runPython(code);
+            const output = py.runPython("sys.stdout.getvalue()");
+            outputElement.textContent = output || "Code executed successfully (no output)";
+            outputElement.className = "output-content success";
+          } catch (pythonError) {
+            outputElement.textContent = \`Error: \${pythonError.message}\`;
+            outputElement.className = "output-content error";
+          }
+        } catch (error) {
+          outputElement.textContent = \`Failed to run code: \${error.message}\`;
+          outputElement.className = "output-content error";
+        } finally {
+          runButton.disabled = false;
+          runButton.innerHTML = '<i class="fas fa-play"></i> Run Code';
+        }
+      };
+
+      window.clearOutputModal = function(blockId) {
+        const outputElement = document.getElementById(`code-output-${blockId}-modal`);
+        if (outputElement) {
+          outputElement.textContent = "";
+          outputElement.className = "output-content";
+        }
+      };
+
+      window.showSolutionModal = function(blockId) {
+        const solutionElement = document.getElementById(`solution-${blockId}-modal`);
+        const button = document.querySelector(`#modal-code-content .show-solution-btn`);
+        
+        if (solutionElement && button) {
+          if (solutionElement.style.display === "none") {
+            solutionElement.style.display = "block";
+            button.innerHTML = '<i class="fas fa-lightbulb"></i> Hide Solution';
+          } else {
+            solutionElement.style.display = "none";
+            button.innerHTML = '<i class="fas fa-lightbulb"></i> Show Solution';
+          }
+        }
+      };
+
+      window.showHintsModal = function(blockId) {
+        const hintsElement = document.getElementById(`hints-${blockId}-modal`);
+        const button = document.querySelector(`#modal-code-content .show-hints-btn`);
+        
+        if (hintsElement && button) {
+          if (hintsElement.style.display === "none") {
+            hintsElement.style.display = "block";
+            button.innerHTML = '<i class="fas fa-question-circle"></i> Hide Hints';
+          } else {
+            hintsElement.style.display = "none";
+            button.innerHTML = '<i class="fas fa-question-circle"></i> Show Hints';
+          }
+        }
+      };
     </script>
   </body>
 </html>
