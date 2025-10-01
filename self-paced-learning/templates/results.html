@@ -94,660 +94,878 @@
     </script>
 
     <script>
-      window.addEventListener("DOMContentLoaded", async function () {
-        // --- Element References ---
-        const statusDiv = document.getElementById("status");
-        const scoreContainer = document.getElementById("score-container");
-        const scoreDisplay = document.getElementById("score-display");
-        const scoreDetails = document.getElementById("score-details");
-        const correctCount = document.getElementById("correct-count");
-        const totalCount = document.getElementById("total-count");
-        const masteryMessageContainer = document.getElementById(
-          "mastery-message-container"
-        );
-        const welcomeMessageContainer =
-          document.getElementById("welcome-message");
-        const feedbackContentDiv = document.getElementById("feedback-content");
-        const topicsNavList = document.getElementById("weak-topics-nav");
-        const contentDisplayArea = document.getElementById("content-display");
-        const continueButton = document.getElementById("continueButton");
-        const backToTopicsButton =
-          document.getElementById("backToTopicsButton");
-        const adminMarkCompleteButton = document.getElementById(
-          "adminMarkCompleteButton"
-        );
+            window.addEventListener("DOMContentLoaded", async function () {
+              // --- Element References ---
+              const statusDiv = document.getElementById("status");
+              const scoreContainer = document.getElementById("score-container");
+              const scoreDisplay = document.getElementById("score-display");
+              const scoreDetails = document.getElementById("score-details");
+              const correctCount = document.getElementById("correct-count");
+              const totalCount = document.getElementById("total-count");
+              const masteryMessageContainer = document.getElementById(
+                "mastery-message-container"
+              );
+              const welcomeMessageContainer =
+                document.getElementById("welcome-message");
+              const feedbackContentDiv = document.getElementById("feedback-content");
+              const topicsNavList = document.getElementById("weak-topics-nav");
+              const contentDisplayArea = document.getElementById("content-display");
+              const continueButton = document.getElementById("continueButton");
+              const backToTopicsButton =
+                document.getElementById("backToTopicsButton");
+              const adminMarkCompleteButton = document.getElementById(
+                "adminMarkCompleteButton"
+              );
 
-        // --- State Tracking ---
-        let completionState = {};
-        let currentPlayer = null;
-        let currentVideoTopic = null;
-        let videoProgressChecker = null;
+              // --- State Tracking ---
+              let completionState = {};
+              let currentPlayer = null;
+              let currentVideoTopic = null;
+              let videoProgressChecker = null;
 
-        // --- YouTube API Ready Handler ---
-        window.onYouTubeIframeAPIReady = function () {
-          console.log("YouTube Player API is ready.");
-        };
+              // --- YouTube API Ready Handler ---
+              window.onYouTubeIframeAPIReady = function () {
+                console.log("YouTube Player API is ready.");
+              };
 
-        // --- Main Analysis Logic - Use Flask session data instead of sessionStorage ---
-        console.log("Processing analysis results from Flask session");
+              // --- Main Analysis Logic - Use Flask session data instead of sessionStorage ---
+              console.log("Processing analysis results from Flask session");
 
-        if (!ANALYSIS_RESULTS) {
-          statusDiv.textContent =
-            "No quiz analysis found. Please take a quiz first.";
-          statusDiv.className = "status status-error";
-          backToTopicsButton.classList.remove("hidden");
-          return;
-        }
+              if (!ANALYSIS_RESULTS) {
+                statusDiv.textContent =
+                  "No quiz analysis found. Please take a quiz first.";
+                statusDiv.className = "status status-error";
+                backToTopicsButton.classList.remove("hidden");
+                return;
+              }
 
-        // Process the analysis results immediately
-        statusDiv.textContent = "Analysis complete!";
-        statusDiv.className = "status status-success";
+              // Process the analysis results immediately
+              statusDiv.textContent = "Analysis complete!";
+              statusDiv.className = "status status-success";
 
-        await processAnalysisResults(ANALYSIS_RESULTS);
+              await processAnalysisResults(ANALYSIS_RESULTS);
 
-        // --- Helper Functions ---
-        function resolveLesson(keyOrId) {
-          if (!keyOrId) return null;
-          const k = String(keyOrId);
-          return REMEDIAL_LESSON_PLANS && REMEDIAL_LESSON_PLANS[k]
-            ? REMEDIAL_LESSON_PLANS[k]
-            : null;
-        }
+              // --- Helper Functions ---
+              function resolveLesson(keyOrId) {
+                if (!keyOrId) return null;
+                const k = String(keyOrId);
+                return REMEDIAL_LESSON_PLANS && REMEDIAL_LESSON_PLANS[k]
+                  ? REMEDIAL_LESSON_PLANS[k]
+                  : null;
+              }
 
-        function extractVideoIdFromUrl(url) {
-          const regExp =
-            /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-          const match = url.match(regExp);
-          return match && match[2].length === 11 ? match[2] : null;
-        }
+              function extractVideoIdFromUrl(url) {
+                const regExp =
+                  /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+                const match = url.match(regExp);
+                return match && match[2].length === 11 ? match[2] : null;
+              }
 
-        // Map conceptual topics to actual video keys
-        function getVideoKeyForTopic(topic) {
-          const topicMappings = {
-            "keyword arguments": "functions",
-            "function parameters": "functions",
-            "function arguments": "functions",
-            "parameter passing": "functions",
-            "default parameters": "functions",
-            "function definition": "functions",
-            "function calls": "functions",
-            "return statements": "functions",
-            "function scope": "functions",
-            "for loops": "loops",
-            "while loops": "loops",
-            "loop iteration": "loops",
-            "break statements": "loops",
-            "continue statements": "loops",
-            "nested loops": "loops",
-            "list operations": "lists",
-            "list methods": "lists",
-            "list comprehension": "lists",
-            "list indexing": "lists",
-            "array operations": "arrays",
-            "numpy arrays": "arrays",
-            "set operations": "sets",
-            "dictionary operations": "dictionaries",
-            "dict methods": "dictionaries",
-          };
+              // Map conceptual topics to actual video keys
+              function getVideoKeyForTopic(topic) {
+                const topicMappings = {
+                  "keyword arguments": "functions",
+                  "function parameters": "functions",
+                  "function arguments": "functions",
+                  "parameter passing": "functions",
+                  "default parameters": "functions",
+                  "function definition": "functions",
+                  "function calls": "functions",
+                  "return statements": "functions",
+                  "function scope": "functions",
+                  "for loops": "loops",
+                  "while loops": "loops",
+                  "loop iteration": "loops",
+                  "break statements": "loops",
+                  "continue statements": "loops",
+                  "nested loops": "loops",
+                  "list operations": "lists",
+                  "list methods": "lists",
+                  "list comprehension": "lists",
+                  "list indexing": "lists",
+                  "array operations": "arrays",
+                  "numpy arrays": "arrays",
+                  "set operations": "sets",
+                  "dictionary operations": "dictionaries",
+                  "dict methods": "dictionaries",
+                };
 
-          const normalizedTopic = topic.toLowerCase();
-          return topicMappings[normalizedTopic] || topic;
-        }
+                const normalizedTopic = topic.toLowerCase();
+                return topicMappings[normalizedTopic] || topic;
+              }
 
-        // --- Simplified Click Handler ---
-        document.addEventListener("click", function (e) {
-          const link = e.target.closest("a[data-action]");
-          if (!link) return;
+              // --- Simplified Click Handler ---
+              document.addEventListener("click", function (e) {
+                const link = e.target.closest("a[data-action]");
+                if (!link) return;
 
-          e.preventDefault();
-          const action = link.dataset.action;
-          const topic = link.dataset.topic;
-          const weakTopic = link.dataset.weakTopic;
-          const completionKey = weakTopic || topic;
+                e.preventDefault();
+                const action = link.dataset.action;
+                const topic = link.dataset.topic;
+                const weakTopic = link.dataset.weakTopic;
+                const completionKey = weakTopic || topic;
 
-          if (!topic || !action) return;
+                if (!topic || !action) return;
 
-          // Clear previous active state
-          const currentActive = document.querySelector("a.active");
-          if (currentActive) currentActive.classList.remove("active");
-          link.classList.add("active");
+                // Clear previous active state
+                const currentActive = document.querySelector("a.active");
+                if (currentActive) currentActive.classList.remove("active");
+                link.classList.add("active");
 
-          if (action === "read") {
-            renderLesson(topic);
-            updateCompletionState(completionKey, "read");
-          } else if (action === "watch") {
-            renderVideo(topic, completionKey);
-          }
-        });
+                if (action === "read") {
+                  renderLesson(topic);
+                  updateCompletionState(completionKey, "read");
+                } else if (action === "watch") {
+                  renderVideo(topic, completionKey);
+                }
+              });
 
-        // --- Analysis Results Processing Function ---
-        async function processAnalysisResults(analysisData) {
-          console.log("Processing analysis results:", analysisData);
+              // --- Analysis Results Processing Function ---
+              async function processAnalysisResults(analysisData) {
+                console.log("Processing analysis results:", analysisData);
 
-          const weakTopics = analysisData.weak_topics || [];
+                const weakTopics = analysisData.weak_topics || [];
 
-          // Calculate and display score
-          if (analysisData.score) {
-            displayScore(analysisData.score);
-          }
+                // Calculate and display score
+                if (analysisData.score) {
+                  displayScore(analysisData.score);
+                }
 
-          statusDiv.classList.add("hidden");
+                statusDiv.classList.add("hidden");
 
-          if (weakTopics.length > 0) {
-            welcomeMessageContainer.classList.remove("hidden");
-            feedbackContentDiv.innerHTML = analysisData.feedback;
+                if (weakTopics.length > 0) {
+                  welcomeMessageContainer.classList.remove("hidden");
+                  feedbackContentDiv.innerHTML = analysisData.feedback;
 
-            buildCompletionState(weakTopics);
-            displayWeakTopics(weakTopics);
+                  buildCompletionState(weakTopics);
+                  displayWeakTopics(weakTopics);
 
-            continueButton.classList.remove("hidden");
-            backToTopicsButton.classList.remove("hidden");
-            checkCompletionAndToggleButton();
-          } else {
-            masteryMessageContainer.classList.remove("hidden");
-            backToTopicsButton.classList.remove("hidden");
-            // Show continue button for perfect scores too
-            continueButton.classList.remove("hidden");
-            continueButton.disabled = false; // Enable button when no weak topics
-          }
-        }
+                  continueButton.classList.remove("hidden");
+                  backToTopicsButton.classList.remove("hidden");
+                  checkCompletionAndToggleButton();
+                } else {
+                  masteryMessageContainer.classList.remove("hidden");
+                  backToTopicsButton.classList.remove("hidden");
+                  // Show continue button for perfect scores too
+                  continueButton.classList.remove("hidden");
+                  continueButton.disabled = false; // Enable button when no weak topics
+                }
+              }
 
-        // --- Simplified Topic Display ---
-        function displayWeakTopics(topics) {
-          topicsNavList.innerHTML = "";
-          topics.forEach((topic) => {
-            const lesson = REMEDIAL_LESSON_PLANS[topic];
-            if (!lesson) return;
+              // --- Simplified Topic Display ---
+              function displayWeakTopics(topics) {
+                topicsNavList.innerHTML = "";
+                topics.forEach((topic) => {
+                  const lesson = REMEDIAL_LESSON_PLANS[topic];
+                  if (!lesson) return;
 
-            const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
-            const groupLi = document.createElement("li");
-            groupLi.className = "topic-group";
-            groupLi.innerHTML = `
-             <span>${lesson.title || topic}</span>
-             <ul>
-               <li id="read-${safeTopicId}"><a href="#" data-topic="${topic}" data-weak-topic="${topic}" data-action="read">Read Remedial Lesson</a></li>
-               <li id="watch-${safeTopicId}"><a href="#" data-topic="${topic}" data-weak-topic="${topic}" data-action="watch">Watch Video</a></li>
-             </ul>
-           `;
-            topicsNavList.appendChild(groupLi);
-          });
-        }
+                  const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
+                  const groupLi = document.createElement("li");
+                  groupLi.className = "topic-group";
+                  groupLi.innerHTML = `
+                   <span>${lesson.title || topic}</span>
+                   <ul>
+                     <li id="read-${safeTopicId}"><a href="#" data-topic="${topic}" data-weak-topic="${topic}" data-action="read">Read Remedial Lesson</a></li>
+                     <li id="watch-${safeTopicId}"><a href="#" data-topic="${topic}" data-weak-topic="${topic}" data-action="watch">Watch Video</a></li>
+                   </ul>
+                 `;
+                  topicsNavList.appendChild(groupLi);
+                });
+              }
 
-        // --- Helper Functions ---
-        function buildCompletionState(topics) {
-          topics.forEach((topic) => {
-            completionState[topic] = { read: false, watched: false };
-          });
-        }
+              // --- Helper Functions ---
+              function buildCompletionState(topics) {
+                topics.forEach((topic) => {
+                  completionState[topic] = { read: false, watched: false };
+                });
+              }
 
-        // --- Score Display Function ---
-        function displayScore(scoreData) {
-          const { correct, total, percentage } = scoreData;
+              // --- Score Display Function ---
+              function displayScore(scoreData) {
+                const { correct, total, percentage } = scoreData;
 
-          // Update score display
-          scoreDisplay.textContent = `${percentage}%`;
-          correctCount.textContent = correct;
-          totalCount.textContent = total;
+                // Update score display
+                scoreDisplay.textContent = `${percentage}%`;
+                correctCount.textContent = correct;
+                totalCount.textContent = total;
 
-          // Apply score-based styling
-          scoreContainer.classList.remove(
-            "score-excellent",
-            "score-good",
-            "score-needs-improvement"
-          );
-          if (percentage >= 90) {
-            scoreContainer.classList.add("score-excellent");
-          } else if (percentage >= 70) {
-            scoreContainer.classList.add("score-good");
-          } else {
-            scoreContainer.classList.add("score-needs-improvement");
-          }
+                // Apply score-based styling
+                scoreContainer.classList.remove(
+                  "score-excellent",
+                  "score-good",
+                  "score-needs-improvement"
+                );
+                if (percentage >= 90) {
+                  scoreContainer.classList.add("score-excellent");
+                } else if (percentage >= 70) {
+                  scoreContainer.classList.add("score-good");
+                } else {
+                  scoreContainer.classList.add("score-needs-improvement");
+                }
 
-          // Show the score container
-          scoreContainer.classList.remove("hidden");
-        }
+                // Show the score container
+                scoreContainer.classList.remove("hidden");
+              }
 
-        // --- Score Display Function (duplicate click handler removed) ---
+              // --- Score Display Function (duplicate click handler removed) ---
 
-        continueButton.addEventListener("click", function () {
-          if (!this.disabled) {
-            window.location.href = "/generate_remedial_quiz";
-          }
-        });
+              continueButton.addEventListener("click", function () {
+                if (!this.disabled) {
+                  window.location.href = "/generate_remedial_quiz";
+                }
+              });
 
-        // Admin mark complete functionality
-        if (adminMarkCompleteButton) {
-          adminMarkCompleteButton.addEventListener("click", async function () {
-            if (
-              confirm(
-                "Mark all weak topics as complete? This will set all read and watch activities to 100% completion."
-              )
-            ) {
-              try {
-                // Get all current weak topics
-                const weakTopics = Object.keys(completionState);
-                let completedCount = 0;
+              // Admin mark complete functionality
+              if (adminMarkCompleteButton) {
+                adminMarkCompleteButton.addEventListener("click", async function () {
+                  if (
+                    confirm(
+                      "Mark all weak topics as complete? This will set all read and watch activities to 100% completion."
+                    )
+                  ) {
+                    try {
+                      // Get all current weak topics
+                      const weakTopics = Object.keys(completionState);
+                      let completedCount = 0;
 
-                // Mark each topic as complete
-                for (const topic of weakTopics) {
-                  const response = await fetch("/api/admin/mark_complete", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
+                      // Mark each topic as complete
+                      for (const topic of weakTopics) {
+                        const response = await fetch("/api/admin/mark_complete", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify({ topic: topic }),
+                        });
+
+                        if (response.ok) {
+                          // Mark both read and watched as complete
+                          completionState[topic].read = true;
+                          completionState[topic].watched = true;
+                          completedCount++;
+
+                          // Update visual indicators for both read and watch
+                          const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
+
+                          // Mark read as complete
+                          const readElement = document.getElementById(
+                            `read-${safeTopicId}`
+                          );
+                          if (readElement) {
+                            readElement.classList.add("completed");
+                          }
+
+                          // Mark watch as complete
+                          const watchElement = document.getElementById(
+                            `watch-${safeTopicId}`
+                          );
+                          if (watchElement) {
+                            watchElement.classList.add("completed");
+                          }
+                        }
+                      }
+
+                      // Show success message
+                      alert(
+                        `Successfully marked ${completedCount} topics as complete!`
+                      );
+
+                      // Check if all topics are now complete
+                      checkCompletionAndToggleButton();
+                    } catch (error) {
+                      console.error("Error marking topics complete:", error);
+                      alert("Error marking topics complete. Please try again.");
+                    }
+                  }
+                });
+              }
+
+              /**
+               * Renders lesson content in the main content area.
+               */
+              function renderLesson(topic) {
+                const lesson = resolveLesson(topic);
+
+                if (!lesson) {
+                  contentDisplayArea.innerHTML = `<h2>Content Not Found</h2><p>Sorry, we couldn't find a lesson for "${topic}".</p>`;
+                  return;
+                }
+
+                // Hide the welcome message and show lesson content
+                welcomeMessageContainer.classList.add("hidden");
+
+                let contentHtml = `<h2>${lesson.title}</h2>`;
+                (lesson.content || []).forEach((item) => {
+                  if (item.type === "header") {
+                    contentHtml += `<h5>${item.text}</h5>`;
+                  } else if (item.type === "paragraph") {
+                    contentHtml += `<p>${item.text}</p>`;
+                  } else if (item.type === "list") {
+                    contentHtml += "<ul>";
+                    (item.items || []).forEach((li_text) => {
+                      contentHtml += `<li>${li_text}</li>`;
+                    });
+                    contentHtml += "</ul>";
+                  } else if (item.type === "code") {
+                    const escapedCode = (item.text || "")
+                      .replace(/</g, "&lt;")
+                      .replace(/>/g, "&gt;");
+                    contentHtml += `<pre><code>${escapedCode}</code></pre>`;
+                  } else if (item.type === "code_runner") {
+                    const blockId = Math.random().toString(36).substr(2, 9);
+                    contentHtml += `
+                      <div class="code-runner-block" id="code-runner-${blockId}">
+                        <div class="code-runner-header">
+                          <h4><i class="fas fa-play-circle"></i> Interactive Python Code</h4>
+                        </div>
+                        <div class="code-runner-content">
+                          <div class="code-editor">
+                            <textarea id="code-editor-${blockId}" class="python-editor" placeholder="Write your Python code here...">${item.starter_code || '# Write your Python code here\nprint("Hello, World!")'}</textarea>
+                          </div>
+                          <div class="code-controls">
+                            <button class="run-code-btn" onclick="runPythonCode('${blockId}')">
+                              <i class="fas fa-play"></i> Run Code
+                            </button>
+                            <button class="clear-output-btn" onclick="clearOutput('${blockId}')">
+                              <i class="fas fa-trash"></i> Clear Output
+                            </button>
+                            ${item.solution ? `<button class="show-solution-btn" onclick="showSolution('${blockId}')"><i class="fas fa-lightbulb"></i> Show Solution</button>` : ''}
+                            ${item.hints && item.hints.length > 0 ? `<button class="show-hints-btn" onclick="showHints('${blockId}')"><i class="fas fa-question-circle"></i> Show Hints</button>` : ''}
+                            <button class="expand-code-btn" onclick="expandCodeRunner('${blockId}')">
+                              <i class="fas fa-expand"></i> Expand
+                            </button>
+                          </div>
+                          <div class="code-output">
+                            <div class="output-header">Output:</div>
+                            <pre id="code-output-${blockId}" class="output-content"></pre>
+                          </div>
+                          ${item.expected_output ? `<div class="expected-output"><strong>Expected Output:</strong><pre>${item.expected_output}</pre></div>` : ''}
+                          ${item.hints && item.hints.length > 0 ? `<div class="hints-content" id="hints-${blockId}" style="display: none;"><strong>Hints:</strong><ul>${item.hints.map(hint => `<li>${hint}</li>`).join('')}</ul></div>` : ''}
+                          ${item.solution ? `<div class="solution-content" id="solution-${blockId}" style="display: none;"><strong>Solution:</strong><pre><code>${item.solution}</code></pre></div>` : ''}
+                        </div>
+                      </div>
+                    `;
+                  } else if (item.type === "summary") {
+                    contentHtml += `<p><strong>${item.text}</strong></p>`;
+                  }
+                });
+
+                contentDisplayArea.innerHTML = contentHtml;
+              }
+
+              /**
+               * Renders the YouTube video player in the main content area.
+               */
+              function renderVideo(topic, completionKey) {
+                const completionKeyToUse = completionKey || topic;
+
+                // Hide welcome message
+                welcomeMessageContainer.classList.add("hidden");
+
+                // Map the topic to an actual video key
+                const videoKey = getVideoKeyForTopic(completionKeyToUse);
+                const fallbackVideoKey = getVideoKeyForTopic(topic);
+
+                // Find video data using mapped keys
+                let videoData =
+                  VIDEO_DATA[videoKey] ||
+                  VIDEO_DATA[fallbackVideoKey] ||
+                  VIDEO_DATA[completionKeyToUse] ||
+                  VIDEO_DATA[topic];
+
+                // If still no video found, try to find any functions video as a default for function-related topics
+                if (
+                  !videoData &&
+                  (completionKeyToUse.includes("function") ||
+                    topic.includes("function") ||
+                    completionKeyToUse.includes("parameter") ||
+                    completionKeyToUse.includes("argument"))
+                ) {
+                  videoData = VIDEO_DATA["functions"];
+                }
+
+                if (!videoData) {
+                  contentDisplayArea.innerHTML = `
+                    <h2>Video Not Available</h2>
+                    <p>Sorry, we couldn't find a specific video for "${completionKeyToUse}".</p>
+                    <p>Available video topics: ${Object.keys(VIDEO_DATA).join(
+                      ", "
+                    )}</p>
+                    <p>Please try selecting a related topic from the list above or contact support.</p>
+                  `;
+                  return;
+                }
+
+                // Clean up previous player
+                if (currentPlayer) {
+                  currentPlayer.destroy();
+                  currentPlayer = null;
+                }
+
+                // Track completion
+                currentVideoTopic = completionKeyToUse;
+
+                // Extract video ID
+                const videoId = extractVideoIdFromUrl(videoData.url);
+                if (!videoId) {
+                  contentDisplayArea.innerHTML = `<h2>Invalid Video</h2><p>The video data is not valid.</p>`;
+                  return;
+                }
+
+                // Create simple video player
+                contentDisplayArea.innerHTML = `
+                  <div id="video-player-container">
+                    <div class="video-header">
+                      <h2>${videoData.title || completionKeyToUse}</h2>
+                      ${
+                        videoKey !== completionKeyToUse
+                          ? `<p><em>Note: Showing "${videoData.title}" which covers topics related to "${completionKeyToUse}"</em></p>`
+                          : ""
+                      }
+                    </div>
+                    <div class="video-wrapper">
+                      <div id="youtube-player"></div>
+                    </div>
+                  </div>
+                `;
+
+                // Create YouTube player
+                if (window.YT && window.YT.Player) {
+                  currentPlayer = new YT.Player("youtube-player", {
+                    height: "315",
+                    width: "560",
+                    videoId: videoId,
+                    playerVars: {
+                      autoplay: 0,
+                      rel: 0,
+                      modestbranding: 1,
+                      controls: 1,
                     },
-                    body: JSON.stringify({ topic: topic }),
+                    events: {
+                      onStateChange: onPlayerStateChange,
+                    },
                   });
+                }
+              }
 
-                  if (response.ok) {
-                    // Mark both read and watched as complete
-                    completionState[topic].read = true;
-                    completionState[topic].watched = true;
-                    completedCount++;
+              /**
+               * Handles video player state changes to detect when a video is finished.
+               */
+              function onPlayerStateChange(event) {
+                // Mark as complete when video ends
+                if (event.data === YT.PlayerState.ENDED && currentVideoTopic) {
+                  updateCompletionState(currentVideoTopic, "watched");
+                }
+              }
 
-                    // Update visual indicators for both read and watch
-                    const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
+              /**
+               * Updates the completion state and the UI for the corresponding item.
+               */
+              /**
+               * Updates the completion state and the UI for the corresponding item.
+               */
+              function updateCompletionState(topic, action) {
+                if (!completionState[topic]) {
+                  completionState[topic] = { read: false, watched: false };
+                }
 
-                    // Mark read as complete
-                    const readElement = document.getElementById(
-                      `read-${safeTopicId}`
-                    );
-                    if (readElement) {
-                      readElement.classList.add("completed");
-                    }
+                if (completionState[topic][action]) {
+                  return; // Already completed
+                }
 
-                    // Mark watch as complete
-                    const watchElement = document.getElementById(
-                      `watch-${safeTopicId}`
-                    );
-                    if (watchElement) {
-                      watchElement.classList.add("completed");
-                    }
+                completionState[topic][action] = true;
+
+                // Update UI
+                const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
+                const elementAction = action === "watched" ? "watch" : action;
+                const elementId = `${elementAction}-${safeTopicId}`;
+                const elementToMark = document.getElementById(elementId);
+
+                if (elementToMark) {
+                  elementToMark.classList.add("completed");
+                }
+
+                checkCompletionAndToggleButton();
+              }
+
+              /**
+               * Checks the overall completion state and enables/disables the continue button.
+               */
+              function checkCompletionAndToggleButton() {
+                // If no topics to complete (empty state), enable the button
+                if (Object.keys(completionState).length === 0) {
+                  continueButton.disabled = false;
+                  return;
+                }
+
+                let allCompleted = true;
+
+                for (const topic in completionState) {
+                  if (
+                    !completionState[topic].read ||
+                    !completionState[topic].watched
+                  ) {
+                    allCompleted = false;
+                    break;
                   }
                 }
 
-                // Show success message
-                alert(
-                  `Successfully marked ${completedCount} topics as complete!`
-                );
+                continueButton.disabled = !allCompleted;
+              }
 
-                // Check if all topics are now complete
-                checkCompletionAndToggleButton();
-              } catch (error) {
-                console.error("Error marking topics complete:", error);
-                alert("Error marking topics complete. Please try again.");
+              // Pyodide functionality for code execution
+              let pyodide = null;
+              let pyodideLoading = false;
+
+              async function initPyodide() {
+                if (pyodide) return pyodide;
+                if (pyodideLoading) {
+                  // Wait for existing initialization to complete
+                  while (pyodideLoading) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                  }
+                  return pyodide;
+                }
+
+                pyodideLoading = true;
+                try {
+                  pyodide = await loadPyodide({
+                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
+                  });
+                  console.log("Pyodide loaded successfully");
+                  return pyodide;
+                } catch (error) {
+                  console.error("Failed to load Pyodide:", error);
+                  throw error;
+                } finally {
+                  pyodideLoading = false;
+                }
+              }
+
+              async function runPythonCode(blockId) {
+                const codeElement = document.getElementById(`code-editor-${blockId}`);
+                const outputElement = document.getElementById(`code-output-${blockId}`);
+                const runButton = document.querySelector(`#code-runner-${blockId} .run-code-btn`);
+
+                if (!codeElement || !outputElement) return;
+
+                const code = codeElement.value;
+                if (!code.trim()) {
+                  outputElement.textContent = "Please enter some Python code to run.";
+                  return;
+                }
+
+                // Update button state
+                runButton.disabled = true;
+                runButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+                outputElement.textContent = "Initializing Python environment...";
+
+                try {
+                  // Initialize Pyodide if not already done
+                  const py = await initPyodide();
+
+                  // Capture stdout
+                  py.runPython(`
+      import sys
+      from io import StringIO
+      sys.stdout = StringIO()
+      `);
+
+                  // Run the user's code
+                  try {
+                    py.runPython(code);
+
+                    // Get the output
+                    const output = py.runPython("sys.stdout.getvalue()");
+                    outputElement.textContent = output || "Code executed successfully (no output)";
+                    outputElement.className = "output-content success";
+                  } catch (pythonError) {
+                    outputElement.textContent = `Error: ${pythonError.message}`;
+                    outputElement.className = "output-content error";
+                  }
+
+                } catch (error) {
+                  outputElement.textContent = `Failed to run code: ${error.message}`;
+                  outputElement.className = "output-content error";
+                } finally {
+                  // Reset button state
+                  runButton.disabled = false;
+                  runButton.innerHTML = '<i class="fas fa-play"></i> Run Code';
+                }
+              }
+
+              function clearOutput(blockId) {
+                const outputElement = document.getElementById(`code-output-${blockId}`);
+                if (outputElement) {
+                  outputElement.textContent = "";
+                  outputElement.className = "output-content";
+                }
+              }
+
+              function showSolution(blockId) {
+                const solutionElement = document.getElementById(`solution-${blockId}`);
+                const button = document.querySelector(`#code-runner-${blockId} .show-solution-btn`);
+
+                if (solutionElement && button) {
+                  if (solutionElement.style.display === 'none') {
+                    solutionElement.style.display = 'block';
+                    button.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Solution';
+                  } else {
+                    solutionElement.style.display = 'none';
+                    button.innerHTML = '<i class="fas fa-lightbulb"></i> Show Solution';
+                  }
+                }
+              }
+
+              function showHints(blockId) {
+                const hintsElement = document.getElementById(`hints-${blockId}`);
+                const button = document.querySelector(`#code-runner-${blockId} .show-hints-btn`);
+
+                if (hintsElement && button) {
+                  if (hintsElement.style.display === 'none') {
+                    hintsElement.style.display = 'block';
+                    button.innerHTML = '<i class="fas fa-question-circle"></i> Hide Hints';
+                  } else {
+                    hintsElement.style.display = 'none';
+                    button.innerHTML = '<i class="fas fa-question-circle"></i> Show Hints';
+                  }
+                }
+              }
+
+              // Add tab support to all textareas (especially for code editing)
+              document.addEventListener('keydown', function(e) {
+                  // Handle Tab key in textareas
+                  if (e.target.tagName === 'TEXTAREA' && e.key === 'Tab') {
+                      e.preventDefault();
+
+                      const textarea = e.target;
+                      const start = textarea.selectionStart;
+                      const end = textarea.selectionEnd;
+
+                      // Insert 4 spaces (or a tab character) at cursor position
+                      const tab = '    '; // 4 spaces for Python indentation
+                      textarea.value = textarea.value.substring(0, start) + tab + textarea.value.substring(end);
+
+                      // Move cursor after the inserted tab
+                      textarea.selectionStart = textarea.selectionEnd = start + tab.length;
+                  }
+              });
+            });
+
+            // Modal functions for expanding code runners
+            function expandCodeRunner(blockId) {
+              const originalContainer = document.getElementById(`code-runner-${blockId}`);
+              if (!originalContainer) return;
+
+              // Create modal if it doesn't exist
+              let modal = document.getElementById('code-runner-modal');
+              if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'code-runner-modal';
+                modal.className = 'code-runner-modal';
+                modal.innerHTML = `
+                  <div class="code-runner-modal-content">
+                    <div class="code-runner-modal-header">
+                      <h3><i class="fas fa-expand"></i> Expanded Code Editor</h3>
+                      <button class="code-runner-modal-close" onclick="closeCodeRunnerModal()">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                    <div class="code-runner-modal-body" id="modal-code-content">
+                      <!-- Code runner content will be inserted here -->
+                    </div>
+                  </div>
+                `;
+                document.body.appendChild(modal);
+
+                // Close modal when clicking outside
+                modal.addEventListener('click', function(e) {
+                  if (e.target === modal) {
+                    closeCodeRunnerModal();
+                  }
+                });
+
+                // Close modal with Escape key
+                document.addEventListener('keydown', function(e) {
+                  if (e.key === 'Escape' && modal.classList.contains('active')) {
+                    closeCodeRunnerModal();
+                  }
+                });
+              }
+
+              // Clone and modify the code runner content
+              const originalContent = originalContainer.querySelector('.code-runner-content');
+              const modalBody = modal.querySelector('#modal-code-content');
+              modalBody.innerHTML = originalContent.innerHTML;
+
+              // Update IDs and event handlers for modal version
+              const modalTextarea = modalBody.querySelector(`#code-editor-${blockId}`);
+              const modalButtons = modalBody.querySelectorAll('button');
+
+              if (modalTextarea) {
+                modalTextarea.id = `code-editor-${blockId}-modal`;
+              }
+
+              modalButtons.forEach(button => {
+                const onclick = button.getAttribute('onclick');
+                if (onclick) {
+                  // Update function calls to use modal versions
+                  const newOnclick = onclick
+                    .replace(`runPythonCode('${blockId}')`, `runPythonCodeModal('${blockId}')`)
+                    .replace(`clearOutput('${blockId}')`, `clearOutputModal('${blockId}')`)
+                    .replace(`showSolution('${blockId}')`, `showSolutionModal('${blockId}')`)
+                    .replace(`showHints('${blockId}')`, `showHintsModal('${blockId}')`);
+                  button.setAttribute('onclick', newOnclick);
+                }
+              });
+
+              // Update output element ID
+              const modalOutput = modalBody.querySelector(`#code-output-${blockId}`);
+              if (modalOutput) {
+                modalOutput.id = `code-output-${blockId}-modal`;
+              }
+
+              // Update hints and solution IDs
+              const modalHints = modalBody.querySelector(`#hints-${blockId}`);
+              if (modalHints) {
+                modalHints.id = `hints-${blockId}-modal`;
+              }
+
+              const modalSolution = modalBody.querySelector(`#solution-${blockId}`);
+              if (modalSolution) {
+                modalSolution.id = `solution-${blockId}-modal`;
+              }
+
+              // Sync content
+              syncToModal(blockId);
+
+              // Show modal
+              modal.classList.add('active');
+
+              // Focus on textarea
+              setTimeout(() => {
+                const modalTextareaFinal = modal.querySelector(`#code-editor-${blockId}-modal`);
+                if (modalTextareaFinal) {
+                  modalTextareaFinal.focus();
+                }
+              }, 100);
+            }
+
+            function closeCodeRunnerModal() {
+              const modal = document.getElementById('code-runner-modal');
+              if (!modal) return;
+
+              // Sync content back before closing
+              syncFromModal();
+
+              modal.classList.remove('active');
+            }
+
+            function syncToModal(blockId) {
+              const original = document.getElementById(`code-editor-${blockId}`);
+              const modal = document.getElementById(`code-editor-${blockId}-modal`);
+
+              if (original && modal) {
+                modal.value = original.value;
               }
             }
-          });
-        }
 
-        /**
-         * Renders lesson content in the main content area.
-         */
-        function renderLesson(topic) {
-          const lesson = resolveLesson(topic);
+            function syncFromModal() {
+              const modal = document.getElementById('code-runner-modal');
+              if (!modal) return;
 
-          if (!lesson) {
-            contentDisplayArea.innerHTML = `<h2>Content Not Found</h2><p>Sorry, we couldn't find a lesson for "${topic}".</p>`;
-            return;
-          }
+              const modalTextarea = modal.querySelector('textarea[id$="-modal"]');
+              if (!modalTextarea) return;
 
-          // Hide the welcome message and show lesson content
-          welcomeMessageContainer.classList.add("hidden");
+              const blockId = modalTextarea.id.replace('code-editor-', '').replace('-modal', '');
+              const original = document.getElementById(`code-editor-${blockId}`);
 
-          let contentHtml = `<h2>${lesson.title}</h2>`;
-          (lesson.content || []).forEach((item) => {
-            if (item.type === "header") {
-              contentHtml += `<h5>${item.text}</h5>`;
-            } else if (item.type === "paragraph") {
-              contentHtml += `<p>${item.text}</p>`;
-            } else if (item.type === "list") {
-              contentHtml += "<ul>";
-              (item.items || []).forEach((li_text) => {
-                contentHtml += `<li>${li_text}</li>`;
-              });
-              contentHtml += "</ul>";
-            } else if (item.type === "code") {
-              const escapedCode = (item.text || "")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;");
-              contentHtml += `<pre><code>${escapedCode}</code></pre>`;
-            } else if (item.type === "code_runner") {
-              const blockId = Math.random().toString(36).substr(2, 9);
-              contentHtml += `
-                <div class="code-runner-block" id="code-runner-${blockId}">
-                  <div class="code-runner-header">
-                    <h4><i class="fas fa-play-circle"></i> Interactive Python Code</h4>
-                  </div>
-                  <div class="code-runner-content">
-                    <div class="code-editor">
-                      <textarea id="code-editor-${blockId}" class="python-editor" placeholder="Write your Python code here...">${item.starter_code || '# Write your Python code here\nprint("Hello, World!")'}</textarea>
-                    </div>
-                    <div class="code-controls">
-                      <button class="run-code-btn" onclick="runPythonCode('${blockId}')">
-                        <i class="fas fa-play"></i> Run Code
-                      </button>
-                      <button class="clear-output-btn" onclick="clearOutput('${blockId}')">
-                        <i class="fas fa-trash"></i> Clear Output
-                      </button>
-                      ${item.solution ? `<button class="show-solution-btn" onclick="showSolution('${blockId}')"><i class="fas fa-lightbulb"></i> Show Solution</button>` : ''}
-                      ${item.hints && item.hints.length > 0 ? `<button class="show-hints-btn" onclick="showHints('${blockId}')"><i class="fas fa-question-circle"></i> Show Hints</button>` : ''}
-                    </div>
-                    <div class="code-output">
-                      <div class="output-header">Output:</div>
-                      <pre id="code-output-${blockId}" class="output-content"></pre>
-                    </div>
-                    ${item.expected_output ? `<div class="expected-output"><strong>Expected Output:</strong><pre>${item.expected_output}</pre></div>` : ''}
-                    ${item.hints && item.hints.length > 0 ? `<div class="hints-content" id="hints-${blockId}" style="display: none;"><strong>Hints:</strong><ul>${item.hints.map(hint => `<li>${hint}</li>`).join('')}</ul></div>` : ''}
-                    ${item.solution ? `<div class="solution-content" id="solution-${blockId}" style="display: none;"><strong>Solution:</strong><pre><code>${item.solution}</code></pre></div>` : ''}
-                  </div>
-                </div>
-              `;
-            } else if (item.type === "summary") {
-              contentHtml += `<p><strong>${item.text}</strong></p>`;
+              if (original && modalTextarea) {
+                original.value = modalTextarea.value;
+              }
             }
-          });
 
-          contentDisplayArea.innerHTML = contentHtml;
-        }
+            // Modal versions of the code runner functions
+            window.runPythonCodeModal = async function(blockId) {
+              const codeElement = document.getElementById(`code-editor-${blockId}-modal`);
+              const outputElement = document.getElementById(`code-output-${blockId}-modal`);
+              const runButton = document.querySelector(`#modal-code-content .run-code-btn`);
 
-        /**
-         * Renders the YouTube video player in the main content area.
-         */
-        function renderVideo(topic, completionKey) {
-          const completionKeyToUse = completionKey || topic;
+              if (!codeElement || !outputElement) return;
 
-          // Hide welcome message
-          welcomeMessageContainer.classList.add("hidden");
+              const code = codeElement.value;
+              if (!code.trim()) {
+                outputElement.textContent = "Please enter some Python code to run.";
+                return;
+              }
 
-          // Map the topic to an actual video key
-          const videoKey = getVideoKeyForTopic(completionKeyToUse);
-          const fallbackVideoKey = getVideoKeyForTopic(topic);
+              runButton.disabled = true;
+              runButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+              outputElement.textContent = "Initializing Python environment...";
 
-          // Find video data using mapped keys
-          let videoData =
-            VIDEO_DATA[videoKey] ||
-            VIDEO_DATA[fallbackVideoKey] ||
-            VIDEO_DATA[completionKeyToUse] ||
-            VIDEO_DATA[topic];
+              try {
+                const py = await initPyodide();
+                py.runPython(\`
+      import sys
+      from io import StringIO
+      sys.stdout = StringIO()
+      \`);
 
-          // If still no video found, try to find any functions video as a default for function-related topics
-          if (
-            !videoData &&
-            (completionKeyToUse.includes("function") ||
-              topic.includes("function") ||
-              completionKeyToUse.includes("parameter") ||
-              completionKeyToUse.includes("argument"))
-          ) {
-            videoData = VIDEO_DATA["functions"];
-          }
-
-          if (!videoData) {
-            contentDisplayArea.innerHTML = `
-              <h2>Video Not Available</h2>
-              <p>Sorry, we couldn't find a specific video for "${completionKeyToUse}".</p>
-              <p>Available video topics: ${Object.keys(VIDEO_DATA).join(
-                ", "
-              )}</p>
-              <p>Please try selecting a related topic from the list above or contact support.</p>
-            `;
-            return;
-          }
-
-          // Clean up previous player
-          if (currentPlayer) {
-            currentPlayer.destroy();
-            currentPlayer = null;
-          }
-
-          // Track completion
-          currentVideoTopic = completionKeyToUse;
-
-          // Extract video ID
-          const videoId = extractVideoIdFromUrl(videoData.url);
-          if (!videoId) {
-            contentDisplayArea.innerHTML = `<h2>Invalid Video</h2><p>The video data is not valid.</p>`;
-            return;
-          }
-
-          // Create simple video player
-          contentDisplayArea.innerHTML = `
-            <div id="video-player-container">
-              <div class="video-header">
-                <h2>${videoData.title || completionKeyToUse}</h2>
-                ${
-                  videoKey !== completionKeyToUse
-                    ? `<p><em>Note: Showing "${videoData.title}" which covers topics related to "${completionKeyToUse}"</em></p>`
-                    : ""
+                try {
+                  py.runPython(code);
+                  const output = py.runPython("sys.stdout.getvalue()");
+                  outputElement.textContent = output || "Code executed successfully (no output)";
+                  outputElement.className = "output-content success";
+                } catch (pythonError) {
+                  outputElement.textContent = \`Error: \${pythonError.message}\`;
+                  outputElement.className = "output-content error";
                 }
-              </div>
-              <div class="video-wrapper">
-                <div id="youtube-player"></div>
-              </div>
-            </div>
-          `;
+              } catch (error) {
+                outputElement.textContent = \`Failed to run code: \${error.message}\`;
+                outputElement.className = "output-content error";
+              } finally {
+                runButton.disabled = false;
+                runButton.innerHTML = '<i class="fas fa-play"></i> Run Code';
+              }
+            };
 
-          // Create YouTube player
-          if (window.YT && window.YT.Player) {
-            currentPlayer = new YT.Player("youtube-player", {
-              height: "315",
-              width: "560",
-              videoId: videoId,
-              playerVars: {
-                autoplay: 0,
-                rel: 0,
-                modestbranding: 1,
-                controls: 1,
-              },
-              events: {
-                onStateChange: onPlayerStateChange,
-              },
-            });
-          }
-        }
+            window.clearOutputModal = function(blockId) {
+              const outputElement = document.getElementById(`code-output-${blockId}-modal`);
+              if (outputElement) {
+                outputElement.textContent = "";
+                outputElement.className = "output-content";
+              }
+            };
 
-        /**
-         * Handles video player state changes to detect when a video is finished.
-         */
-        function onPlayerStateChange(event) {
-          // Mark as complete when video ends
-          if (event.data === YT.PlayerState.ENDED && currentVideoTopic) {
-            updateCompletionState(currentVideoTopic, "watched");
-          }
-        }
+            window.showSolutionModal = function(blockId) {
+              const solutionElement = document.getElementById(`solution-${blockId}-modal`);
+              const button = document.querySelector(`#modal-code-content .show-solution-btn`);
 
-        /**
-         * Updates the completion state and the UI for the corresponding item.
-         */
-        /**
-         * Updates the completion state and the UI for the corresponding item.
-         */
-        function updateCompletionState(topic, action) {
-          if (!completionState[topic]) {
-            completionState[topic] = { read: false, watched: false };
-          }
+              if (solutionElement && button) {
+                if (solutionElement.style.display === "none") {
+                  solutionElement.style.display = "block";
+                  button.innerHTML = '<i class="fas fa-lightbulb"></i> Hide Solution';
+                } else {
+                  solutionElement.style.display = "none";
+                  button.innerHTML = '<i class="fas fa-lightbulb"></i> Show Solution';
+                }
+              }
+            };
 
-          if (completionState[topic][action]) {
-            return; // Already completed
-          }
+            window.showHintsModal = function(blockId) {
+              const hintsElement = document.getElementById(`hints-${blockId}-modal`);
+              const button = document.querySelector(`#modal-code-content .show-hints-btn`);
 
-          completionState[topic][action] = true;
-
-          // Update UI
-          const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
-          const elementAction = action === "watched" ? "watch" : action;
-          const elementId = `${elementAction}-${safeTopicId}`;
-          const elementToMark = document.getElementById(elementId);
-
-          if (elementToMark) {
-            elementToMark.classList.add("completed");
-          }
-
-          checkCompletionAndToggleButton();
-        }
-
-        /**
-         * Checks the overall completion state and enables/disables the continue button.
-         */
-        function checkCompletionAndToggleButton() {
-          // If no topics to complete (empty state), enable the button
-          if (Object.keys(completionState).length === 0) {
-            continueButton.disabled = false;
-            return;
-          }
-
-          let allCompleted = true;
-
-          for (const topic in completionState) {
-            if (
-              !completionState[topic].read ||
-              !completionState[topic].watched
-            ) {
-              allCompleted = false;
-              break;
-            }
-          }
-
-          continueButton.disabled = !allCompleted;
-        }
-
-        // Pyodide functionality for code execution
-        let pyodide = null;
-        let pyodideLoading = false;
-
-        async function initPyodide() {
-          if (pyodide) return pyodide;
-          if (pyodideLoading) {
-            // Wait for existing initialization to complete
-            while (pyodideLoading) {
-              await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            return pyodide;
-          }
-
-          pyodideLoading = true;
-          try {
-            pyodide = await loadPyodide({
-              indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
-            });
-            console.log("Pyodide loaded successfully");
-            return pyodide;
-          } catch (error) {
-            console.error("Failed to load Pyodide:", error);
-            throw error;
-          } finally {
-            pyodideLoading = false;
-          }
-        }
-
-        async function runPythonCode(blockId) {
-          const codeElement = document.getElementById(`code-editor-${blockId}`);
-          const outputElement = document.getElementById(`code-output-${blockId}`);
-          const runButton = document.querySelector(`#code-runner-${blockId} .run-code-btn`);
-          
-          if (!codeElement || !outputElement) return;
-
-          const code = codeElement.value;
-          if (!code.trim()) {
-            outputElement.textContent = "Please enter some Python code to run.";
-            return;
-          }
-
-          // Update button state
-          runButton.disabled = true;
-          runButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
-          outputElement.textContent = "Initializing Python environment...";
-
-          try {
-            // Initialize Pyodide if not already done
-            const py = await initPyodide();
-            
-            // Capture stdout
-            py.runPython(`
-import sys
-from io import StringIO
-sys.stdout = StringIO()
-`);
-
-            // Run the user's code
-            try {
-              py.runPython(code);
-              
-              // Get the output
-              const output = py.runPython("sys.stdout.getvalue()");
-              outputElement.textContent = output || "Code executed successfully (no output)";
-              outputElement.className = "output-content success";
-            } catch (pythonError) {
-              outputElement.textContent = `Error: ${pythonError.message}`;
-              outputElement.className = "output-content error";
-            }
-
-          } catch (error) {
-            outputElement.textContent = `Failed to run code: ${error.message}`;
-            outputElement.className = "output-content error";
-          } finally {
-            // Reset button state
-            runButton.disabled = false;
-            runButton.innerHTML = '<i class="fas fa-play"></i> Run Code';
-          }
-        }
-
-        function clearOutput(blockId) {
-          const outputElement = document.getElementById(`code-output-${blockId}`);
-          if (outputElement) {
-            outputElement.textContent = "";
-            outputElement.className = "output-content";
-          }
-        }
-
-        function showSolution(blockId) {
-          const solutionElement = document.getElementById(`solution-${blockId}`);
-          const button = document.querySelector(`#code-runner-${blockId} .show-solution-btn`);
-          
-          if (solutionElement && button) {
-            if (solutionElement.style.display === 'none') {
-              solutionElement.style.display = 'block';
-              button.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Solution';
-            } else {
-              solutionElement.style.display = 'none';
-              button.innerHTML = '<i class="fas fa-lightbulb"></i> Show Solution';
-            }
-          }
-        }
-
-        function showHints(blockId) {
-          const hintsElement = document.getElementById(`hints-${blockId}`);
-          const button = document.querySelector(`#code-runner-${blockId} .show-hints-btn`);
-          
-          if (hintsElement && button) {
-            if (hintsElement.style.display === 'none') {
-              hintsElement.style.display = 'block';
-              button.innerHTML = '<i class="fas fa-question-circle"></i> Hide Hints';
-            } else {
-              hintsElement.style.display = 'none';
-              button.innerHTML = '<i class="fas fa-question-circle"></i> Show Hints';
-            }
-          }
-        }
-
-        // Add tab support to all textareas (especially for code editing)
-        document.addEventListener('keydown', function(e) {
-            // Handle Tab key in textareas
-            if (e.target.tagName === 'TEXTAREA' && e.key === 'Tab') {
-                e.preventDefault();
-                
-                const textarea = e.target;
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                
-                // Insert 4 spaces (or a tab character) at cursor position
-                const tab = '    '; // 4 spaces for Python indentation
-                textarea.value = textarea.value.substring(0, start) + tab + textarea.value.substring(end);
-                
-                // Move cursor after the inserted tab
-                textarea.selectionStart = textarea.selectionEnd = start + tab.length;
-            }
-        });
-      });
+              if (hintsElement && button) {
+                if (hintsElement.style.display === "none") {
+                  hintsElement.style.display = "block";
+                  button.innerHTML = '<i class="fas fa-question-circle"></i> Hide Hints';
+                } else {
+                  hintsElement.style.display = "none";
+                  button.innerHTML = '<i class="fas fa-question-circle"></i> Show Hints';
+                }
+              }
+            };
     </script>
   </body>
 </html>
