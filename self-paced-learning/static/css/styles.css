@@ -1267,7 +1267,7 @@ body.quiz-page {
 .python-editor {
   width: 100%;
   min-height: 120px;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
   font-size: 14px;
   border: 1px solid #ced4da;
   border-radius: 4px;
@@ -1290,7 +1290,10 @@ body.quiz-page {
   flex-wrap: wrap;
 }
 
-.run-code-btn, .clear-output-btn, .show-solution-btn, .show-hints-btn {
+.run-code-btn,
+.clear-output-btn,
+.show-solution-btn,
+.show-hints-btn {
   background: #667eea;
   color: white;
   border: none;
@@ -1356,7 +1359,7 @@ body.quiz-page {
   padding: 12px;
   background: #343a40 !important;
   color: #f8f9fa !important;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
   font-size: 14px;
   min-height: 60px;
   margin: 0;
@@ -1374,19 +1377,22 @@ body.quiz-page {
   color: #ff6b6b !important;
 }
 
-.expected-output, .hints-content, .solution-content {
+.expected-output,
+.hints-content,
+.solution-content {
   background: #e9ecef;
   border-radius: 4px;
   padding: 12px;
   margin-top: 12px;
 }
 
-.expected-output pre, .solution-content pre {
+.expected-output pre,
+.solution-content pre {
   background: #f8f9fa;
   padding: 8px;
   border-radius: 4px;
   margin: 8px 0 0 0;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
   font-size: 14px;
 }
 
@@ -1404,12 +1410,15 @@ body.quiz-page {
   .code-controls {
     flex-direction: column;
   }
-  
-  .run-code-btn, .clear-output-btn, .show-solution-btn, .show-hints-btn {
+
+  .run-code-btn,
+  .clear-output-btn,
+  .show-solution-btn,
+  .show-hints-btn {
     width: 100%;
     justify-content: center;
   }
-  
+
   .python-editor {
     font-size: 13px;
   }
