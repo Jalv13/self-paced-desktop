@@ -2194,155 +2194,175 @@
 
       // Code Runner Modal Functions
       function expandCodeRunner(blockId) {
-        console.log('Expanding code runner:', blockId);
-        
+        console.log("Expanding code runner:", blockId);
+
         // Toggle button icon immediately
-        const expandBtn = document.querySelector(`#code-runner-${blockId} .expand-code-btn i`);
+        const expandBtn = document.querySelector(
+          `#code-runner-${blockId} .expand-code-btn i`
+        );
         if (expandBtn) {
-          expandBtn.className = expandBtn.className.includes('fa-expand') ? 'fas fa-compress' : 'fas fa-expand';
+          expandBtn.className = expandBtn.className.includes("fa-expand")
+            ? "fas fa-compress"
+            : "fas fa-expand";
         }
-        
+
         // Check if modal already exists (collapse case)
-        const existingModal = document.getElementById(`code-runner-modal-${blockId}`);
+        const existingModal = document.getElementById(
+          `code-runner-modal-${blockId}`
+        );
         if (existingModal) {
           closeCodeRunnerModal(blockId);
           return;
         }
-        
+
         openCodeRunnerModal(blockId);
       }
-      
+
       function openCodeRunnerModal(blockId) {
         const originalBlock = document.getElementById(`code-runner-${blockId}`);
-        const codeRunnerContent = originalBlock.querySelector('.code-runner-content');
-        
+        const codeRunnerContent = originalBlock.querySelector(
+          ".code-runner-content"
+        );
+
         if (!codeRunnerContent) {
-          console.error('Code runner content not found for block:', blockId);
+          console.error("Code runner content not found for block:", blockId);
           return;
         }
-        
+
         // Create modal
-        const modal = document.createElement('div');
+        const modal = document.createElement("div");
         modal.id = `code-runner-modal-${blockId}`;
-        modal.className = 'code-runner-modal';
+        modal.className = "code-runner-modal";
         modal.style.cssText = `
           position: fixed; top: 0; left: 0; width: 100%; height: 100%;
           background: rgba(0,0,0,0.8); z-index: 1000; display: flex;
           align-items: center; justify-content: center;
         `;
-        
+
         // Create modal content container
-        const modalContent = document.createElement('div');
+        const modalContent = document.createElement("div");
         modalContent.style.cssText = `
           background: white; border-radius: 12px; max-width: 90vw; max-height: 80vh;
           width: 100%; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         `;
-        
+
         // Create header with title and close button
-        const header = document.createElement('div');
+        const header = document.createElement("div");
         header.style.cssText = `
           padding: 20px 30px; border-bottom: 1px solid #eee; display: flex;
           align-items: center; justify-content: space-between; background: #f8f9fa;
           border-radius: 12px 12px 0 0;
         `;
-        
-        const title = document.createElement('h3');
-        title.textContent = 'Python Code Runner';
-        title.style.cssText = 'margin: 0; color: #333;';
-        
-        const closeBtn = document.createElement('button');
-        closeBtn.innerHTML = '×';
+
+        const title = document.createElement("h3");
+        title.textContent = "Python Code Runner";
+        title.style.cssText = "margin: 0; color: #333;";
+
+        const closeBtn = document.createElement("button");
+        closeBtn.innerHTML = "×";
         closeBtn.style.cssText = `
           background: none; border: none; font-size: 24px; cursor: pointer;
           color: #666; padding: 5px; line-height: 1;
         `;
         closeBtn.onclick = () => closeCodeRunnerModal(blockId);
-        
-        const collapseBtn = document.createElement('button');
+
+        const collapseBtn = document.createElement("button");
         collapseBtn.innerHTML = '<i class="fas fa-compress"></i> Collapse';
         collapseBtn.style.cssText = `
           background: #6c757d; color: white; border: none; padding: 8px 15px;
           border-radius: 6px; cursor: pointer; margin-right: 10px;
         `;
         collapseBtn.onclick = () => closeCodeRunnerModal(blockId);
-        
+
         header.appendChild(title);
-        const buttonGroup = document.createElement('div');
+        const buttonGroup = document.createElement("div");
         buttonGroup.appendChild(collapseBtn);
         buttonGroup.appendChild(closeBtn);
         header.appendChild(buttonGroup);
-        
+
         // Create body container
-        const bodyContainer = document.createElement('div');
-        bodyContainer.style.cssText = 'padding: 30px;';
-        
+        const bodyContainer = document.createElement("div");
+        bodyContainer.style.cssText = "padding: 30px;";
+
         // Create placeholder in original location
-        const placeholder = document.createElement('div');
+        const placeholder = document.createElement("div");
         placeholder.id = `code-runner-placeholder-${blockId}`;
-        placeholder.style.cssText = 'display: none;';
-        
+        placeholder.style.cssText = "display: none;";
+
         // MOVE content to modal (preserves all data and event handlers)
         originalBlock.insertBefore(placeholder, codeRunnerContent);
         bodyContainer.appendChild(codeRunnerContent);
-        
+
         // Assemble modal
         modalContent.appendChild(header);
         modalContent.appendChild(bodyContainer);
         modal.appendChild(modalContent);
         document.body.appendChild(modal);
-        
-        console.log('Modal created and content moved');
+
+        console.log("Modal created and content moved");
       }
-      
+
       function closeCodeRunnerModal(blockId) {
-        console.log('Closing modal for block:', blockId);
-        
+        console.log("Closing modal for block:", blockId);
+
         const modal = document.getElementById(`code-runner-modal-${blockId}`);
         const originalBlock = document.getElementById(`code-runner-${blockId}`);
-        const placeholder = document.getElementById(`code-runner-placeholder-${blockId}`);
-        
+        const placeholder = document.getElementById(
+          `code-runner-placeholder-${blockId}`
+        );
+
         if (modal && originalBlock && placeholder) {
           // Find the content in the modal (it's nested in bodyContainer)
-          const bodyContainer = modal.querySelector('div[style*="padding: 30px"]');
-          const codeRunnerContent = bodyContainer.querySelector('.code-runner-content');
-          
+          const bodyContainer = modal.querySelector(
+            'div[style*="padding: 30px"]'
+          );
+          const codeRunnerContent = bodyContainer.querySelector(
+            ".code-runner-content"
+          );
+
           if (codeRunnerContent) {
             // MOVE content back to original location
             originalBlock.insertBefore(codeRunnerContent, placeholder);
             placeholder.remove();
             modal.remove();
-            
+
             // Reset expand button icon
-            const expandBtn = originalBlock.querySelector('.expand-code-btn i');
+            const expandBtn = originalBlock.querySelector(".expand-code-btn i");
             if (expandBtn) {
-              expandBtn.className = 'fas fa-expand';
+              expandBtn.className = "fas fa-expand";
             }
-            
-            console.log('Modal closed and content restored');
+
+            console.log("Modal closed and content restored");
           } else {
-            console.error('Could not find code runner content in modal');
+            console.error("Could not find code runner content in modal");
           }
         } else {
-          console.error('Missing elements for closing modal:', { modal: !!modal, originalBlock: !!originalBlock, placeholder: !!placeholder });
+          console.error("Missing elements for closing modal:", {
+            modal: !!modal,
+            originalBlock: !!originalBlock,
+            placeholder: !!placeholder,
+          });
         }
       }
-      
+
       // Event listeners for modal closing
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
           // Find any open code runner modal and close it
-          const openModal = document.querySelector('[id^="code-runner-modal-"]');
+          const openModal = document.querySelector(
+            '[id^="code-runner-modal-"]'
+          );
           if (openModal) {
-            const blockId = openModal.id.replace('code-runner-modal-', '');
+            const blockId = openModal.id.replace("code-runner-modal-", "");
             closeCodeRunnerModal(blockId);
           }
         }
       });
-      
-      document.addEventListener('click', function(e) {
+
+      document.addEventListener("click", function (e) {
         // Close modal when clicking outside (but not on modal content)
-        if (e.target.classList.contains('code-runner-modal')) {
-          const blockId = e.target.id.replace('code-runner-modal-', '');
+        if (e.target.classList.contains("code-runner-modal")) {
+          const blockId = e.target.id.replace("code-runner-modal-", "");
           closeCodeRunnerModal(blockId);
         }
       });
@@ -2552,7 +2572,9 @@
       async function runPythonCode(blockId) {
         const codeElement = document.getElementById(`code-editor-${blockId}`);
         const outputElement = document.getElementById(`code-output-${blockId}`);
-        const runButton = document.querySelector(`#code-runner-${blockId} .run-code-btn, #code-runner-modal-${blockId} .run-code-btn`);
+        const runButton = document.querySelector(
+          `#code-runner-${blockId} .run-code-btn, #code-runner-modal-${blockId} .run-code-btn`
+        );
 
         if (!codeElement || !outputElement) return;
 
@@ -2612,7 +2634,9 @@ sys.stdout = StringIO()
 
       function showSolution(blockId) {
         const solutionElement = document.getElementById(`solution-${blockId}`);
-        const button = document.querySelector(`#code-runner-${blockId} .show-solution-btn, #code-runner-modal-${blockId} .show-solution-btn`);
+        const button = document.querySelector(
+          `#code-runner-${blockId} .show-solution-btn, #code-runner-modal-${blockId} .show-solution-btn`
+        );
 
         if (solutionElement && button) {
           if (solutionElement.style.display === "none") {
@@ -2627,7 +2651,9 @@ sys.stdout = StringIO()
 
       function showHints(blockId) {
         const hintsElement = document.getElementById(`hints-${blockId}`);
-        const button = document.querySelector(`#code-runner-${blockId} .show-hints-btn, #code-runner-modal-${blockId} .show-hints-btn`);
+        const button = document.querySelector(
+          `#code-runner-${blockId} .show-hints-btn, #code-runner-modal-${blockId} .show-hints-btn`
+        );
 
         if (hintsElement && button) {
           if (hintsElement.style.display === "none") {
@@ -2668,31 +2694,33 @@ sys.stdout = StringIO()
       function expandCodeRunner(blockId) {
         const originalBlock = document.getElementById(`code-runner-${blockId}`);
         if (!originalBlock) return;
-        
-        const expandBtn = originalBlock.querySelector('.expand-code-btn');
-        const icon = expandBtn.querySelector('i');
-        
+
+        const expandBtn = originalBlock.querySelector(".expand-code-btn");
+        const icon = expandBtn.querySelector("i");
+
         // Simple toggle based on current button state
-        if (icon.classList.contains('fa-expand')) {
+        if (icon.classList.contains("fa-expand")) {
           // Currently "Expand" - change to "Collapse" and open modal
-          icon.className = 'fas fa-compress';
+          icon.className = "fas fa-compress";
           expandBtn.innerHTML = '<i class="fas fa-compress"></i> Collapse';
           openCodeRunnerModal(blockId);
         } else {
           // Currently "Collapse" - change to "Expand" and close modal
-          icon.className = 'fas fa-expand';
+          icon.className = "fas fa-expand";
           expandBtn.innerHTML = '<i class="fas fa-expand"></i> Expand';
           closeCodeRunnerModal(blockId);
         }
       }
-      
+
       function openCodeRunnerModal(blockId) {
         const originalBlock = document.getElementById(`code-runner-${blockId}`);
-        const codeRunnerContent = originalBlock.querySelector('.code-runner-content');
-        
+        const codeRunnerContent = originalBlock.querySelector(
+          ".code-runner-content"
+        );
+
         // Create modal overlay
-        const modal = document.createElement('div');
-        modal.className = 'code-runner-modal active';
+        const modal = document.createElement("div");
+        modal.className = "code-runner-modal active";
         modal.id = `code-runner-modal-${blockId}`;
         modal.style.cssText = `
           position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -2701,14 +2729,14 @@ sys.stdout = StringIO()
         `;
 
         // Create modal content shell
-        const modalContentShell = document.createElement('div');
+        const modalContentShell = document.createElement("div");
         modalContentShell.style.cssText = `
           background: white; border-radius: 12px; max-width: 90%; max-height: 90%;
           width: 1000px; overflow-y: auto; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         `;
-        
+
         // Create header
-        const header = document.createElement('div');
+        const header = document.createElement("div");
         header.style.cssText = `
           padding: 20px; border-bottom: 1px solid #eee; display: flex;
           align-items: center; justify-content: space-between; background: #f8f9fa;
@@ -2721,44 +2749,45 @@ sys.stdout = StringIO()
             color: #666; padding: 5px; line-height: 1;
           "><i class="fas fa-times"></i></button>
         `;
-        
+
         // Create body container
-        const bodyContainer = document.createElement('div');
-        bodyContainer.style.cssText = 'padding: 30px;';
-        
+        const bodyContainer = document.createElement("div");
+        bodyContainer.style.cssText = "padding: 30px;";
+
         // Create placeholder in original location
-        const placeholder = document.createElement('div');
+        const placeholder = document.createElement("div");
         placeholder.id = `code-runner-placeholder-${blockId}`;
         placeholder.style.cssText = `
           padding: 40px; text-align: center; background: #f8f9fa;
           border: 2px dashed #ddd; border-radius: 8px; color: #666;
         `;
-        placeholder.innerHTML = '<i class="fas fa-external-link-alt"></i> Code runner is expanded in modal';
-        
+        placeholder.innerHTML =
+          '<i class="fas fa-external-link-alt"></i> Code runner is expanded in modal';
+
         // MOVE (not clone) the content to modal
         originalBlock.insertBefore(placeholder, codeRunnerContent);
         bodyContainer.appendChild(codeRunnerContent);
-        
+
         modalContentShell.appendChild(header);
         modalContentShell.appendChild(bodyContainer);
         modal.appendChild(modalContentShell);
         document.body.appendChild(modal);
 
         // Click outside to close
-        modal.addEventListener('click', function(e) {
+        modal.addEventListener("click", function (e) {
           if (e.target === modal) {
             expandCodeRunner(blockId);
           }
         });
-        
+
         // ESC to close
-        const escapeHandler = function(e) {
-          if (e.key === 'Escape') {
+        const escapeHandler = function (e) {
+          if (e.key === "Escape") {
             expandCodeRunner(blockId);
-            document.removeEventListener('keydown', escapeHandler);
+            document.removeEventListener("keydown", escapeHandler);
           }
         };
-        document.addEventListener('keydown', escapeHandler);
+        document.addEventListener("keydown", escapeHandler);
       }
 
       // All sync and rebinding functions removed - DOM relocation eliminates the need
@@ -2766,13 +2795,19 @@ sys.stdout = StringIO()
       function closeCodeRunnerModal(blockId) {
         const modal = document.getElementById(`code-runner-modal-${blockId}`);
         const originalBlock = document.getElementById(`code-runner-${blockId}`);
-        const placeholder = document.getElementById(`code-runner-placeholder-${blockId}`);
-        
+        const placeholder = document.getElementById(
+          `code-runner-placeholder-${blockId}`
+        );
+
         if (modal && originalBlock && placeholder) {
           // Find the content in the modal (it's nested in bodyContainer)
-          const bodyContainer = modal.querySelector('div[style*="padding: 30px"]');
-          const codeRunnerContent = bodyContainer.querySelector('.code-runner-content');
-          
+          const bodyContainer = modal.querySelector(
+            'div[style*="padding: 30px"]'
+          );
+          const codeRunnerContent = bodyContainer.querySelector(
+            ".code-runner-content"
+          );
+
           // MOVE content back to original location
           originalBlock.insertBefore(codeRunnerContent, placeholder);
           placeholder.remove();
