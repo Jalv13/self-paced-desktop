@@ -35,7 +35,7 @@
             Take Follow-up Quiz
           </button>
           <a
-            href="{{ url_for('subject_page', subject=CURRENT_SUBJECT) if CURRENT_SUBJECT else url_for('subject_selection') }}"
+            href="{{ url_for('main.subject_page', subject=CURRENT_SUBJECT) if CURRENT_SUBJECT else url_for('main.subject_selection') }}"
             id="backToTopicsButton"
             class="action-button hidden"
             >Back to {{ CURRENT_SUBJECT.title() if CURRENT_SUBJECT else
@@ -660,7 +660,7 @@
 
                 // Update button state
                 runButton.disabled = true;
-                runButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+                runButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Running...`;
                 outputElement.textContent = "Initializing Python environment...";
 
                 try {
@@ -693,7 +693,7 @@
                 } finally {
                   // Reset button state
                   runButton.disabled = false;
-                  runButton.innerHTML = '<i class="fas fa-play"></i> Run Code';
+                  runButton.innerHTML = `<i class="fas fa-play"></i> Run Code`;
                 }
               }
 
@@ -903,16 +903,16 @@
               }
 
               runButton.disabled = true;
-              runButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+              runButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Running...`;
               outputElement.textContent = "Initializing Python environment...";
 
               try {
                 const py = await initPyodide();
-                py.runPython(\`
+                py.runPython(`
       import sys
       from io import StringIO
       sys.stdout = StringIO()
-      \`);
+      `);
 
                 try {
                   py.runPython(code);
@@ -920,15 +920,15 @@
                   outputElement.textContent = output || "Code executed successfully (no output)";
                   outputElement.className = "output-content success";
                 } catch (pythonError) {
-                  outputElement.textContent = \`Error: \${pythonError.message}\`;
+                  outputElement.textContent = `Error: ${pythonError.message}`;
                   outputElement.className = "output-content error";
                 }
               } catch (error) {
-                outputElement.textContent = \`Failed to run code: \${error.message}\`;
+                outputElement.textContent = `Failed to run code: ${error.message}`;
                 outputElement.className = "output-content error";
               } finally {
                 runButton.disabled = false;
-                runButton.innerHTML = '<i class="fas fa-play"></i> Run Code';
+                runButton.innerHTML = `<i class="fas fa-play"></i> Run Code`;
               }
             };
 
