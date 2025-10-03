@@ -1,7 +1,7 @@
 {
-  "lessons": {
-    "testest": {
-      "title": "testest",
+  "lessons": [
+    {
+      "title": "testestres",
       "videoId": "",
       "content": [
         {
@@ -10,7 +10,7 @@
         },
         {
           "type": "paragraph",
-          "text": "testesttestest"
+          "text": "testesttestestasd"
         },
         {
           "type": "list",
@@ -20,21 +20,21 @@
         },
         {
           "type": "code",
-          "text": "testesttestesttestest"
+          "text": "testesttestesttestestresre"
         },
         {
           "type": "summary",
-          "text": "testesttestesttestesttestest"
+          "text": "testesttestesttestesttesteresrst"
         }
       ],
       "tags": [
         "test"
       ],
       "type": "initial",
-      "order": 1,
-      "updated_date": "2025-01-01"
+      "updated_date": "2025-01-01",
+      "id": "testest"
     },
-    "testtest": {
+    {
       "title": "asdf",
       "videoId": "5yfh5cf4-0w&t=2661s",
       "content": [
@@ -78,17 +78,12 @@
       ],
       "type": "initial",
       "order": 2,
-      "created_date": "2025-01-01"
+      "created_date": "2025-01-01",
+      "id": "testtest"
     },
-    "integrals": {
+    {
       "title": "Introduction to Integrals",
       "videoId": "5yfh5cf4-0w&t=2661s",
-      "tags": [
-        "integrals",
-        "integration",
-        "calculus",
-        "antiderivative"
-      ],
       "content": [
         {
           "type": "header",
@@ -108,13 +103,13 @@
         },
         {
           "type": "code",
-          "text": "# Example: If f(x) = 2x, then F(x) = x\u00b2 + C is an antiderivative\n# because d/dx(x\u00b2 + C) = 2x\n\n# The general form of an indefinite integral:\n# \u222b f(x) dx = F(x) + C\n# where C is the constant of integration"
+          "text": "# Example: If f(x) = 2x, then F(x) = x² + C is an antiderivative\n# because d/dx(x² + C) = 2x\n\n# The general form of an indefinite integral:\n# ∫ f(x) dx = F(x) + C\n# where C is the constant of integration"
         },
         {
           "type": "list",
           "items": [
-            "<strong>Indefinite Integral:</strong> \u222b f(x) dx = F(x) + C, represents a family of functions",
-            "<strong>Definite Integral:</strong> \u222b[a to b] f(x) dx = F(b) - F(a), gives a specific numerical value",
+            "<strong>Indefinite Integral:</strong> ∫ f(x) dx = F(x) + C, represents a family of functions",
+            "<strong>Definite Integral:</strong> ∫[a to b] f(x) dx = F(b) - F(a), gives a specific numerical value",
             "<strong>Fundamental Theorem of Calculus:</strong> Links differentiation and integration"
           ]
         },
@@ -123,9 +118,17 @@
           "text": "<strong>Key takeaway:</strong> Integration is the reverse of differentiation. Indefinite integrals include a constant of integration, while definite integrals evaluate to specific values."
         }
       ],
-      "type": "remedial"
+      "tags": [
+        "integrals",
+        "integration",
+        "calculus",
+        "antiderivativef"
+      ],
+      "type": "remedial",
+      "updated_date": "2025-01-01",
+      "id": "integrals"
     },
-    "integration": {
+    {
       "title": "Basic Integration Rules",
       "videoId": "5yfh5cf4-0w&t=2661s",
       "content": [
@@ -139,16 +142,16 @@
         },
         {
           "type": "code",
-          "text": "# Power Rule for Integration:\n# \u222b x^n dx = (x^(n+1))/(n+1) + C, where n \u2260 -1\n\n# Examples:\n# \u222b x\u00b3 dx = x\u2074/4 + C\n# \u222b x^(-2) dx = -1/x + C\n# \u222b \u221ax dx = \u222b x^(1/2) dx = (2/3)x^(3/2) + C"
+          "text": "# Power Rule for Integration:\n# ∫ x^n dx = (x^(n+1))/(n+1) + C, where n ≠ -1\n\n# Examples:\n# ∫ x³ dx = x⁴/4 + C\n# ∫ x^(-2) dx = -1/x + C\n# ∫ √x dx = ∫ x^(1/2) dx = (2/3)x^(3/2) + C"
         },
         {
           "type": "list",
           "items": [
-            "<strong>Constant Rule:</strong> \u222b c dx = cx + C",
-            "<strong>Power Rule:</strong> \u222b x^n dx = x^(n+1)/(n+1) + C (n \u2260 -1)",
-            "<strong>Exponential:</strong> \u222b e^x dx = e^x + C",
-            "<strong>Logarithmic:</strong> \u222b (1/x) dx = ln|x| + C",
-            "<strong>Trigonometric:</strong> \u222b sin(x) dx = -cos(x) + C, \u222b cos(x) dx = sin(x) + C"
+            "<strong>Constant Rule:</strong> ∫ c dx = cx + C",
+            "<strong>Power Rule:</strong> ∫ x^n dx = x^(n+1)/(n+1) + C (n ≠ -1)",
+            "<strong>Exponential:</strong> ∫ e^x dx = e^x + C",
+            "<strong>Logarithmic:</strong> ∫ (1/x) dx = ln|x| + C",
+            "<strong>Trigonometric:</strong> ∫ sin(x) dx = -cos(x) + C, ∫ cos(x) dx = sin(x) + C"
           ]
         },
         {
@@ -162,9 +165,10 @@
         "calculus"
       ],
       "updated_date": "2025-01-01",
-      "type": "remedial"
+      "type": "remedial",
+      "id": "integration"
     },
-    "fundamental theorem": {
+    {
       "title": "Understanding Definite Integrals",
       "videoId": "5yfh5cf4-0w&t=2661s",
       "tags": [
@@ -184,14 +188,14 @@
         },
         {
           "type": "code",
-          "text": "# Fundamental Theorem of Calculus:\n# If F(x) is an antiderivative of f(x), then:\n# \u222b[a to b] f(x) dx = F(b) - F(a)\n\n# Example: Evaluate \u222b[1 to 3] 2x dx\n# Step 1: Find antiderivative: F(x) = x\u00b2\n# Step 2: Apply theorem: F(3) - F(1) = 9 - 1 = 8"
+          "text": "# Fundamental Theorem of Calculus:\n# If F(x) is an antiderivative of f(x), then:\n# ∫[a to b] f(x) dx = F(b) - F(a)\n\n# Example: Evaluate ∫[1 to 3] 2x dx\n# Step 1: Find antiderivative: F(x) = x²\n# Step 2: Apply theorem: F(3) - F(1) = 9 - 1 = 8"
         },
         {
           "type": "list",
           "items": [
             "<strong>Geometric Interpretation:</strong> Definite integrals represent the signed area under a curve",
-            "<strong>Properties:</strong> \u222b[a to a] f(x) dx = 0, \u222b[a to b] f(x) dx = -\u222b[b to a] f(x) dx",
-            "<strong>Additivity:</strong> \u222b[a to c] f(x) dx = \u222b[a to b] f(x) dx + \u222b[b to c] f(x) dx"
+            "<strong>Properties:</strong> ∫[a to a] f(x) dx = 0, ∫[a to b] f(x) dx = -∫[b to a] f(x) dx",
+            "<strong>Additivity:</strong> ∫[a to c] f(x) dx = ∫[a to b] f(x) dx + ∫[b to c] f(x) dx"
           ]
         },
         {
@@ -199,9 +203,10 @@
           "text": "<strong>Key takeaway:</strong> Definite integrals give exact numerical values and represent the net area between the curve and the x-axis over a given interval."
         }
       ],
-      "type": "remedial"
+      "type": "remedial",
+      "id": "fundamental theorem"
     },
-    "logarithmic": {
+    {
       "title": "Basic Integration Rules",
       "videoId": "5yfh5cf4-0w&t=2661s",
       "content": [
@@ -215,16 +220,16 @@
         },
         {
           "type": "code",
-          "text": "# Power Rule for Integration:\n# \u222b x^n dx = (x^(n+1))/(n+1) + C, where n \u2260 -1\n\n# Examples:\n# \u222b x\u00b3 dx = x\u2074/4 + C\n# \u222b x^(-2) dx = -1/x + C\n# \u222b \u221ax dx = \u222b x^(1/2) dx = (2/3)x^(3/2) + C"
+          "text": "# Power Rule for Integration:\n# ∫ x^n dx = (x^(n+1))/(n+1) + C, where n ≠ -1\n\n# Examples:\n# ∫ x³ dx = x⁴/4 + C\n# ∫ x^(-2) dx = -1/x + C\n# ∫ √x dx = ∫ x^(1/2) dx = (2/3)x^(3/2) + C"
         },
         {
           "type": "list",
           "items": [
-            "<strong>Constant Rule:</strong> \u222b c dx = cx + C",
-            "<strong>Power Rule:</strong> \u222b x^n dx = x^(n+1)/(n+1) + C (n \u2260 -1)",
-            "<strong>Exponential:</strong> \u222b e^x dx = e^x + C",
-            "<strong>Logarithmic:</strong> \u222b (1/x) dx = ln|x| + C",
-            "<strong>Trigonometric:</strong> \u222b sin(x) dx = -cos(x) + C, \u222b cos(x) dx = sin(x) + C"
+            "<strong>Constant Rule:</strong> ∫ c dx = cx + C",
+            "<strong>Power Rule:</strong> ∫ x^n dx = x^(n+1)/(n+1) + C (n ≠ -1)",
+            "<strong>Exponential:</strong> ∫ e^x dx = e^x + C",
+            "<strong>Logarithmic:</strong> ∫ (1/x) dx = ln|x| + C",
+            "<strong>Trigonometric:</strong> ∫ sin(x) dx = -cos(x) + C, ∫ cos(x) dx = sin(x) + C"
           ]
         },
         {
@@ -239,9 +244,10 @@
         "logarithmic"
       ],
       "updated_date": "2025-01-01",
-      "type": "remedial"
+      "type": "remedial",
+      "id": "logarithmic"
     },
-    "power rule": {
+    {
       "title": "Basic Integration Rules",
       "videoId": "5yfh5cf4-0w&t=2661s",
       "content": [
@@ -255,16 +261,16 @@
         },
         {
           "type": "code",
-          "text": "# Power Rule for Integration:\n# \u222b x^n dx = (x^(n+1))/(n+1) + C, where n \u2260 -1\n\n# Examples:\n# \u222b x\u00b3 dx = x\u2074/4 + C\n# \u222b x^(-2) dx = -1/x + C\n# \u222b \u221ax dx = \u222b x^(1/2) dx = (2/3)x^(3/2) + C"
+          "text": "# Power Rule for Integration:\n# ∫ x^n dx = (x^(n+1))/(n+1) + C, where n ≠ -1\n\n# Examples:\n# ∫ x³ dx = x⁴/4 + C\n# ∫ x^(-2) dx = -1/x + C\n# ∫ √x dx = ∫ x^(1/2) dx = (2/3)x^(3/2) + C"
         },
         {
           "type": "list",
           "items": [
-            "<strong>Constant Rule:</strong> \u222b c dx = cx + C",
-            "<strong>Power Rule:</strong> \u222b x^n dx = x^(n+1)/(n+1) + C (n \u2260 -1)",
-            "<strong>Exponential:</strong> \u222b e^x dx = e^x + C",
-            "<strong>Logarithmic:</strong> \u222b (1/x) dx = ln|x| + C",
-            "<strong>Trigonometric:</strong> \u222b sin(x) dx = -cos(x) + C, \u222b cos(x) dx = sin(x) + C"
+            "<strong>Constant Rule:</strong> ∫ c dx = cx + C",
+            "<strong>Power Rule:</strong> ∫ x^n dx = x^(n+1)/(n+1) + C (n ≠ -1)",
+            "<strong>Exponential:</strong> ∫ e^x dx = e^x + C",
+            "<strong>Logarithmic:</strong> ∫ (1/x) dx = ln|x| + C",
+            "<strong>Trigonometric:</strong> ∫ sin(x) dx = -cos(x) + C, ∫ cos(x) dx = sin(x) + C"
           ]
         },
         {
@@ -279,7 +285,9 @@
         "power rule"
       ],
       "updated_date": "2025-01-01",
-      "type": "remedial"
+      "type": "remedial",
+      "id": "power rule"
     }
-  }
+  ],
+  "updated_date": "2025-10-02"
 }

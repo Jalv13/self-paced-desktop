@@ -1,16 +1,5 @@
 {
   "subtopics": {
-    "functions": {
-      "name": "Python Functions",
-      "description": "Master function concepts, arguments, return values, and advanced techniques",
-      "order": 3,
-      "status": "active",
-      "prerequisites": [],
-      "estimated_time": "2 hours",
-      "video_count": 1,
-      "lesson_count": 14,
-      "question_count": 44
-    },
     "loops": {
       "name": "Python Loops",
       "description": "Learn how to automate repetitive tasks using for and while loops",
@@ -21,6 +10,17 @@
       "video_count": 1,
       "lesson_count": 0,
       "question_count": 0
+    },
+    "functions": {
+      "name": "Python Functions",
+      "description": "Master function concepts, arguments, return values, and advanced techniques",
+      "order": 3,
+      "status": "active",
+      "prerequisites": [],
+      "estimated_time": "2 hours",
+      "video_count": 1,
+      "lesson_count": 14,
+      "question_count": 44
     },
     "arrays": {
       "name": "NumPy Arrays",

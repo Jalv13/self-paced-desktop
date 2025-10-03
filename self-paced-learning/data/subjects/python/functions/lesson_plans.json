@@ -1,6 +1,6 @@
 {
-  "lessons": {
-    "python-functions-intro": {
+  "lessons": [
+    {
       "title": "Python Functions",
       "videoId": "",
       "content": [
@@ -13,12 +13,17 @@
           "text": "Functions help you avoid repetition, make code more organized, and allow easier debugging."
         }
       ],
-      "tags": ["python", "functions", "introduction"],
+      "tags": [
+        "python",
+        "functions",
+        "introduction"
+      ],
       "type": "initial",
       "updated_date": "2025-09-25",
-      "order": 1
+      "order": 1,
+      "id": "python-functions-intro"
     },
-    "def-keyword": {
+    {
       "title": "The 'def' Keyword",
       "videoId": "",
       "content": [
@@ -81,12 +86,18 @@
           ]
         }
       ],
-      "tags": ["python", "functions", "def", "syntax"],
+      "tags": [
+        "python",
+        "functions",
+        "def",
+        "syntax"
+      ],
       "type": "initial",
       "updated_date": "2025-09-25",
-      "order": 2
+      "order": 2,
+      "id": "def-keyword"
     },
-    "function-parameters": {
+    {
       "title": "Function Parameters",
       "videoId": "",
       "content": [
@@ -161,7 +172,7 @@
           "type": "list",
           "items": [
             "Create a function named personal_greeting(name, city) that:",
-            "Accepts two parameters: a person\u2019s name and the city they live in.",
+            "Accepts two parameters: a person’s name and the city they live in.",
             "Prints a sentence like: \"Hi Alice, how is the weather in New York?\".",
             "Call the function at least twice with different names and cities."
           ]
@@ -215,9 +226,10 @@
       ],
       "type": "initial",
       "updated_date": "2025-09-25",
-      "order": 3
+      "order": 3,
+      "id": "function-parameters"
     },
-    "arbitrary-arguments": {
+    {
       "title": "Arbitrary Arguments (*args & **kwargs)",
       "videoId": "",
       "content": [
@@ -227,7 +239,7 @@
         },
         {
           "type": "paragraph",
-          "text": "If you don\u2019t know how many arguments will be passed, use *args. Inside the function, args is treated as a tuple."
+          "text": "If you don’t know how many arguments will be passed, use *args. Inside the function, args is treated as a tuple."
         },
         {
           "type": "code",
@@ -239,7 +251,7 @@
         },
         {
           "type": "paragraph",
-          "text": "If you don\u2019t know how many keyword arguments will be passed, use **kwargs. Inside the function, kwargs is treated as a dictionary."
+          "text": "If you don’t know how many keyword arguments will be passed, use **kwargs. Inside the function, kwargs is treated as a dictionary."
         },
         {
           "type": "code",
@@ -294,7 +306,7 @@
         },
         {
           "type": "paragraph",
-          "text": "\"name\" (string) \u2192 employee\u2019s name<br>\"role\" (string) \u2192 employee\u2019s job role<br>\"salary\" (integer or float) \u2192 employee\u2019s yearly salary"
+          "text": "\"name\" (string) → employee’s name<br>\"role\" (string) → employee’s job role<br>\"salary\" (integer or float) → employee’s yearly salary"
         },
         {
           "type": "paragraph",
@@ -312,12 +324,19 @@
           ]
         }
       ],
-      "tags": ["python", "functions", "args", "kwargs", "arguments"],
+      "tags": [
+        "python",
+        "functions",
+        "args",
+        "kwargs",
+        "arguments"
+      ],
       "type": "initial",
       "updated_date": "2025-09-25",
-      "order": 4
+      "order": 4,
+      "id": "arbitrary-arguments"
     },
-    "return-values": {
+    {
       "title": "Return Values",
       "videoId": "",
       "content": [
@@ -357,12 +376,79 @@
           ]
         }
       ],
-      "tags": ["python", "functions", "return"],
+      "tags": [
+        "python",
+        "functions",
+        "return"
+      ],
       "type": "initial",
       "updated_date": "2025-09-25",
-      "order": 5
+      "order": 5,
+      "id": "return-values"
     },
-    "recursion": {
+    {
+      "title": "Python Functions – Summary",
+      "videoId": "",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "Functions are one of the most important building blocks in Python.<br>They let us <strong>group reusable code</strong>, make programs <strong>easier to read</strong>, and reduce mistakes by avoiding repetition."
+        },
+        {
+          "type": "header",
+          "text": "Key Points"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>Defining a Function</strong><ul><li>Use the <code>def</code> keyword followed by the function name and parentheses.</li><li>Example:<div class=\"highlight\"><pre><span></span><span class=\"k\">def</span><span class=\"w\"> </span><span class=\"nf\">my_function</span><span class=\"p\">():</span>\n    <span class=\"nb\">print</span><span class=\"p\">(</span><span class=\"s2\">\"Hello\"</span><span class=\"p\">)</span>\n</pre></div></li></ul>",
+            "<strong>Calling a Function</strong><ul><li>Execute the function by writing its name followed by <code>()</code>.</li><li>Example:<div class=\"highlight\"><pre><span></span><span class=\"n\">my_function</span><span class=\"p\">()</span>\n</pre></div></li></ul>",
+            "<strong>Parameters and Arguments</strong><ul><li>Parameters are placeholders in the function definition.</li><li>Arguments are the actual values you pass when calling.</li></ul>",
+            "<strong>Default Parameters</strong><ul><li>You can give parameters default values so they are optional.</li><li>⚠️ Avoid using mutable objects (lists, dicts) as defaults.</li></ul>",
+            "<strong>Keyword Arguments</strong><ul><li>Specify arguments by <strong>name</strong>, not just position.</li><li>This makes calls more readable and flexible.</li></ul>",
+            "<strong>Arbitrary Arguments</strong><ul><li><code>*args</code> lets you pass many positional arguments (tuple).</li><li><code>**kwargs</code> lets you pass many keyword arguments (dictionary).</li></ul>",
+            "<strong>Return Values</strong><ul><li>Functions can return values using the <code>return</code> keyword.</li><li>Without <code>return</code>, a function gives back <code>None</code>.</li></ul>",
+            "<strong>Recursion</strong><ul><li>A function can call itself.</li><li>Always include a <strong>base case</strong> to stop recursion.</li><li>Python has a recursion depth limit.</li></ul>",
+            "<strong>Best Practices</strong><ul><li>Keep functions small and focused on one task.</li><li>Use descriptive names.</li><li>Document with docstrings.</li><li>Avoid unexpected side effects.</li><li>Test with different inputs, including edge cases.</li></ul>"
+          ]
+        },
+        {
+          "type": "header",
+          "text": "Why Functions Matter"
+        },
+        {
+          "type": "list",
+          "items": [
+            "They make programs <strong>modular</strong>: easier to understand, test, and maintain.",
+            "They allow <strong>code reuse</strong>, saving time and effort.",
+            "They support <strong>abstraction</strong>, letting you hide complexity behind a simple interface."
+          ]
+        },
+        {
+          "type": "header",
+          "text": "✅ Next Step for Students"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Practice by writing small utility functions (calculators, converters, string formatters).",
+            "Try combining different parameter types (<code>*args</code>, <code>**kwargs</code>, defaults) in one function.",
+            "Challenge yourself with recursive problems (factorial, Fibonacci, sum of a list)."
+          ]
+        }
+      ],
+      "tags": [
+        "python",
+        "functions",
+        "summary",
+        "best practices"
+      ],
+      "type": "initial",
+      "updated_date": "2025-09-25",
+      "order": 7,
+      "id": "python-functions-summary"
+    },
+    {
       "title": "Recursion",
       "videoId": "",
       "content": [
@@ -398,66 +484,16 @@
           ]
         }
       ],
-      "tags": ["python", "functions", "recursion"],
+      "tags": [
+        "python",
+        "functions",
+        "recursion"
+      ],
       "type": "initial",
       "updated_date": "2025-01-01",
-      "order": 8
-    },
-    "python-functions-summary": {
-      "title": "Python Functions \u2013 Summary",
-      "videoId": "",
-      "content": [
-        {
-          "type": "paragraph",
-          "text": "Functions are one of the most important building blocks in Python.<br>They let us <strong>group reusable code</strong>, make programs <strong>easier to read</strong>, and reduce mistakes by avoiding repetition."
-        },
-        {
-          "type": "header",
-          "text": "Key Points"
-        },
-        {
-          "type": "list",
-          "items": [
-            "<strong>Defining a Function</strong><ul><li>Use the <code>def</code> keyword followed by the function name and parentheses.</li><li>Example:<div class=\"highlight\"><pre><span></span><span class=\"k\">def</span><span class=\"w\"> </span><span class=\"nf\">my_function</span><span class=\"p\">():</span>\n    <span class=\"nb\">print</span><span class=\"p\">(</span><span class=\"s2\">\"Hello\"</span><span class=\"p\">)</span>\n</pre></div></li></ul>",
-            "<strong>Calling a Function</strong><ul><li>Execute the function by writing its name followed by <code>()</code>.</li><li>Example:<div class=\"highlight\"><pre><span></span><span class=\"n\">my_function</span><span class=\"p\">()</span>\n</pre></div></li></ul>",
-            "<strong>Parameters and Arguments</strong><ul><li>Parameters are placeholders in the function definition.</li><li>Arguments are the actual values you pass when calling.</li></ul>",
-            "<strong>Default Parameters</strong><ul><li>You can give parameters default values so they are optional.</li><li>\u26a0\ufe0f Avoid using mutable objects (lists, dicts) as defaults.</li></ul>",
-            "<strong>Keyword Arguments</strong><ul><li>Specify arguments by <strong>name</strong>, not just position.</li><li>This makes calls more readable and flexible.</li></ul>",
-            "<strong>Arbitrary Arguments</strong><ul><li><code>*args</code> lets you pass many positional arguments (tuple).</li><li><code>**kwargs</code> lets you pass many keyword arguments (dictionary).</li></ul>",
-            "<strong>Return Values</strong><ul><li>Functions can return values using the <code>return</code> keyword.</li><li>Without <code>return</code>, a function gives back <code>None</code>.</li></ul>",
-            "<strong>Recursion</strong><ul><li>A function can call itself.</li><li>Always include a <strong>base case</strong> to stop recursion.</li><li>Python has a recursion depth limit.</li></ul>",
-            "<strong>Best Practices</strong><ul><li>Keep functions small and focused on one task.</li><li>Use descriptive names.</li><li>Document with docstrings.</li><li>Avoid unexpected side effects.</li><li>Test with different inputs, including edge cases.</li></ul>"
-          ]
-        },
-        {
-          "type": "header",
-          "text": "Why Functions Matter"
-        },
-        {
-          "type": "list",
-          "items": [
-            "They make programs <strong>modular</strong>: easier to understand, test, and maintain.",
-            "They allow <strong>code reuse</strong>, saving time and effort.",
-            "They support <strong>abstraction</strong>, letting you hide complexity behind a simple interface."
-          ]
-        },
-        {
-          "type": "header",
-          "text": "\u2705 Next Step for Students"
-        },
-        {
-          "type": "list",
-          "items": [
-            "Practice by writing small utility functions (calculators, converters, string formatters).",
-            "Try combining different parameter types (<code>*args</code>, <code>**kwargs</code>, defaults) in one function.",
-            "Challenge yourself with recursive problems (factorial, Fibonacci, sum of a list)."
-          ]
-        }
-      ],
-      "tags": ["python", "functions", "summary", "best practices"],
-      "type": "initial",
-      "updated_date": "2025-09-25",
-      "order": 7
+      "order": 8,
+      "id": "recursion"
     }
-  }
+  ],
+  "updated_date": "2025-10-02"
 }

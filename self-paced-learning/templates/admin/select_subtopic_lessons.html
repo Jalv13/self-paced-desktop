@@ -95,7 +95,7 @@
           subtopics.items() %}
           <div
             class="subtopic-card"
-            onclick="selectSubtopic('{{ subject_id }}', '{{ subtopic_id }}')"
+            onclick="selectSubtopic('{{ subject }}', '{{ subtopic_id }}')"
           >
             <div class="subtopic-card-header">
               <div class="subtopic-icon">
@@ -140,7 +140,7 @@
             <div class="subtopic-card-actions">
               <button
                 class="btn-action select"
-                onclick="selectSubtopic('{{ subject_id }}', '{{ subtopic_id }}')"
+                onclick="selectSubtopic('{{ subject }}', '{{ subtopic_id }}')"
               >
                 <i class="fas fa-arrow-right"></i>
                 Manage Lessons

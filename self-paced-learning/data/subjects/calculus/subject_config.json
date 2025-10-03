@@ -1,15 +1,15 @@
 {
   "subtopics": {
     "integrals": {
-      "name": "Integrals",
-      "description": "Learn about integration techniques, definite and indefinite integrals, and applications of integration in calculus.",
-      "order": 1,
-      "status": "active",
-      "prerequisites": [],
+      "description": "Learn about integration techniques, definite and indefinite integrals, and applications of integration in calculus./",
       "estimated_time": "2 hours",
-      "video_count": 0,
       "lesson_count": 0,
-      "question_count": 0
+      "name": "Integrals",
+      "order": 1,
+      "prerequisites": [],
+      "question_count": 0,
+      "status": "active",
+      "video_count": 0
     }
   },
   "allowed_tags": [

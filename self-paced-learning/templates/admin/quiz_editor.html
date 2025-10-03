@@ -2054,15 +2054,26 @@
       function editQuestion(quizType, index) {
           currentQuizType = quizType;
           currentQuestionIndex = index;
-          document.getElementById('editMode').value = 'true';
-          document.getElementById('questionModalTitle').textContent = 'Edit Question';
-          document.getElementById('questionSubmitText').textContent = 'Update Question';
+          
+          const editModeEl = document.getElementById('editMode');
+          const modalTitleEl = document.getElementById('questionModalTitle');
+          const submitTextEl = document.getElementById('questionSubmitText');
+          const modalEl = document.getElementById('questionModal');
+          
+          if (!editModeEl || !modalTitleEl || !submitTextEl || !modalEl) {
+              console.error('Modal elements not found');
+              return;
+          }
+          
+          editModeEl.value = 'true';
+          modalTitleEl.textContent = 'Edit Question';
+          submitTextEl.textContent = 'Update Question';
 
           const questions = quizType === 'initial' ? initialQuizData.questions : questionPoolData.questions;
           const question = questions[index];
 
           populateQuestionForm(question);
-          document.getElementById('questionModal').classList.add('show');
+          modalEl.classList.add('show');
       }
 
       // Delete question
@@ -2371,19 +2382,20 @@
           const options = [];
           const optionTexts = document.querySelectorAll('.option-text');
           const correctAnswer = document.querySelector('input[name="correctOption"]:checked');
+          let isValid = true;
 
           // Check options
           optionTexts.forEach((input, index) => {
               const text = input.value.trim();
               if (!text) {
                   input.classList.add('error');
-                  return false;
-              }
-              if (text.length > 300) {
+                  isValid = false;
+              } else if (text.length > 300) {
                   input.classList.add('error');
-                  return false;
+                  isValid = false;
+              } else {
+                  options.push(text);
               }
-              options.push(text);
           });
 
           if (options.length < 2) {
@@ -2400,6 +2412,10 @@
           const uniqueOptions = [...new Set(options)];
           if (uniqueOptions.length !== options.length) {
               alert('Options must be unique');
+              return false;
+          }
+
+          if (!isValid) {
               return false;
           }
 
@@ -2566,7 +2582,7 @@
                   'multiple_choice': 'Multiple Choice',
                   'fill_in_the_blank': 'Fill in the Blank',
                   'coding': 'Coding'
-              }[question.type] || question.type.replace('_', ' ').title();
+              }[question.type] || question.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
 
               let contentHtml = '';
 
@@ -2765,8 +2781,13 @@
                   // Show subtle success indicator
                   showAutoSaveIndicator('saved');
               } else {
-                  // Show subtle error indicator
+                  // Show subtle error indicator and log the error
+                  console.error('Save failed with status:', response.status);
+                  const errorText = await response.text();
+                  console.error('Save error response:', errorText);
                   showAutoSaveIndicator('error');
+                  // Show user-friendly error message
+                  alert(`Save failed: ${response.status} - ${errorText}`);
               }
 
           } catch (error) {
