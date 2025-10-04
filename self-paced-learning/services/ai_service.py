@@ -10,6 +10,11 @@ from typing import Dict, List, Optional, Any
 import json
 import re
 
+try:
+    from openai import OpenAI as OpenAIClient
+except ImportError:
+    OpenAIClient = None
+
 
 class AIService:
     """Service class for handling AI-powered features."""
@@ -18,9 +23,22 @@ class AIService:
         """Initialize the AI service with OpenAI configuration."""
         self.api_key = os.getenv("OPENAI_API_KEY")
         self.default_model = os.getenv("OPENAI_MODEL", "gpt-4")
+        self.client: Optional[Any] = None
+
+        if self.api_key and OpenAIClient:
+            try:
+                self.client = OpenAIClient(api_key=self.api_key)
+            except TypeError:
+                self.client = OpenAIClient()
+            except Exception as exc:
+                print(f"Warning: failed to initialize OpenAI client: {exc}")
+                self.client = None
 
         if self.api_key:
-            openai.api_key = self.api_key
+            try:
+                openai.api_key = self.api_key
+            except Exception:
+                pass
         else:
             print("Warning: OPENAI_API_KEY not set. AI features will not work.")
 
@@ -31,6 +49,7 @@ class AIService:
     # ============================================================================
     # CORE AI API METHODS
     # ============================================================================
+
 
     def call_openai_api(
         self,
@@ -66,23 +85,129 @@ class AIService:
         if expect_json_output:
             kwargs["response_format"] = {"type": "json_object"}
 
-        try:
-            try:
-                response = openai.ChatCompletion.create(**kwargs)
-            except AttributeError:
-                response = openai.chat.completions.create(**kwargs)
+        last_error: Optional[Exception] = None
 
-            choice = response.choices[0]
-            message = getattr(choice, "message", None)
+        if getattr(self, "client", None) and getattr(self.client, "chat", None):
+            try:
+                response = self.client.chat.completions.create(**kwargs)
+                content = self._extract_content_from_response(response)
+                if content:
+                    return content.strip()
+            except Exception as exc:
+                last_error = exc
+
+        for api_call in (
+            lambda: openai.ChatCompletion.create(**kwargs),
+            lambda: openai.chat.completions.create(**kwargs),
+        ):
+            try:
+                response = api_call()
+                content = self._extract_content_from_response(response)
+                if content:
+                    return content.strip()
+            except AttributeError as exc:
+                last_error = exc
+            except Exception as exc:
+                last_error = exc
+
+        if getattr(self, "client", None) and getattr(self.client, "responses", None):
+            try:
+                prompt_text = "\n".join(message["content"] for message in messages if message.get("content"))
+                response_kwargs = {
+                    "model": model_to_use,
+                    "input": prompt_text,
+                    "temperature": temperature,
+                    "max_output_tokens": max_tokens,
+                }
+                response = self.client.responses.create(**response_kwargs)
+                content = self._extract_content_from_response(response)
+                if content:
+                    return content.strip()
+            except Exception as exc:
+                last_error = exc
+
+        if last_error:
+            print(f"Error calling OpenAI API: {last_error}")
+        return None
+
+    def _extract_content_from_response(self, response: Any) -> Optional[str]:
+        if not response:
+            return None
+
+        choices = getattr(response, "choices", None)
+        if choices:
+            first_choice = choices[0]
+            message = getattr(first_choice, "message", None)
             if isinstance(message, dict):
                 content = message.get("content")
             else:
                 content = getattr(message, "content", None)
+            text_value = self._flatten_content(content)
+            if text_value:
+                return text_value
 
-            return content.strip() if content else None
-        except Exception as e:
-            print(f"Error calling OpenAI API: {e}")
+            text_attr = getattr(first_choice, "text", None)
+            if isinstance(text_attr, str):
+                return text_attr
+
+        output_text = getattr(response, "output_text", None)
+        if isinstance(output_text, str) and output_text.strip():
+            return output_text
+
+        output = getattr(response, "output", None)
+        if isinstance(output, list) and output:
+            content = getattr(output[0], "content", None)
+            text_value = self._flatten_content(content)
+            if text_value:
+                return text_value
+
+        data = getattr(response, "data", None)
+        if isinstance(data, list) and data:
+            message = getattr(data[0], "message", None)
+            if message:
+                text_value = self._flatten_content(getattr(message, "content", None))
+                if text_value:
+                    return text_value
+
+        if isinstance(response, dict):
+            choices = response.get("choices")
+            if choices:
+                choice0 = choices[0] if choices else None
+                message = choice0.get("message") if isinstance(choice0, dict) else None
+                text_value = self._flatten_content(message.get("content") if message else None)
+                if text_value:
+                    return text_value
+        return None
+
+
+    def _flatten_content(self, content: Any) -> Optional[str]:
+        if not content:
             return None
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            parts: List[str] = []
+            for item in content:
+                if isinstance(item, str):
+                    parts.append(item)
+                elif isinstance(item, dict):
+                    text_value = item.get("text")
+                    if isinstance(text_value, str):
+                        parts.append(text_value)
+                    else:
+                        content_value = item.get("content")
+                        if isinstance(content_value, str):
+                            parts.append(content_value)
+            if parts:
+                return "\n".join(part for part in parts if part)
+        if isinstance(content, dict):
+            text_value = content.get("text")
+            if isinstance(text_value, str):
+                return text_value
+            content_value = content.get("content")
+            if isinstance(content_value, str):
+                return content_value
+        return None
 
     # ============================================================================
     # QUIZ ANALYSIS AND RECOMMENDATIONS

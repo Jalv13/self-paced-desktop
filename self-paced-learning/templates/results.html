@@ -35,7 +35,7 @@
             Take Follow-up Quiz
           </button>
           <a
-            href="{{ url_for('subject_page', subject=CURRENT_SUBJECT) if CURRENT_SUBJECT else url_for('subject_selection') }}"
+            href="{{ url_for('main.subject_page', subject=CURRENT_SUBJECT) if CURRENT_SUBJECT else url_for('main.subject_selection') }}"
             id="backToTopicsButton"
             class="action-button hidden"
             >Back to {{ CURRENT_SUBJECT.title() if CURRENT_SUBJECT else
