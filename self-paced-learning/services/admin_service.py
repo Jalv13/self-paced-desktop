@@ -674,7 +674,7 @@ class AdminService:
     # OVERRIDE AND TESTING FUNCTIONALITY
     # ============================================================================
 
-    def toggle_admin_override(self) -> Dict[str, Any]:
+    def toggle_override(self) -> Dict[str, Any]:
         """Toggle admin override status."""
         try:
             new_status = self.progress_service.toggle_admin_override()
@@ -688,9 +688,37 @@ class AdminService:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def get_admin_status(self) -> Dict[str, Any]:
+    def set_override(self, enabled: bool) -> Dict[str, Any]:
+        """Explicitly set the admin override status."""
+        try:
+            status = self.progress_service.set_admin_override(enabled)
+            return {
+                "success": True,
+                "admin_override": status,
+                "message": f"Admin override {'enabled' if status else 'disabled'}",
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    def check_override_status(self) -> Dict[str, Any]:
         """Get current admin override status."""
-        return {"admin_override": self.progress_service.get_admin_override_status()}
+        try:
+            return {
+                "success": True,
+                "admin_override": self.progress_service.get_admin_override_status(),
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    # Backwards compatibility helpers -------------------------------------------------
+
+    def toggle_admin_override(self) -> Dict[str, Any]:
+        """Backward compatible alias for toggle_override."""
+        return self.toggle_override()
+
+    def get_admin_status(self) -> Dict[str, Any]:
+        """Backward compatible alias for check_override_status."""
+        return self.check_override_status()
 
     def admin_mark_complete(self, subject: str, subtopic: str) -> Dict[str, Any]:
         """Mark a topic as complete for admin override."""

@@ -443,10 +443,15 @@ def api_admin_status():
     try:
         progress_service = get_progress_service()
 
-        return jsonify({"admin_override": progress_service.get_admin_override_status()})
+        return jsonify(
+            {
+                "success": True,
+                "admin_override": progress_service.get_admin_override_status(),
+            }
+        )
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @api_bp.route("/admin/mark_complete", methods=["POST"])
@@ -456,8 +461,14 @@ def api_admin_mark_complete():
         progress_service = get_progress_service()
 
         data = request.get_json()
-        subject = data.get("subject")
-        subtopic = data.get("subtopic")
+        subject = data.get("subject") if data else None
+        subtopic = data.get("subtopic") if data else None
+
+        # Allow the frontend to omit subject/subtopic and fall back to the active quiz context
+        if not subject:
+            subject = session.get("current_subject")
+        if not subtopic:
+            subtopic = session.get("current_subtopic")
 
         if not subject or not subtopic:
             return jsonify({"error": "Subject and subtopic are required"}), 400
