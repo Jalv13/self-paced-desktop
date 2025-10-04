@@ -61,6 +61,26 @@
             </div>
           </div>
 
+          <div
+            id="analysis-progress-tracker"
+            class="analysis-progress-tracker hidden"
+          >
+            <span class="progress-pill" data-progress="score">Score</span>
+            <span class="progress-pill" data-progress="weak">Weak Areas</span>
+            <span class="progress-pill" data-progress="ai">AI Insights</span>
+          </div>
+
+          <div id="ai-enhancement-banner" class="ai-enhancement-banner hidden">
+            <span class="spinner" aria-hidden="true"></span>
+            <span id="ai-enhancement-text">Enhancing analysis with AI...</span>
+          </div>
+
+          <div id="ai-feedback-skeleton" class="ai-feedback-skeleton hidden">
+            <div class="skeleton-line wide"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+          </div>
+
           {% if quiz_generation_error %}
           <div id="quiz-generation-error-message" class="status status-error">
             <strong>Error:</strong> {{ quiz_generation_error }}
@@ -91,6 +111,9 @@
       const CURRENT_SUBJECT = {{ CURRENT_SUBJECT | tojson | safe }};
       const CURRENT_SUBTOPIC = {{ CURRENT_SUBTOPIC | tojson | safe }};
       const ANALYSIS_RESULTS = {{ ANALYSIS_RESULTS | tojson | safe }};
+      const ENHANCEMENT_STATUS = {{ ENHANCEMENT_STATUS | tojson | safe }};
+      const HAS_ENHANCED = {{ HAS_ENHANCED | tojson | safe }};
+      const AI_AVAILABLE = {{ AI_AVAILABLE | tojson | safe }};
     </script>
 
     <script>
@@ -116,6 +139,22 @@
               const adminMarkCompleteButton = document.getElementById(
                 "adminMarkCompleteButton"
               );
+              const progressTracker = document.getElementById(
+                "analysis-progress-tracker"
+              );
+              const progressPills = document.querySelectorAll(
+                ".progress-pill"
+              );
+              const aiBanner = document.getElementById("ai-enhancement-banner");
+              const aiBannerText = document.getElementById(
+                "ai-enhancement-text"
+              );
+              const aiSkeleton = document.getElementById("ai-feedback-skeleton");
+
+              let enhancementPollingActive = false;
+              let initialRenderCompleted = false;
+              let currentAnalysis = ANALYSIS_RESULTS || {};
+              const aiAvailable = Boolean(AI_AVAILABLE);
 
               // --- State Tracking ---
               let completionState = {};
@@ -143,7 +182,8 @@
               statusDiv.textContent = "Analysis complete!";
               statusDiv.className = "status status-success";
 
-              await processAnalysisResults(ANALYSIS_RESULTS);
+              await processAnalysisResults(currentAnalysis);
+              configureEnhancementUI(ENHANCEMENT_STATUS);
 
               // --- Helper Functions ---
               function resolveLesson(keyOrId) {
@@ -221,7 +261,13 @@
               });
 
               // --- Analysis Results Processing Function ---
-              async function processAnalysisResults(analysisData) {
+              async function processAnalysisResults(
+                analysisData,
+                options = {}
+              ) {
+                if (!analysisData) return;
+
+                const { isEnhanced = false } = options;
                 console.log("Processing analysis results:", analysisData);
 
                 const weakTopics =
@@ -229,16 +275,23 @@
                     ? analysisData.weak_topics
                     : analysisData.weak_tags) || [];
 
-                // Calculate and display score
+                completionState = {};
+
                 if (analysisData.score) {
-                  displayScore(analysisData.score);
+                  displayScore(analysisData.score, {
+                    animate: !initialRenderCompleted,
+                  });
                 }
 
                 statusDiv.classList.add("hidden");
 
                 if (weakTopics.length > 0) {
                   welcomeMessageContainer.classList.remove("hidden");
-                  feedbackContentDiv.innerHTML = analysisData.feedback;
+                  masteryMessageContainer.classList.add("hidden");
+                  feedbackContentDiv.innerHTML =
+                    analysisData.feedback ||
+                    analysisData.ai_analysis ||
+                    "Focused practice recommendations will appear here.";
 
                   buildCompletionState(weakTopics);
                   displayWeakTopics(weakTopics);
@@ -247,12 +300,22 @@
                   backToTopicsButton.classList.remove("hidden");
                   checkCompletionAndToggleButton();
                 } else {
+                  topicsNavList.innerHTML = "";
+                  welcomeMessageContainer.classList.add("hidden");
                   masteryMessageContainer.classList.remove("hidden");
                   backToTopicsButton.classList.remove("hidden");
-                  // Show continue button for perfect scores too
                   continueButton.classList.remove("hidden");
-                  continueButton.disabled = false; // Enable button when no weak topics
+                  continueButton.disabled = false;
+                  updateProgress("weak");
                 }
+
+                if (isEnhanced) {
+                  updateProgress("ai");
+                  setAiBanner("AI insights ready!", "success");
+                  aiSkeleton.classList.add("hidden");
+                }
+
+                initialRenderCompleted = true;
               }
 
               // --- Simplified Topic Display ---
@@ -274,6 +337,8 @@
                  `;
                   topicsNavList.appendChild(groupLi);
                 });
+
+                updateProgress("weak");
               }
 
               // --- Helper Functions ---
@@ -284,15 +349,27 @@
               }
 
               // --- Score Display Function ---
-              function displayScore(scoreData) {
+              function displayScore(scoreData, options = {}) {
+                if (!scoreData) return;
                 const { correct, total, percentage } = scoreData;
+                const { animate = true } = options;
 
-                // Update score display
-                scoreDisplay.textContent = `${percentage}%`;
                 correctCount.textContent = correct;
                 totalCount.textContent = total;
 
-                // Apply score-based styling
+                applyScoreStyling(percentage);
+
+                if (animate) {
+                  animateScoreDisplay(percentage);
+                } else {
+                  scoreDisplay.textContent = `${Math.round(percentage)}%`;
+                }
+
+                scoreContainer.classList.remove("hidden");
+                updateProgress("score");
+              }
+
+              function applyScoreStyling(percentage) {
                 scoreContainer.classList.remove(
                   "score-excellent",
                   "score-good",
@@ -305,9 +382,158 @@
                 } else {
                   scoreContainer.classList.add("score-needs-improvement");
                 }
+              }
 
-                // Show the score container
-                scoreContainer.classList.remove("hidden");
+              function animateScoreDisplay(targetPercentage) {
+                const startValue = 0;
+                const duration = 800;
+                const startTime = performance.now();
+
+                function update(now) {
+                  const elapsed = now - startTime;
+                  const progress = Math.min(elapsed / duration, 1);
+                  const value = Math.round(
+                    startValue + (targetPercentage - startValue) * progress
+                  );
+                  scoreDisplay.textContent = `${value}%`;
+                  if (progress < 1) {
+                    requestAnimationFrame(update);
+                  }
+                }
+
+                requestAnimationFrame(update);
+              }
+
+              function updateProgress(step, variant = "completed") {
+                if (!progressTracker) return;
+                progressTracker.classList.remove("hidden");
+                progressPills.forEach((pill) => {
+                  if (pill.dataset.progress === step) {
+                    if (variant === "error") {
+                      pill.classList.add("error");
+                    } else {
+                      pill.classList.add("completed");
+                      pill.classList.remove("error");
+                    }
+                  }
+                });
+              }
+
+              function setAiBanner(message, variant = "loading") {
+                if (!aiBanner || !aiBannerText) return;
+                aiBannerText.textContent = message;
+                aiBanner.classList.remove("hidden", "success", "error");
+                const spinnerEl = aiBanner.querySelector(".spinner");
+                if (variant === "loading") {
+                  aiBanner.classList.remove("success", "error");
+                  if (spinnerEl) spinnerEl.style.display = "inline-block";
+                } else if (variant === "success") {
+                  aiBanner.classList.add("success");
+                  if (spinnerEl) spinnerEl.style.display = "none";
+                } else if (variant === "error") {
+                  aiBanner.classList.add("error");
+                  if (spinnerEl) spinnerEl.style.display = "none";
+                }
+              }
+
+              function configureEnhancementUI(status) {
+                if (!aiBanner || !progressTracker) return;
+                if (!aiAvailable) {
+                  progressTracker.classList.remove("hidden");
+                  aiBanner.classList.add("hidden");
+                  aiSkeleton.classList.add("hidden");
+                  return;
+                }
+
+                let normalizedStatus = (status || "").toString().toLowerCase();
+                if (
+                  (!normalizedStatus || normalizedStatus === "none") &&
+                  currentAnalysis &&
+                  currentAnalysis.analysis_stage === "enhanced"
+                ) {
+                  normalizedStatus = "completed";
+                }
+
+                if (normalizedStatus === "completed" || HAS_ENHANCED) {
+                  setAiBanner("AI insights ready!", "success");
+                  updateProgress("ai");
+                  aiSkeleton.classList.add("hidden");
+                } else if (normalizedStatus === "failed") {
+                  handleEnhancementFailure(
+                    "AI insights unavailable. Showing basic guidance."
+                  );
+                } else {
+                  aiBanner.classList.remove("hidden");
+                  aiSkeleton.classList.remove("hidden");
+                  setAiBanner("Enhancing analysis with AI...", "loading");
+                  if (!enhancementPollingActive) {
+                    enhancementPollingActive = true;
+                    startEnhancementPolling(normalizedStatus);
+                  }
+                }
+              }
+
+              function handleEnhancementFailure(message) {
+                setAiBanner(message || "AI enhancement unavailable.", "error");
+                updateProgress("ai", "error");
+                aiSkeleton.classList.add("hidden");
+              }
+
+              function startEnhancementPolling(initialStatus) {
+                if (!aiAvailable) return;
+                const allowedStatuses = [
+                  "pending",
+                  "in_progress",
+                  "basic",
+                  "basic_ready",
+                ];
+                if (!allowedStatuses.includes(initialStatus)) {
+                  return;
+                }
+
+                let attempts = 0;
+                const maxAttempts = 10;
+                const intervalMs = 2500;
+
+                const poll = async () => {
+                  attempts += 1;
+                  try {
+                    const response = await fetch("/analyze/enhance");
+                    if (!response.ok) {
+                      throw new Error(`Status ${response.status}`);
+                    }
+                    const payload = await response.json();
+                    if (payload.status === "completed" && payload.analysis) {
+                      currentAnalysis = payload.analysis;
+                      await processAnalysisResults(currentAnalysis, {
+                        isEnhanced: true,
+                      });
+                      configureEnhancementUI("completed");
+                      return;
+                    }
+                    if (payload.status === "failed") {
+                      handleEnhancementFailure(payload.error);
+                      return;
+                    }
+                    if (payload.status === "error") {
+                      handleEnhancementFailure(payload.error);
+                      return;
+                    }
+                  } catch (error) {
+                    console.error("Error polling enhancement:", error);
+                  }
+
+                  if (attempts >= maxAttempts) {
+                    handleEnhancementFailure(
+                      "AI enhancement timed out. Showing basic guidance."
+                    );
+                    return;
+                  }
+
+                  setTimeout(poll, intervalMs);
+                };
+
+                setTimeout(poll, intervalMs);
               }
 
               // --- Score Display Function (duplicate click handler removed) ---
