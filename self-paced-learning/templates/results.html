@@ -224,7 +224,10 @@
               async function processAnalysisResults(analysisData) {
                 console.log("Processing analysis results:", analysisData);
 
-                const weakTopics = analysisData.weak_topics || [];
+                const weakTopics =
+                  (analysisData.weak_topics && analysisData.weak_topics.length
+                    ? analysisData.weak_topics
+                    : analysisData.weak_tags) || [];
 
                 // Calculate and display score
                 if (analysisData.score) {

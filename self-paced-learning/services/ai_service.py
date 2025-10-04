@@ -8,6 +8,7 @@ import openai
 import os
 from typing import Dict, List, Optional, Any
 import json
+import re
 
 
 class AIService:
@@ -16,6 +17,7 @@ class AIService:
     def __init__(self):
         """Initialize the AI service with OpenAI configuration."""
         self.api_key = os.getenv("OPENAI_API_KEY")
+        self.default_model = os.getenv("OPENAI_MODEL", "gpt-4")
 
         if self.api_key:
             openai.api_key = self.api_key
@@ -30,26 +32,54 @@ class AIService:
     # CORE AI API METHODS
     # ============================================================================
 
-    def call_openai_api(self, prompt: str, model: str = "gpt-4") -> Optional[str]:
-        """Helper function to call the OpenAI API."""
+    def call_openai_api(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        system_message: Optional[str] = None,
+        max_tokens: int = 1500,
+        temperature: float = 0.2,
+        expect_json_output: bool = False,
+    ) -> Optional[str]:
+        """Helper function to call the OpenAI API with optional JSON expectations."""
         if not self.is_available():
             return None
 
-        try:
-            response = openai.ChatCompletion.create(
-                model=model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a helpful educational assistant.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                max_tokens=2000,
-                temperature=0.7,
-            )
+        messages = [
+            {
+                "role": "system",
+                "content": system_message
+                or "You are a helpful educational assistant.",
+            },
+            {"role": "user", "content": prompt},
+        ]
 
-            return response.choices[0].message.content.strip()
+        model_to_use = model or getattr(self, "default_model", "gpt-4")
+
+        kwargs = {
+            "model": model_to_use,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+
+        if expect_json_output:
+            kwargs["response_format"] = {"type": "json_object"}
+
+        try:
+            try:
+                response = openai.ChatCompletion.create(**kwargs)
+            except AttributeError:
+                response = openai.chat.completions.create(**kwargs)
+
+            choice = response.choices[0]
+            message = getattr(choice, "message", None)
+            if isinstance(message, dict):
+                content = message.get("content")
+            else:
+                content = getattr(message, "content", None)
+
+            return content.strip() if content else None
         except Exception as e:
             print(f"Error calling OpenAI API: {e}")
             return None
@@ -61,61 +91,283 @@ class AIService:
     def analyze_quiz_performance(
         self, questions: List[Dict], answers: List[str], subject: str, subtopic: str
     ) -> Dict[str, Any]:
-        """Analyze quiz performance and generate recommendations."""
-        if not self.is_available():
-            return self._get_fallback_analysis(questions, answers)
+        """Analyze quiz performance and generate tag-aware recommendations."""
+        from services import get_data_service
+
+        total_questions = len(questions)
+        normalized_answers = [str(answer) if answer is not None else "" for answer in answers]
+        correct_answers = 0
+        submission_details: List[str] = []
+        wrong_indices: List[int] = []
+        wrong_tag_candidates: List[str] = []
+
+        for idx, question in enumerate(questions):
+            user_answer = normalized_answers[idx] if idx < len(normalized_answers) else ""
+            question_type = (question.get("type") or "multiple_choice").strip().lower()
+            status = "Incorrect"
+
+            if question_type == "coding":
+                status = "For AI Review"
+            elif self._is_answer_correct(question, user_answer):
+                status = "Correct"
+                correct_answers += 1
+            else:
+                wrong_indices.append(idx)
+                wrong_tag_candidates.extend(self._collect_question_tags(question))
+
+            correct_answer_text = self._resolve_correct_answer(question)
+            detail_lines = [
+                f"Question {idx + 1} (Type: {question_type}): {question.get('question', 'N/A')}",
+                "Student's Answer:",
+                "---",
+                user_answer if user_answer else "[No answer provided]",
+                "---",
+            ]
+            if correct_answer_text:
+                detail_lines.append(f"Correct Answer: {correct_answer_text}")
+            detail_lines.append(f"Status: {status}")
+            submission_details.append("\n".join(detail_lines) + "\n")
+
+        score_percentage = (
+            round((correct_answers / total_questions) * 100)
+            if total_questions > 0
+            else 0
+        )
+
+        analysis: Dict[str, Any] = {
+            "score": {
+                "correct": correct_answers,
+                "total": total_questions,
+                "percentage": score_percentage,
+            },
+            "weak_topics": [],
+            "weak_tags": [],
+            "weak_areas": [],
+            "feedback": "",
+            "ai_analysis": "",
+            "recommendations": [],
+            "submission_details": submission_details,
+            "wrong_question_indices": wrong_indices,
+            "allowed_tags": [],
+            "used_ai": False,
+        }
 
         try:
-            # Calculate basic metrics
-            total_questions = len(questions)
-            correct_answers = 0
-            incorrect_topics = []
+            data_service = get_data_service()
+            allowed_tags = data_service.get_subject_allowed_tags(subject)
+        except Exception as exc:
+            print(f"Error getting allowed tags for {subject}: {exc}")
+            allowed_tags = []
 
-            # Analyze each question
-            for i, (question, answer) in enumerate(zip(questions, answers)):
-                correct_answer = question.get("correct_answer", "")
+        allowed_lookup = {
+            str(tag).lower(): str(tag) for tag in allowed_tags if isinstance(tag, str)
+        }
+        analysis["allowed_tags"] = allowed_tags
 
-                if answer.lower().strip() == correct_answer.lower().strip():
-                    correct_answers += 1
-                else:
-                    # Track topics that need work
-                    topic = question.get("topic", "General")
-                    if topic not in incorrect_topics:
-                        incorrect_topics.append(topic)
+        fallback_tags = self._filter_allowed_tags(wrong_tag_candidates, allowed_lookup)
+        if not fallback_tags:
+            fallback_tags = self._normalize_tags(wrong_tag_candidates)
 
-            score_percentage = (
-                (correct_answers / total_questions) * 100 if total_questions > 0 else 0
+        submission_text = "".join(submission_details) if submission_details else "[No submission details available]"
+        system_message = (
+            "You are an expert instructor. Your task is to analyze a student's quiz performance, "
+            "classify their errors against a predefined list of topics, and evaluate their submitted code when provided."
+        )
+        allowed_tags_str = json.dumps(allowed_tags) if allowed_tags else "[]"
+
+        prompt_parts = [
+            "You are analyzing a student's quiz submission which includes multiple choice, fill-in-the-blank, and coding questions.",
+            "Based on the incorrect answers and their submitted code, identify the concepts they are weak in.",
+            f"You MUST choose the weak concepts from this predefined list ONLY: {allowed_tags_str}",
+            "For coding questions marked 'For AI Review', evaluate if the student's code:",
+            "1. Correctly solves the problem",
+            "2. Uses appropriate syntax and conventions",
+            "3. Demonstrates understanding of the underlying concepts",
+            "Compare their code with the provided sample solution when available.",
+            "Provide your analysis as a single JSON object with two keys:",
+            ' - "detailed_feedback": (string) Your textual analysis, including specific feedback on coding attempts, what they did well, and areas for improvement.',
+            ' - "weak_concept_tags": (JSON list of strings) The list of weak concepts from the ALLOWED TAGS list. If there are no weaknesses, provide an empty list [].',
+            f"Overall score: {correct_answers}/{total_questions} correct ({score_percentage}%).",
+            "Here is the student's submission:",
+            "--- START OF SUBMISSION ---",
+            submission_text,
+            "--- END OF SUBMISSION ---",
+        ]
+        prompt = "\n".join(prompt_parts)
+
+        ai_response = None
+        if self.is_available():
+            ai_response = self.call_openai_api(
+                prompt,
+                model=getattr(self, "default_model", "gpt-4"),
+                system_message=system_message,
+                max_tokens=1500,
+                temperature=0.1,
+                expect_json_output=True,
             )
 
-            # Generate AI-powered analysis
-            analysis_prompt = self._create_analysis_prompt(
-                questions,
-                answers,
-                subject,
-                subtopic,
-                score_percentage,
-                incorrect_topics,
-            )
+        analysis["raw_ai_response"] = ai_response
 
-            ai_analysis = self.call_openai_api(analysis_prompt)
+        if ai_response:
+            parsed_response = self._extract_json_object(ai_response)
+            if parsed_response:
+                candidate_tags = parsed_response.get("weak_concept_tags") or []
+                if isinstance(candidate_tags, str):
+                    candidate_tags = [candidate_tags]
+                validated_tags = self._filter_allowed_tags(candidate_tags, allowed_lookup)
+                if not validated_tags:
+                    validated_tags = fallback_tags
+                feedback = parsed_response.get("detailed_feedback") or parsed_response.get("feedback") or ""
 
-            return {
-                "score": {
-                    "correct": correct_answers,
-                    "total": total_questions,
-                    "percentage": score_percentage,
-                },
-                "weak_areas": incorrect_topics,
-                "ai_analysis": ai_analysis,
-                "recommendations": self._generate_recommendations(
-                    score_percentage, incorrect_topics, subject, subtopic
-                ),
-            }
+                analysis["weak_topics"] = validated_tags
+                analysis["weak_tags"] = validated_tags
+                analysis["weak_areas"] = validated_tags
+                analysis["feedback"] = feedback
+                analysis["ai_analysis"] = feedback
+                analysis["used_ai"] = True
+            else:
+                analysis["weak_topics"] = fallback_tags
+                analysis["weak_tags"] = fallback_tags
+                analysis["weak_areas"] = fallback_tags
+        else:
+            analysis["weak_topics"] = fallback_tags
+            analysis["weak_tags"] = fallback_tags
+            analysis["weak_areas"] = fallback_tags
 
-        except Exception as e:
-            print(f"Error analyzing quiz performance: {e}")
-            return self._get_fallback_analysis(questions, answers)
+        if not analysis["feedback"]:
+            if fallback_tags:
+                analysis["feedback"] = (
+                    f"You answered {correct_answers} out of {total_questions} correctly ("
+                    f"{score_percentage}%). Focus on reviewing: {', '.join(fallback_tags)}."
+                )
+            else:
+                analysis["feedback"] = (
+                    f"Excellent work scoring {score_percentage}%! Keep practicing to reinforce your understanding."
+                )
+            analysis["ai_analysis"] = analysis["feedback"]
 
+        analysis["recommendations"] = self._generate_recommendations(
+            score_percentage, analysis["weak_topics"], subject, subtopic
+        )
+
+        return analysis
+
+    def _resolve_correct_answer(self, question: Dict[str, Any]) -> str:
+        question_type = (question.get("type") or "multiple_choice").strip().lower()
+        if question_type == "multiple_choice":
+            options = question.get("options", []) or []
+            answer_index = question.get("answer_index")
+            if answer_index is None:
+                answer_index = question.get("correct_answer_index")
+            if isinstance(answer_index, int) and 0 <= answer_index < len(options):
+                return str(options[answer_index])
+            return str(question.get("correct_answer", ""))
+        if question_type == "fill_in_the_blank":
+            correct = question.get("correct_answer")
+            if isinstance(correct, list):
+                return ", ".join(str(value) for value in correct)
+            return str(correct or question.get("answer", ""))
+        if question_type == "coding":
+            for key in ("sample_solution", "solution", "correct_answer"):
+                value = question.get(key)
+                if value:
+                    return str(value)
+            return ""
+        return str(question.get("correct_answer", ""))
+
+    def _is_answer_correct(self, question: Dict[str, Any], user_answer: str) -> bool:
+        question_type = (question.get("type") or "multiple_choice").strip().lower()
+        answer_text = self._resolve_correct_answer(question)
+        user_clean = (user_answer or "").strip()
+        if not user_clean:
+            return False
+        if question_type == "multiple_choice":
+            return user_clean == answer_text.strip()
+        if question_type == "fill_in_the_blank":
+            acceptable = []
+            if answer_text:
+                acceptable.extend(
+                    [part.strip().lower() for part in answer_text.split(",") if part.strip()]
+                )
+            raw_list = question.get("correct_answers") or question.get("acceptable_answers")
+            if isinstance(raw_list, list):
+                acceptable.extend(
+                    [str(item).strip().lower() for item in raw_list if str(item).strip()]
+                )
+            return user_clean.lower() in acceptable if acceptable else False
+        if question_type == "coding":
+            return False
+        return user_clean.lower() == answer_text.strip().lower()
+
+    def _collect_question_tags(self, question: Dict[str, Any]) -> List[str]:
+        tags: List[str] = []
+        raw_tags = question.get("tags")
+        if isinstance(raw_tags, list):
+            tags.extend(str(tag) for tag in raw_tags)
+        elif isinstance(raw_tags, str):
+            tags.append(raw_tags)
+
+        topic = question.get("topic")
+        if isinstance(topic, list):
+            tags.extend(str(tag) for tag in topic)
+        elif isinstance(topic, str):
+            tags.append(topic)
+
+        return tags
+
+    def _filter_allowed_tags(self, tags: List[str], allowed_lookup: Dict[str, str]) -> List[str]:
+        if not tags:
+            return []
+        if not allowed_lookup:
+            return self._normalize_tags(tags)
+        filtered: List[str] = []
+        seen = set()
+        for tag in tags:
+            if not isinstance(tag, str):
+                continue
+            cleaned = tag.strip()
+            if not cleaned:
+                continue
+            key = cleaned.lower()
+            if key not in allowed_lookup or key in seen:
+                continue
+            seen.add(key)
+            filtered.append(allowed_lookup[key])
+        return filtered
+
+    def _normalize_tags(self, tags: List[str]) -> List[str]:
+        normalized: List[str] = []
+        seen = set()
+        for tag in tags or []:
+            if not isinstance(tag, str):
+                continue
+            cleaned = tag.strip()
+            if not cleaned:
+                continue
+            key = cleaned.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            normalized.append(cleaned)
+        return normalized
+
+    def _extract_json_object(self, response_text: str) -> Optional[Dict[str, Any]]:
+        if not response_text:
+            return None
+        stripped = response_text.strip()
+        try:
+            parsed = json.loads(stripped)
+            if isinstance(parsed, dict):
+                return parsed
+        except json.JSONDecodeError:
+            pass
+        match = re.search(r"\{[\s\S]*\}", stripped)
+        if match:
+            try:
+                return json.loads(match.group(0))
+            except json.JSONDecodeError:
+                return None
+        return None
     def _create_analysis_prompt(
         self,
         questions: List[Dict],
@@ -196,11 +448,12 @@ Keep the response concise and student-friendly.
     ) -> Dict[str, Any]:
         """Provide fallback analysis when AI is not available."""
         total_questions = len(questions)
-        correct_answers = sum(
-            1
-            for i, (q, a) in enumerate(zip(questions, answers))
-            if a.lower().strip() == q.get("correct_answer", "").lower().strip()
-        )
+        normalized_answers = [str(answer) if answer is not None else "" for answer in answers]
+        correct_answers = 0
+        for idx, question in enumerate(questions):
+            user_answer = normalized_answers[idx] if idx < len(normalized_answers) else ""
+            if self._is_answer_correct(question, user_answer):
+                correct_answers += 1
 
         score_percentage = (
             (correct_answers / total_questions) * 100 if total_questions > 0 else 0
@@ -213,7 +466,10 @@ Keep the response concise and student-friendly.
                 "percentage": score_percentage,
             },
             "weak_areas": [],
+            "weak_topics": [],
+            "weak_tags": [],
             "ai_analysis": "AI analysis not available. Please review your answers and try again.",
+            "feedback": "AI analysis not available. Please review your answers and try again.",
             "recommendations": self._generate_recommendations(
                 score_percentage, [], "", ""
             ),

@@ -2054,17 +2054,17 @@
       function editQuestion(quizType, index) {
           currentQuizType = quizType;
           currentQuestionIndex = index;
-          
+
           const editModeEl = document.getElementById('editMode');
           const modalTitleEl = document.getElementById('questionModalTitle');
           const submitTextEl = document.getElementById('questionSubmitText');
           const modalEl = document.getElementById('questionModal');
-          
+
           if (!editModeEl || !modalTitleEl || !submitTextEl || !modalEl) {
               console.error('Modal elements not found');
               return;
           }
-          
+
           editModeEl.value = 'true';
           modalTitleEl.textContent = 'Edit Question';
           submitTextEl.textContent = 'Update Question';

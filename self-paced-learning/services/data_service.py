@@ -300,6 +300,15 @@ class DataService:
     # UTILITY METHODS
     # ============================================================================
 
+    def get_subject_allowed_tags(self, subject: str) -> List[str]:
+        """Get configured allowed tags for a subject."""
+        try:
+            tags = self.data_loader.get_subject_keywords(subject)
+            return [tag for tag in tags if isinstance(tag, str)]
+        except Exception as exc:
+            print(f'Error retrieving allowed tags for subject {subject}: {exc}')
+            return []
+
     def get_subject_tags(self, subject: str) -> List[str]:
         """Get all available tags for a subject."""
         tags = set()

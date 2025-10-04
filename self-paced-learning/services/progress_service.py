@@ -14,7 +14,8 @@ class ProgressService:
 
     def __init__(self):
         """Initialize the progress service."""
-        pass
+        self._test_completed_lessons = {}
+        self._test_watched_videos = {}
 
     # ============================================================================
     # SESSION KEY MANAGEMENT
@@ -34,9 +35,16 @@ class ProgressService:
         for key in keys_to_remove:
             session.pop(key, None)
 
+        completed_key = self.get_session_key(subject, subtopic, "completed_lessons")
+        self._test_completed_lessons.pop(completed_key, None)
+        watched_key = self.get_session_key(subject, subtopic, "watched_videos")
+        self._test_watched_videos.pop(watched_key, None)
+
     def clear_all_session_data(self) -> None:
         """Clear all session data."""
         session.clear()
+        self._test_completed_lessons.clear()
+        self._test_watched_videos.clear()
 
     # ============================================================================
     # LESSON PROGRESS TRACKING
@@ -45,7 +53,9 @@ class ProgressService:
     def mark_lesson_complete(self, subject: str, subtopic: str, lesson_id: str) -> bool:
         """Mark a specific lesson as completed."""
         if not has_request_context():
-            # Return True when not in request context (for testing)
+            key = self.get_session_key(subject, subtopic, "completed_lessons")
+            completed = self._test_completed_lessons.setdefault(key, set())
+            completed.add(lesson_id)
             return True
 
         try:
@@ -65,8 +75,9 @@ class ProgressService:
     def is_lesson_complete(self, subject: str, subtopic: str, lesson_id: str) -> bool:
         """Check if a specific lesson is completed."""
         if not has_request_context():
-            # Return False when not in request context (for testing)
-            return False
+            key = self.get_session_key(subject, subtopic, "completed_lessons")
+            completed = self._test_completed_lessons.get(key, set())
+            return lesson_id in completed
 
         try:
             completed_key = self.get_session_key(subject, subtopic, "completed_lessons")
@@ -79,6 +90,8 @@ class ProgressService:
     def get_completed_lessons(self, subject: str, subtopic: str) -> List[str]:
         """Get list of completed lesson IDs for a subject/subtopic."""
         completed_key = self.get_session_key(subject, subtopic, "completed_lessons")
+        if not has_request_context():
+            return list(self._test_completed_lessons.get(completed_key, set()))
         return session.get(completed_key, [])
 
     def get_lesson_progress_stats(
@@ -103,6 +116,12 @@ class ProgressService:
 
     def mark_video_complete(self, subject: str, subtopic: str, video_id: str) -> bool:
         """Mark a specific video as watched."""
+        if not has_request_context():
+            key = self.get_session_key(subject, subtopic, "watched_videos")
+            watched = self._test_watched_videos.setdefault(key, set())
+            watched.add(video_id)
+            return True
+
         try:
             watched_key = self.get_session_key(subject, subtopic, "watched_videos")
             watched_videos = session.get(watched_key, [])
@@ -120,12 +139,17 @@ class ProgressService:
     def is_video_complete(self, subject: str, subtopic: str, video_id: str) -> bool:
         """Check if a specific video is watched."""
         watched_key = self.get_session_key(subject, subtopic, "watched_videos")
+        if not has_request_context():
+            watched = self._test_watched_videos.get(watched_key, set())
+            return video_id in watched
         watched_videos = session.get(watched_key, [])
         return video_id in watched_videos
 
     def get_watched_videos(self, subject: str, subtopic: str) -> List[str]:
         """Get list of watched video IDs for a subject/subtopic."""
         watched_key = self.get_session_key(subject, subtopic, "watched_videos")
+        if not has_request_context():
+            return list(self._test_watched_videos.get(watched_key, set()))
         return session.get(watched_key, [])
 
     def get_video_progress_stats(
@@ -183,6 +207,104 @@ class ProgressService:
 
         for key in quiz_keys:
             session.pop(key, None)
+
+
+    def prepare_analysis_for_session(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
+        """Return a sanitized copy of analysis data suitable for cookie storage."""
+        if not isinstance(analysis, dict):
+            return {}
+
+        keys_to_keep = [
+            "score",
+            "weak_topics",
+            "weak_tags",
+            "weak_areas",
+            "feedback",
+            "ai_analysis",
+            "recommendations",
+            "allowed_tags",
+            "used_ai",
+        ]
+
+        sanitized = {key: analysis.get(key) for key in keys_to_keep if key in analysis}
+
+        submission = analysis.get("submission_details")
+        if submission:
+            # Provide a short summary for debugging while keeping cookie sizes small
+            if isinstance(submission, list):
+                preview = "\n".join(str(part) for part in submission)[:1000]
+            else:
+                preview = str(submission)[:1000]
+            sanitized["submission_preview"] = preview
+
+        raw_response = analysis.get("raw_ai_response")
+        if raw_response:
+            sanitized["raw_ai_response_preview"] = str(raw_response)[:1000]
+
+        return sanitized
+
+    def store_quiz_analysis(self, subject: str, subtopic: str, analysis: Dict[str, Any]) -> Dict[str, Any]:
+        """Persist quiz analysis results for later use and return sanitized copy."""
+        sanitized = self.prepare_analysis_for_session(analysis)
+        key = self.get_session_key(subject, subtopic, "analysis_results")
+        session[key] = sanitized
+        session.permanent = True
+        return sanitized
+
+    def get_quiz_analysis(self, subject: str, subtopic: str) -> Optional[Dict[str, Any]]:
+        """Retrieve stored quiz analysis if available."""
+        key = self.get_session_key(subject, subtopic, "analysis_results")
+        return session.get(key)
+
+    def set_weak_topics(self, subject: str, subtopic: str, topics: List[str]) -> None:
+        """Store normalized weak topics for remedial guidance."""
+        normalized: List[str] = []
+        seen = set()
+        for topic in topics or []:
+            if not isinstance(topic, str):
+                continue
+            cleaned = topic.strip()
+            if not cleaned:
+                continue
+            key_lower = cleaned.lower()
+            if key_lower in seen:
+                continue
+            seen.add(key_lower)
+            normalized.append(cleaned)
+        weak_key = self.get_session_key(subject, subtopic, "weak_topics")
+        session[weak_key] = normalized
+        session.permanent = True
+
+    def get_weak_topics(self, subject: str, subtopic: str) -> List[str]:
+        """Return stored weak topics, if any."""
+        weak_key = self.get_session_key(subject, subtopic, "weak_topics")
+        return session.get(weak_key, [])
+
+    def set_remedial_quiz_data(
+        self, subject: str, subtopic: str, questions: List[Dict[str, Any]], topics: Optional[List[str]] = None
+    ) -> None:
+        """Persist remedial quiz questions and related topics."""
+        questions_key = self.get_session_key(subject, subtopic, "remedial_questions")
+        session[questions_key] = questions
+        if topics is not None:
+            topics_key = self.get_session_key(subject, subtopic, "remedial_topics")
+            session[topics_key] = topics
+        session.permanent = True
+
+    def get_remedial_quiz_questions(self, subject: str, subtopic: str) -> List[Dict[str, Any]]:
+        """Get stored remedial quiz questions."""
+        questions_key = self.get_session_key(subject, subtopic, "remedial_questions")
+        return session.get(questions_key, [])
+
+    def get_remedial_topics(self, subject: str, subtopic: str) -> List[str]:
+        """Get topics associated with the remedial quiz."""
+        topics_key = self.get_session_key(subject, subtopic, "remedial_topics")
+        return session.get(topics_key, [])
+
+    def clear_remedial_quiz_data(self, subject: str, subtopic: str) -> None:
+        """Remove remedial quiz data from the session."""
+        for suffix in ("remedial_questions", "remedial_topics"):
+            session.pop(self.get_session_key(subject, subtopic, suffix), None)
 
     # ============================================================================
     # OVERALL PROGRESS TRACKING
@@ -292,14 +414,84 @@ class ProgressService:
     # ============================================================================
 
     def check_quiz_prerequisites(self, subject: str, subtopic: str) -> Dict[str, Any]:
-        """Check prerequisite status for a subject/subtopic.
+        """Evaluate whether the learner can take the quiz for a subject/subtopic."""
 
-        Currently returns permissive status (no prerequisites).
-        This can be extended to implement actual prerequisite logic.
-        """
+        from services import get_data_service  # Lazy import to avoid circular deps
+
+        data_service = get_data_service()
+        loader = data_service.data_loader
+
+        lesson_data = loader.load_lesson_plans(subject, subtopic) or {}
+        raw_lessons = lesson_data.get("lessons", {})
+
+        lesson_items = []
+        if isinstance(raw_lessons, dict):
+            lesson_items = list(raw_lessons.items())
+        elif isinstance(raw_lessons, list):
+            for index, lesson in enumerate(raw_lessons):
+                lesson_id = lesson.get("id") or f"lesson_{index + 1}"
+                lesson_items.append((lesson_id, lesson))
+
+        lesson_titles = {
+            lesson_id: lesson.get("title", lesson_id)
+            for lesson_id, lesson in lesson_items
+        }
+        lesson_ids = list(lesson_titles.keys())
+
+        completed_lessons = set(self.get_completed_lessons(subject, subtopic))
+        missing_lessons = [
+            lesson_titles[lesson_id]
+            for lesson_id in lesson_ids
+            if lesson_id not in completed_lessons
+        ]
+
+        videos_data = loader.load_videos(subject, subtopic) or {}
+        raw_videos = videos_data.get("videos", {})
+
+        video_titles = {}
+        video_ids: List[str] = []
+        if isinstance(raw_videos, dict):
+            for video_id, video in raw_videos.items():
+                video_ids.append(video_id)
+                video_titles[video_id] = video.get("title", video_id)
+        elif isinstance(raw_videos, list):
+            for index, video in enumerate(raw_videos):
+                video_id = video.get("id") or f"video_{index + 1}"
+                video_ids.append(video_id)
+                video_titles[video_id] = video.get("title", video_id)
+
+        watched_videos = set(self.get_watched_videos(subject, subtopic))
+        missing_videos = [
+            video_titles.get(video_id, video_id)
+            for video_id in video_ids
+            if video_id not in watched_videos
+        ]
+
+        lessons_complete = len(missing_lessons) == 0 if lesson_ids else True
+        videos_complete = len(missing_videos) == 0 if video_ids else True
+
+        missing_items: List[str] = []
+        missing_items.extend([f"Complete lesson: {title}" for title in missing_lessons])
+        missing_items.extend([f"Watch video: {title}" for title in missing_videos])
+
+        admin_override = self.get_admin_override_status()
+        all_met = admin_override or (lessons_complete and videos_complete)
+
         return {
-            "has_prerequisites": False,
-            "prerequisites_met": True,
-            "missing_prerequisites": [],
-            "can_take_quiz": True,
+            "subject": subject,
+            "subtopic": subtopic,
+            "has_prerequisites": bool(lesson_ids or video_ids),
+            "lessons_complete": lessons_complete,
+            "lesson_total": len(lesson_ids),
+            "lessons_completed": len(lesson_ids) - len(missing_lessons),
+            "videos_complete": videos_complete,
+            "videos_total": len(video_ids),
+            "videos_watched": len(video_ids) - len(missing_videos),
+            "missing_items": missing_items,
+            "missing_lessons": missing_lessons,
+            "missing_videos": missing_videos,
+            "admin_override": admin_override,
+            "all_met": all_met,
+            "can_take_quiz": all_met,
+            "prerequisites_met": all_met,
         }

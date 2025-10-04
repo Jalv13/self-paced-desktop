@@ -4,8 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Subtopics Management - Admin Panel</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
   </head>
   <body class="admin-body">
     <div class="admin-layout">
@@ -19,19 +25,29 @@
             <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
           </li>
           <li>
-            <a href="/admin/subjects"><i class="fas fa-book-open"></i> Subjects</a>
+            <a href="/admin/subjects"
+              ><i class="fas fa-book-open"></i> Subjects</a
+            >
           </li>
           <li>
-            <a href="/admin/subtopics/select-subject" class="active"><i class="fas fa-sitemap"></i> Subtopics</a>
+            <a href="/admin/subtopics/select-subject" class="active"
+              ><i class="fas fa-sitemap"></i> Subtopics</a
+            >
           </li>
           <li>
-            <a href="/admin/lessons/select-subject"><i class="fas fa-chalkboard-teacher"></i> Lessons</a>
+            <a href="/admin/lessons/select-subject"
+              ><i class="fas fa-chalkboard-teacher"></i> Lessons</a
+            >
           </li>
           <li>
-            <a href="/admin/questions/select-subject"><i class="fas fa-question-circle"></i> Questions</a>
+            <a href="/admin/questions/select-subject"
+              ><i class="fas fa-question-circle"></i> Questions</a
+            >
           </li>
           <li>
-            <a href="/admin/export"><i class="fas fa-download"></i> Export/Import</a>
+            <a href="/admin/export"
+              ><i class="fas fa-download"></i> Export/Import</a
+            >
           </li>
         </ul>
       </nav>
@@ -43,7 +59,9 @@
           <p>Organise, style, and reorder the subtopics for this subject</p>
           <div class="breadcrumb">
             <a href="/admin/subtopics/select-subject">All Subtopics</a> >
-            <a href="/admin/subjects">{{ subject_info.name or subject|title }}</a>
+            <a href="/admin/subjects"
+              >{{ subject_info.name or subject|title }}</a
+            >
           </div>
           {% else %}
           <h1>Subtopic Management</h1>
@@ -70,16 +88,26 @@
           </div>
           <div class="action-buttons">
             {% if filtered_view %}
-            <button class="action-btn primary" type="button" onclick="openSubtopicModal('create')">
+            <button
+              class="action-btn primary"
+              type="button"
+              onclick="openSubtopicModal('create')"
+            >
               <i class="fas fa-plus"></i>
               Add New Subtopic
             </button>
-            <a href="/admin/subtopics/select-subject" class="action-btn secondary">
+            <a
+              href="/admin/subtopics/select-subject"
+              class="action-btn secondary"
+            >
               <i class="fas fa-list"></i>
               View All Subjects
             </a>
             {% else %}
-            <a href="/admin/subtopics/select-subject" class="action-btn primary">
+            <a
+              href="/admin/subtopics/select-subject"
+              class="action-btn primary"
+            >
               <i class="fas fa-layer-group"></i>
               Choose Subject
             </a>
@@ -96,17 +124,22 @@
 
           {% if allowed_tags %}
           <div class="allowed-tags subject-tags">
-            <strong>Allowed tags for {{ subject_info.name or subject|title }}:</strong>
+            <strong
+              >Allowed tags for {{ subject_info.name or subject|title
+              }}:</strong
+            >
             {% for tag in allowed_tags %}
             <span class="tag">{{ tag }}</span>
             {% endfor %}
           </div>
-          {% endif %}
-
-          {% if subtopics %}
-          <div class="subtopics-list" id="subtopics-list" data-subject="{{ subject }}">
-            {% for subtopic_id, subtopic_data in subtopics.items() %}
-            {% set is_mapping = subtopic_data is mapping %}
+          {% endif %} {% if subtopics %}
+          <div
+            class="subtopics-list"
+            id="subtopics-list"
+            data-subject="{{ subject }}"
+          >
+            {% for subtopic_id, subtopic_data in subtopics.items() %} {% set
+            is_mapping = subtopic_data is mapping %}
             <div
               class="subtopic-card draggable"
               data-subject="{{ subject }}"
@@ -114,14 +147,20 @@
               data-order="{{ subtopic_data.order if is_mapping and subtopic_data.order else loop.index }}"
               draggable="true"
             >
-              <div class="subtopic-drag-handle"><i class="fas fa-grip-vertical"></i></div>
+              <div class="subtopic-drag-handle">
+                <i class="fas fa-grip-vertical"></i>
+              </div>
               <div class="subtopic-order-badge">
-                {{ subtopic_data.order if is_mapping and subtopic_data.order else loop.index }}
+                {{ subtopic_data.order if is_mapping and subtopic_data.order
+                else loop.index }}
               </div>
 
               <div class="subtopic-main-content">
                 <div class="subtopic-header-inline">
-                  <h3>{{ subtopic_data.name if is_mapping and subtopic_data.name else subtopic_id.replace('-', ' ')|title }}</h3>
+                  <h3>
+                    {{ subtopic_data.name if is_mapping and subtopic_data.name
+                    else subtopic_id.replace('-', ' ')|title }}
+                  </h3>
                   <div class="subtopic-meta-inline">
                     <span
                       class="subject-badge-small"
@@ -130,35 +169,43 @@
                       <i class="{{ subject_info.icon or 'fas fa-book' }}"></i>
                     </span>
                     {% if is_mapping and subtopic_data.status %}
-                    <span class="subtopic-status {{ subtopic_data.status }}">{{ subtopic_data.status|title }}</span>
+                    <span class="subtopic-status {{ subtopic_data.status }}"
+                      >{{ subtopic_data.status|title }}</span
+                    >
                     {% endif %}
                   </div>
                 </div>
 
                 {% if is_mapping and subtopic_data.description %}
-                <p class="subtopic-description">{{ subtopic_data.description }}</p>
+                <p class="subtopic-description">
+                  {{ subtopic_data.description }}
+                </p>
                 {% endif %}
 
                 <div class="subtopic-details">
                   {% if is_mapping and subtopic_data.prerequisites %}
                   <div class="detail-item">
                     <i class="fas fa-lock"></i>
-                    <span>{{ subtopic_data.prerequisites|length }} prerequisite{{ 's' if subtopic_data.prerequisites|length != 1 }}</span>
+                    <span
+                      >{{ subtopic_data.prerequisites|length }} prerequisite{{
+                      's' if subtopic_data.prerequisites|length != 1 }}</span
+                    >
                   </div>
-                  {% endif %}
-                  {% if is_mapping and subtopic_data.estimated_time %}
+                  {% endif %} {% if is_mapping and subtopic_data.estimated_time
+                  %}
                   <div class="detail-item">
                     <i class="fas fa-clock"></i>
                     <span>{{ subtopic_data.estimated_time }}</span>
                   </div>
-                  {% endif %}
-                  {% if is_mapping and subtopic_data.lesson_count %}
+                  {% endif %} {% if is_mapping and subtopic_data.lesson_count %}
                   <div class="detail-item">
                     <i class="fas fa-chalkboard-teacher"></i>
-                    <span>{{ subtopic_data.lesson_count }} lesson{{ 's' if subtopic_data.lesson_count != 1 }}</span>
+                    <span
+                      >{{ subtopic_data.lesson_count }} lesson{{ 's' if
+                      subtopic_data.lesson_count != 1 }}</span
+                    >
                   </div>
-                  {% endif %}
-                  {% if is_mapping and subtopic_data.tags %}
+                  {% endif %} {% if is_mapping and subtopic_data.tags %}
                   <div class="detail-item tags">
                     <i class="fas fa-tags"></i>
                     <span>
@@ -169,7 +216,6 @@
                   </div>
                   {% endif %}
                 </div>
-
               </div>
 
               <div class="subtopic-actions-inline">
@@ -211,8 +257,15 @@
           <div class="empty-state">
             <i class="fas fa-sitemap"></i>
             <h3>No subtopics found</h3>
-            <p>Start by adding a subtopic for {{ subject_info.name or subject|title }}.</p>
-            <button class="action-btn primary" type="button" onclick="openSubtopicModal('create')">
+            <p>
+              Start by adding a subtopic for {{ subject_info.name or
+              subject|title }}.
+            </p>
+            <button
+              class="action-btn primary"
+              type="button"
+              onclick="openSubtopicModal('create')"
+            >
               <i class="fas fa-plus"></i>
               Create First Subtopic
             </button>
@@ -233,11 +286,22 @@
       </main>
 
       {% if filtered_view %}
-      <div id="subtopicModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
+      <div
+        id="subtopicModal"
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-hidden="true"
+      >
         <div class="modal-content">
           <div class="modal-header">
             <h2 id="subtopicModalTitle">Add Subtopic</h2>
-            <button type="button" class="modal-close" aria-label="Close" onclick="closeSubtopicModal()">
+            <button
+              type="button"
+              class="modal-close"
+              aria-label="Close"
+              onclick="closeSubtopicModal()"
+            >
               <i class="fas fa-times"></i>
             </button>
           </div>
@@ -246,18 +310,34 @@
 
             <div class="form-group">
               <label for="modalSubtopicId">Subtopic ID *</label>
-              <input type="text" id="modalSubtopicId" class="form-control" placeholder="e.g., functions" required />
+              <input
+                type="text"
+                id="modalSubtopicId"
+                class="form-control"
+                placeholder="e.g., functions"
+                required
+              />
               <small>Use lowercase letters, numbers, and hyphens only.</small>
             </div>
 
             <div class="form-group">
               <label for="modalSubtopicName">Display Name</label>
-              <input type="text" id="modalSubtopicName" class="form-control" placeholder="Readable name shown in the UI" />
+              <input
+                type="text"
+                id="modalSubtopicName"
+                class="form-control"
+                placeholder="Readable name shown in the UI"
+              />
             </div>
 
             <div class="form-group">
               <label for="modalSubtopicDescription">Description</label>
-              <textarea id="modalSubtopicDescription" class="form-control" rows="3" placeholder="Short description for this subtopic"></textarea>
+              <textarea
+                id="modalSubtopicDescription"
+                class="form-control"
+                rows="3"
+                placeholder="Short description for this subtopic"
+              ></textarea>
             </div>
 
             <div class="form-inline-row">
@@ -271,18 +351,54 @@
               </div>
               <div class="form-group">
                 <label for="modalSubtopicEstimatedTime">Estimated Time</label>
-                <input type="text" id="modalSubtopicEstimatedTime" class="form-control" placeholder="e.g., 45 minutes" />
+                <input
+                  type="text"
+                  id="modalSubtopicEstimatedTime"
+                  class="form-control"
+                  placeholder="e.g., 45 minutes"
+                />
               </div>
             </div>
 
             <div class="form-group">
               <label for="modalSubtopicTags">Tags</label>
-              <input type="text" id="modalSubtopicTags" class="form-control" placeholder="Comma separated tags" />
+              <input
+                type="text"
+                id="modalSubtopicTags"
+                class="form-control"
+                placeholder="Comma separated tags"
+              />
               <small>New tags will be added to this subtopic only.</small>
             </div>
 
+            <div class="form-group">
+              <label for="modalSubtopicPrerequisites">Prerequisites</label>
+              <select
+                id="modalSubtopicPrerequisites"
+                class="form-control"
+                multiple
+                size="6"
+              >
+                {% for candidate_id, candidate_data in subtopics.items() %}
+                <option value="{{ candidate_id }}">
+                  {{ candidate_data.name if candidate_data is mapping and candidate_data.name else candidate_id.replace('-', ' ')|title }}
+                </option>
+                {% endfor %}
+              </select>
+              <small
+                >Select required subtopics (Ctrl/Cmd-click to choose
+                multiple).</small
+              >
+            </div>
+
             <div class="modal-actions">
-              <button type="button" class="btn-secondary" onclick="closeSubtopicModal()">Cancel</button>
+              <button
+                type="button"
+                class="btn-secondary"
+                onclick="closeSubtopicModal()"
+              >
+                Cancel
+              </button>
               <button type="submit" class="btn-primary">
                 <span id="subtopicModalSubmitText">Save Subtopic</span>
               </button>
@@ -973,6 +1089,7 @@
       const subtopicModeInput = document.getElementById('subtopicFormMode');
       const subtopicModalTitle = document.getElementById('subtopicModalTitle');
       const subtopicModalSubmitText = document.getElementById('subtopicModalSubmitText');
+      const subtopicPrereqSelect = document.getElementById('modalSubtopicPrerequisites');
 
       document.addEventListener('DOMContentLoaded', function () {
         initializeDragAndDrop();
@@ -1179,6 +1296,29 @@
           }
           estimatedInput.value = data.estimated_time || '';
           tagsInput.value = Array.isArray(data.tags) ? data.tags.join(', ') : '';
+          if (subtopicPrereqSelect) {
+            const existingValues = new Set(
+              Array.from(subtopicPrereqSelect.options).map((option) => option.value)
+            );
+            if (Array.isArray(data.prerequisites)) {
+              data.prerequisites.forEach((value) => {
+                if (!existingValues.has(value)) {
+                  const option = document.createElement('option');
+                  option.value = value;
+                  option.textContent = value.replace(/-/g, ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
+                  subtopicPrereqSelect.appendChild(option);
+                  existingValues.add(value);
+                }
+              });
+            }
+
+            Array.from(subtopicPrereqSelect.options).forEach((option) => {
+              option.selected = Array.isArray(data.prerequisites)
+                ? data.prerequisites.includes(option.value)
+                : false;
+              option.disabled = option.value === subtopicId;
+            });
+          }
         } else {
           if (subtopicModalTitle) {
             subtopicModalTitle.textContent = 'Add Subtopic';
@@ -1195,6 +1335,12 @@
           }
           estimatedInput.value = '';
           tagsInput.value = '';
+          if (subtopicPrereqSelect) {
+            Array.from(subtopicPrereqSelect.options).forEach((option) => {
+              option.selected = false;
+              option.disabled = false;
+            });
+          }
         }
 
         subtopicModal.classList.add('show');
@@ -1245,6 +1391,7 @@
         const statusSelect = document.getElementById('modalSubtopicStatus');
         const estimatedInput = document.getElementById('modalSubtopicEstimatedTime');
         const tagsInput = document.getElementById('modalSubtopicTags');
+        const prerequisitesSelect = subtopicPrereqSelect;
 
         let subtopicId = (idInput?.value || '').trim();
         if (!subtopicId) {
@@ -1322,6 +1469,17 @@
           entry.tags = tags;
         } else {
           delete entry.tags;
+        }
+
+        if (prerequisitesSelect) {
+          const prerequisites = Array.from(prerequisitesSelect.selectedOptions)
+            .map((option) => option.value)
+            .filter((value) => value && value !== subtopicId);
+          if (prerequisites.length) {
+            entry.prerequisites = prerequisites;
+          } else {
+            delete entry.prerequisites;
+          }
         }
 
         updatedSubtopics[subtopicId] = entry;

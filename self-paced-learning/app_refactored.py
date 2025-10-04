@@ -15,6 +15,7 @@ import re
 from datetime import datetime
 from flask import Flask, session, render_template, jsonify
 from dotenv import load_dotenv
+import werkzeug
 
 # Import our refactored services and blueprints
 from services import init_services
@@ -22,6 +23,9 @@ from blueprints import register_blueprints, get_blueprint_info
 
 # Load environment variables
 load_dotenv()
+
+if not getattr(werkzeug, '__version__', None):
+    werkzeug.__version__ = '3'
 
 # Create Flask application
 app = Flask(__name__)

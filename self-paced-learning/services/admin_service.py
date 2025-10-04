@@ -7,6 +7,7 @@ from the main application routes.
 
 import os
 import json
+from datetime import datetime
 from typing import Dict, List, Optional, Any
 from .data_service import DataService
 from .progress_service import ProgressService
@@ -515,6 +516,159 @@ class AdminService:
 
         except Exception as e:
             return {"success": False, "error": str(e)}
+
+    # ============================================================================
+    # EXPORT / IMPORT OPERATIONS
+    # ============================================================================
+
+    def export_all_content(self) -> Dict[str, Any]:
+        """Compile a JSON snapshot for every subject, subtopic, and resource."""
+        data_root = self.data_service.data_root_path
+        loader = self.data_service.data_loader
+
+        subjects = loader.discover_subjects()
+        export_payload: Dict[str, Any] = {
+            "schema_version": 1,
+            "generated_at": datetime.utcnow().isoformat() + "Z",
+            "subjects_index": None,
+            "subjects": {},
+        }
+
+        subjects_index_path = os.path.join(data_root, "subjects.json")
+        if os.path.exists(subjects_index_path):
+            with open(subjects_index_path, "r", encoding="utf-8") as index_file:
+                export_payload["subjects_index"] = json.load(index_file)
+
+        for subject_id, subject_info in subjects.items():
+            subject_block: Dict[str, Any] = {
+                "info": loader.load_subject_info(subject_id) or {},
+                "config": loader.load_subject_config(subject_id) or {},
+                "meta": subject_info,
+                "subtopics": {},
+            }
+
+            # Determine known subtopics from config and filesystem
+            config_subtopics = (
+                subject_block["config"].get("subtopics", {})
+                if isinstance(subject_block.get("config"), dict)
+                else {}
+            )
+
+            subject_dir = os.path.join(data_root, "subjects", subject_id)
+            filesystem_subtopics = []
+            if os.path.isdir(subject_dir):
+                filesystem_subtopics = [
+                    name
+                    for name in os.listdir(subject_dir)
+                    if os.path.isdir(os.path.join(subject_dir, name))
+                ]
+
+            subtopic_ids = set(list(config_subtopics.keys()) + filesystem_subtopics)
+
+            for subtopic_id in sorted(subtopic_ids):
+                subtopic_block: Dict[str, Any] = {}
+
+                lesson_plans = loader.load_lesson_plans(subject_id, subtopic_id)
+                if lesson_plans:
+                    subtopic_block["lesson_plans"] = lesson_plans
+
+                quiz_data = loader.load_quiz_data(subject_id, subtopic_id)
+                if quiz_data:
+                    subtopic_block["quiz_data"] = quiz_data
+
+                pool_data = loader.load_question_pool(subject_id, subtopic_id)
+                if pool_data:
+                    subtopic_block["question_pool"] = pool_data
+
+                videos_data = loader.load_videos(subject_id, subtopic_id)
+                if videos_data:
+                    subtopic_block["videos"] = videos_data
+
+                if subtopic_block:
+                    subject_block["subtopics"][subtopic_id] = subtopic_block
+
+            export_payload["subjects"][subject_id] = subject_block
+
+        return export_payload
+
+    def import_all_content(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Persist an exported JSON snapshot back to disk."""
+        try:
+            subjects = payload.get("subjects")
+            if not isinstance(subjects, dict) or not subjects:
+                return {"success": False, "error": "No subjects provided in import data."}
+
+            data_root = self.data_service.data_root_path
+
+            for subject_id, subject_payload in subjects.items():
+                subject_dir = os.path.join(data_root, "subjects", subject_id)
+                os.makedirs(subject_dir, exist_ok=True)
+
+                subject_info = subject_payload.get("info")
+                if isinstance(subject_info, dict):
+                    with open(
+                        os.path.join(subject_dir, "subject_info.json"),
+                        "w",
+                        encoding="utf-8",
+                    ) as info_file:
+                        json.dump(subject_info, info_file, indent=2, ensure_ascii=False)
+
+                subject_config = subject_payload.get("config")
+                if isinstance(subject_config, dict):
+                    with open(
+                        os.path.join(subject_dir, "subject_config.json"),
+                        "w",
+                        encoding="utf-8",
+                    ) as config_file:
+                        json.dump(subject_config, config_file, indent=2, ensure_ascii=False)
+
+                subtopics = subject_payload.get("subtopics", {})
+                if isinstance(subtopics, dict):
+                    for subtopic_id, subtopic_payload in subtopics.items():
+                        subtopic_dir = os.path.join(subject_dir, subtopic_id)
+                        os.makedirs(subtopic_dir, exist_ok=True)
+
+                        file_map = {
+                            "lesson_plans": "lesson_plans.json",
+                            "quiz_data": "quiz_data.json",
+                            "question_pool": "question_pool.json",
+                            "videos": "videos.json",
+                        }
+
+                        for key, filename in file_map.items():
+                            if key in subtopic_payload:
+                                with open(
+                                    os.path.join(subtopic_dir, filename),
+                                    "w",
+                                    encoding="utf-8",
+                                ) as target_file:
+                                    json.dump(
+                                        subtopic_payload[key],
+                                        target_file,
+                                        indent=2,
+                                        ensure_ascii=False,
+                                    )
+
+            subjects_index = payload.get("subjects_index")
+            if subjects_index is not None:
+                with open(
+                    os.path.join(data_root, "subjects.json"),
+                    "w",
+                    encoding="utf-8",
+                ) as index_file:
+                    json.dump(subjects_index, index_file, indent=2, ensure_ascii=False)
+
+            # Clear any cached data so fresh content is picked up
+            self.data_service.data_loader.clear_cache()
+
+            return {
+                "success": True,
+                "message": f"Imported data for {len(subjects)} subject(s) successfully.",
+            }
+
+        except Exception as exc:
+            print(f"Error importing dataset: {exc}")
+            return {"success": False, "error": str(exc)}
 
     # ============================================================================
     # OVERRIDE AND TESTING FUNCTIONALITY

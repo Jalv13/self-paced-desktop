@@ -222,15 +222,46 @@ def api_lesson_plans(subject, subtopic):
         if not lesson_data or "lessons" not in lesson_data:
             return jsonify({"lessons": {}, "message": "No lessons found"})
 
-        lessons = lesson_data["lessons"]
+        raw_lessons = lesson_data["lessons"]
 
-        # Add progress information to each lesson
-        for lesson_id, lesson in lessons.items():
-            lesson["completed"] = progress_service.is_lesson_complete(
-                subject, subtopic, lesson_id
+        # Normalise lessons into an ordered dictionary keyed by lesson id
+        normalised_lessons = {}
+
+        if isinstance(raw_lessons, dict):
+            lesson_items = list(raw_lessons.items())
+        elif isinstance(raw_lessons, list):
+            lesson_items = []
+            for index, lesson in enumerate(raw_lessons):
+                lesson_id = lesson.get("id") or f"lesson_{index + 1}"
+                lesson_items.append((lesson_id, lesson))
+        else:
+            lesson_items = []
+
+        def _lesson_sort(item):
+            order_value = item[1].get("order")
+            try:
+                return float(order_value)
+            except (TypeError, ValueError):
+                return 9999
+
+        for lesson_id, lesson in sorted(lesson_items, key=_lesson_sort):
+            lesson_copy = dict(lesson)
+            lesson_copy["id"] = lesson_copy.get("id", lesson_id)
+            lesson_copy["completed"] = progress_service.is_lesson_complete(
+                subject, subtopic, lesson_copy["id"]
             )
+            normalised_lessons[lesson_copy["id"]] = lesson_copy
 
-        return jsonify({"lessons": lessons, "subject": subject, "subtopic": subtopic})
+        ordered_lessons = list(normalised_lessons.values())
+
+        return jsonify(
+            {
+                "lessons": ordered_lessons,
+                "lessons_map": normalised_lessons,
+                "subject": subject,
+                "subtopic": subtopic,
+            }
+        )
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

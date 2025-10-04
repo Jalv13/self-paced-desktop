@@ -1,13 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Export/Import - Admin Panel</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/styles.css') }}"
-    />
+    <title>Export &amp; Import - Admin Panel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
@@ -15,11 +12,10 @@
   </head>
   <body class="admin-body">
     <div class="admin-layout">
-      <!-- Admin Sidebar -->
       <nav class="admin-sidebar">
         <div class="admin-logo">
           <h2><i class="fas fa-cog"></i> Admin Panel</h2>
-          <a href="/" class="back-to-site">← Back to Site</a>
+          <a href="/" class="back-to-site">&larr; Back to Site</a>
         </div>
 
         <ul class="admin-nav">
@@ -27,9 +23,7 @@
             <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
           </li>
           <li>
-            <a href="/admin/subjects"
-              ><i class="fas fa-book-open"></i> Subjects</a
-            >
+            <a href="/admin/subjects"><i class="fas fa-book-open"></i> Subjects</a>
           </li>
           <li>
             <a href="/admin/subtopics/select-subject"
@@ -54,68 +48,482 @@
         </ul>
       </nav>
 
-      <!-- Main Content -->
-      <main class="admin-main">
-        <div class="admin-header">
-          <div class="admin-breadcrumb">
-            <span><i class="fas fa-download"></i></span>
-            <span>Export/Import</span>
+      <main class="admin-content">
+        <header class="admin-header">
+          <h1>Export &amp; Import</h1>
+          <p>Back up your learning library or refresh it from a JSON snapshot.</p>
+          <div class="breadcrumb">
+            <a href="/admin">Admin</a> > <span>Export &amp; Import</span>
           </div>
+        </header>
+
+        {% if error %}
+        <div class="alert error">
+          <i class="fas fa-exclamation-triangle"></i>
+          {{ error }}
         </div>
+        {% endif %}
 
-        <div class="admin-content">
-          <div class="admin-card">
-            <div class="card-header">
-              <h2><i class="fas fa-download"></i> Export/Import Data</h2>
-              <p>Backup and restore your learning platform data</p>
+        <section class="export-grid">
+          <article class="card">
+            <div class="card-header gradient">
+              <h2><i class="fas fa-cloud-download-alt"></i> Export Data</h2>
+              <p>Download a single JSON file containing subjects, lessons, quizzes, and pools.</p>
             </div>
-
-            <div class="card-content">
-              <div class="coming-soon">
-                <i class="fas fa-tools"></i>
-                <h3>Coming Soon</h3>
-                <p>Export and import functionality is under development.</p>
-                <p>This feature will allow you to:</p>
-                <ul>
-                  <li>Export all subjects and data to JSON files</li>
-                  <li>Import data from backup files</li>
-                  <li>Migrate content between environments</li>
-                  <li>Create data templates for new subjects</li>
-                </ul>
+            <div class="card-body">
+              <div class="export-stats">
+                <div class="stat">
+                  <span class="stat-value">{{ total_subjects }}</span>
+                  <span class="stat-label">Subjects</span>
+                </div>
+                <div class="stat">
+                  <span class="stat-value">{{ total_subtopics }}</span>
+                  <span class="stat-label">Subtopics</span>
+                </div>
+                <div class="stat">
+                  <span class="stat-value">{{ total_lessons }}</span>
+                  <span class="stat-label">Lessons</span>
+                </div>
               </div>
+
+              {% if subject_stats %}
+              <div class="subject-summary">
+                {% for subject in subject_stats %}
+                <div class="subject-chip">
+                  <div class="chip-icon" style="background-color: {{ subject.color or '#2563eb' }}">
+                    <i class="fas fa-book"></i>
+                  </div>
+                  <div class="chip-info">
+                    <strong>{{ subject.name }}</strong>
+                    <span>{{ subject.subtopics }} subtopics · {{ subject.lessons }} lessons</span>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+
+              <a href="/admin/export/download" class="action-btn primary full-width">
+                <i class="fas fa-file-export"></i>
+                Download JSON Backup
+              </a>
             </div>
-          </div>
-        </div>
+          </article>
+
+          <article class="card">
+            <div class="card-header">
+              <h2><i class="fas fa-cloud-upload-alt"></i> Import Data</h2>
+              <p>Upload a JSON export file to merge or replace existing content.</p>
+            </div>
+            <div class="card-body">
+              <form id="importForm" class="import-form">
+                <label class="file-input">
+                  <i class="fas fa-file-upload"></i>
+                  <span id="fileLabel">Choose import JSON…</span>
+                  <input type="file" id="importFile" accept="application/json" hidden />
+                </label>
+                <p class="hint">
+                  The import will overwrite matching subjects and subtopics. We'll rebuild caches automatically.
+                </p>
+                <button type="submit" class="action-btn import-btn full-width">
+                  <i class="fas fa-upload"></i>
+                  Import JSON
+                </button>
+              </form>
+              <div id="importStatus" class="status" role="status"></div>
+            </div>
+          </article>
+        </section>
       </main>
     </div>
 
     <style>
-      .coming-soon {
+      .admin-body {
+        background: #f4f7fb;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .admin-layout {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .admin-sidebar {
+        width: 280px;
+        background: #111827;
+        color: #fff;
+        flex-shrink: 0;
+      }
+
+      .admin-logo {
+        padding: 24px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         text-align: center;
-        padding: 3rem;
-        color: #666;
       }
 
-      .coming-soon i {
-        font-size: 4rem;
-        color: #ddd;
-        margin-bottom: 1rem;
+      .admin-logo h2 {
+        margin: 0;
+        font-size: 1.6rem;
       }
 
-      .coming-soon h3 {
-        color: #333;
-        margin-bottom: 1rem;
-      }
-
-      .coming-soon ul {
-        text-align: left;
+      .back-to-site {
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        font-size: 0.9rem;
+        margin-top: 10px;
         display: inline-block;
-        margin-top: 1rem;
       }
 
-      .coming-soon li {
-        margin: 0.5rem 0;
+      .back-to-site:hover {
+        color: #60a5fa;
+      }
+
+      .admin-nav {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .admin-nav li a {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 24px;
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+        font-weight: 500;
+      }
+
+      .admin-nav li a:hover,
+      .admin-nav li a.active {
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+        border-left-color: #60a5fa;
+      }
+
+      .admin-content {
+        flex: 1;
+        padding: 40px;
+        overflow-y: auto;
+      }
+
+      .admin-header h1 {
+        margin: 0;
+        font-size: 2.4rem;
+        color: #1f2937;
+      }
+
+      .admin-header p {
+        margin-top: 8px;
+        color: #4b5563;
+      }
+
+      .breadcrumb {
+        margin-top: 14px;
+        font-size: 0.92rem;
+        color: #6b7280;
+      }
+
+      .breadcrumb a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+
+      .breadcrumb a:hover {
+        text-decoration: underline;
+      }
+
+      .alert {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 18px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        font-weight: 600;
+      }
+
+      .alert.error {
+        background: rgba(248, 113, 113, 0.15);
+        color: #b91c1c;
+      }
+
+      .export-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+        gap: 24px;
+      }
+
+      .card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .card-header {
+        padding: 22px 26px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .card-header.gradient {
+        background: linear-gradient(135deg, #6366f1, #9333ea);
+        color: #fff;
+        border-bottom: none;
+      }
+
+      .card-header h2 {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.3rem;
+      }
+
+      .card-header p {
+        margin: 6px 0 0;
+        font-size: 0.95rem;
+        opacity: 0.9;
+      }
+
+      .card-body {
+        padding: 24px 26px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .export-stats {
+        display: flex;
+        gap: 18px;
+      }
+
+      .stat {
+        flex: 1;
+        background: rgba(99, 102, 241, 0.08);
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+      }
+
+      .stat-value {
+        display: block;
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #4338ca;
+      }
+
+      .stat-label {
+        font-size: 0.9rem;
+        color: #4b5563;
+      }
+
+      .subject-summary {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 220px;
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+
+      .subject-chip {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+
+      .chip-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+      }
+
+      .chip-info strong {
+        display: block;
+        color: #1f2937;
+      }
+
+      .chip-info span {
+        font-size: 0.85rem;
+        color: #6b7280;
+      }
+
+      .action-btn.primary,
+      .action-btn.secondary {
+        justify-content: center;
+      }
+
+      .action-btn.import-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        justify-content: center;
+        background: linear-gradient(135deg, #10b981, #0ea5e9);
+        color: #ffffff;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 18px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        cursor: pointer;
+        box-shadow: 0 14px 30px rgba(14, 165, 233, 0.25);
+        transition: transform 0.2s ease, box-shadow 0.2s ease,
+          filter 0.2s ease;
+      }
+
+      .action-btn.import-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 44px rgba(14, 165, 233, 0.32);
+        filter: brightness(1.05);
+      }
+
+      .action-btn.import-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 10px 24px rgba(14, 165, 233, 0.28);
+        filter: brightness(0.98);
+      }
+
+      .action-btn.import-btn:focus-visible {
+        outline: 3px solid rgba(14, 165, 233, 0.45);
+        outline-offset: 3px;
+      }
+
+      .full-width {
+        width: 100%;
+        text-align: center;
+      }
+
+      .import-form {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .file-input {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        border: 2px dashed #c7d2fe;
+        border-radius: 12px;
+        cursor: pointer;
+        color: #4338ca;
+        font-weight: 600;
+        background: rgba(99, 102, 241, 0.05);
+      }
+
+      .file-input:hover {
+        border-color: #6366f1;
+        background: rgba(99, 102, 241, 0.08);
+      }
+
+      .hint {
+        font-size: 0.9rem;
+        color: #6b7280;
+        margin: 0;
+      }
+
+      .status {
+        min-height: 28px;
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+
+      .status.success {
+        color: #047857;
+      }
+
+      .status.error {
+        color: #b91c1c;
+      }
+
+      @media (max-width: 960px) {
+        .admin-layout {
+          flex-direction: column;
+        }
+
+        .admin-sidebar {
+          width: 100%;
+        }
+
+        .admin-content {
+          padding: 24px;
+        }
+
+        .export-stats {
+          flex-direction: column;
+        }
+
+        .subject-summary {
+          max-height: 180px;
+        }
       }
     </style>
+
+    <script>
+      const importForm = document.getElementById('importForm');
+      const importFile = document.getElementById('importFile');
+      const fileLabel = document.getElementById('fileLabel');
+      const importStatus = document.getElementById('importStatus');
+
+      if (importFile) {
+        importFile.addEventListener('change', () => {
+          const file = importFile.files[0];
+          fileLabel.textContent = file ? file.name : 'Choose export JSON…';
+          importStatus.textContent = '';
+          importStatus.className = 'status';
+        });
+      }
+
+      if (importForm) {
+        importForm.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          if (!importFile || !importFile.files.length) {
+            showStatus('Please choose a JSON file to import.', 'error');
+            return;
+          }
+
+          const formData = new FormData();
+          formData.append('file', importFile.files[0]);
+
+          showStatus('Importing data…', '');
+
+          try {
+            const response = await fetch('/admin/export/import', {
+              method: 'POST',
+              body: formData,
+            });
+            const result = await response.json();
+            if (response.ok && result.success) {
+              showStatus(result.message || 'Import completed successfully.', 'success');
+              importFile.value = '';
+              fileLabel.textContent = 'Choose export JSON…';
+            } else {
+              showStatus(result.error || 'Import failed. Please check the file.', 'error');
+            }
+          } catch (error) {
+            console.error(error);
+            showStatus('Unexpected error during import. See console for details.', 'error');
+          }
+        });
+      }
+
+      function showStatus(message, type) {
+        if (!importStatus) return;
+        importStatus.textContent = message;
+        importStatus.className = `status ${type}`.trim();
+      }
+    </script>
   </body>
 </html>
