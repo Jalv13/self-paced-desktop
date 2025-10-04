@@ -18,13 +18,6 @@
       id="resultsAdminOverridePanel"
     >
       <div class="admin-override-label">Admin Override Active</div>
-      <button
-        type="button"
-        id="disableOverrideResults"
-        class="admin-override-toggle"
-      >
-        Disable Override
-      </button>
     </div>
     {% endif %}
     <div class="blackboard-layout">
@@ -128,9 +121,6 @@
               const continueButton = document.getElementById("continueButton");
               const backToTopicsButton =
                 document.getElementById("backToTopicsButton");
-              const disableOverrideButton = document.getElementById(
-                "disableOverrideResults"
-              );
               const adminMarkCompleteButton = document.getElementById(
                 "adminMarkCompleteButton"
               );
@@ -400,39 +390,6 @@
                   window.location.href = "/generate_remedial_quiz";
                 }
               });
-
-              if (disableOverrideButton) {
-                disableOverrideButton.addEventListener(
-                  "click",
-                  async function () {
-                    try {
-                      disableOverrideButton.disabled = true;
-                      const response = await fetch("/admin/toggle-override", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ enabled: false }),
-                      });
-                      const data = await response.json();
-
-                      if (data.success) {
-                        window.location.reload();
-                      } else {
-                        disableOverrideButton.disabled = false;
-                        alert(
-                          data.error ||
-                            "Failed to disable admin override. Please try again."
-                        );
-                      }
-                    } catch (error) {
-                      console.error("Error disabling admin override", error);
-                      disableOverrideButton.disabled = false;
-                      alert(
-                        "A network error prevented disabling admin override."
-                      );
-                    }
-                  }
-                );
-              }
 
               // Admin mark complete functionality
               if (adminMarkCompleteButton) {
