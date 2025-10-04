@@ -16,10 +16,24 @@ from .progress_service import ProgressService
 class AdminService:
     """Service class for handling administrative operations."""
 
-    def __init__(self, data_service: DataService, progress_service: ProgressService):
-        """Initialize the admin service with required dependencies."""
-        self.data_service = data_service
-        self.progress_service = progress_service
+    def __init__(
+        self,
+        data_service: Optional[DataService] = None,
+        progress_service: Optional[ProgressService] = None,
+    ):
+        """Initialize the admin service with required dependencies.
+
+        Args:
+            data_service: Optional pre-configured :class:`DataService` instance.
+                When omitted a new instance targeting the default data root is
+                created, which keeps legacy tests working without manual
+                wiring.
+            progress_service: Optional :class:`ProgressService` instance. A new
+                instance is created when not provided.
+        """
+
+        self.data_service = data_service or DataService()
+        self.progress_service = progress_service or ProgressService()
 
     # ============================================================================
     # DASHBOARD AND OVERVIEW

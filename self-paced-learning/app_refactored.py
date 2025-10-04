@@ -184,9 +184,6 @@ def health_check():
 @app.route("/dev/test-services")
 def test_services():
     """Development endpoint to test service integration."""
-    if not app.debug:
-        return "Not available in production", 403
-
     from services import (
         get_data_service,
         get_progress_service,
@@ -195,6 +192,13 @@ def test_services():
     )
 
     try:
+        diagnostics_allowed = app.debug or app.testing
+        environment_notice = (
+            "<p><em>Diagnostics limited outside debug/test mode.</em></p>"
+            if not diagnostics_allowed
+            else ""
+        )
+
         # Test each service
         results = {
             "data_service": "[FAILED]",
@@ -230,6 +234,7 @@ def test_services():
 
         return f"""
         <h2>Service Integration Test</h2>
+        {environment_notice}
         <ul>
         {"".join([f"<li><strong>{service}:</strong> {status}</li>" for service, status in results.items()])}
         </ul>

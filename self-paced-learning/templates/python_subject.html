@@ -120,7 +120,7 @@
             <button
               class="button lesson-btn"
               data-subtopic="{{ subtopic_id }}"
-              onclick="showInitialLessons('{{ subject }}', '{{ subtopic_id }}')"
+              onclick="handleSubtopicAccess('{{ subject }}', '{{ subtopic_id }}')"
             >
               <i class="fas fa-book-open"></i>
               View Lessons
@@ -1525,6 +1525,51 @@
       const lessonCompletionCache = new Map();
       const videoCompletionCache = new Map();
 
+      async function handleSubtopicAccess(subject, subtopic) {
+        try {
+          const response = await fetch(
+            `/api/subtopic-prerequisites/${subject}/${subtopic}`
+          );
+
+          if (!response.ok) {
+            showInitialLessons(subject, subtopic);
+            return;
+          }
+
+          const data = await response.json();
+
+          if (
+            data.admin_override ||
+            !data.has_prerequisites ||
+            data.can_access_subtopic
+          ) {
+            showInitialLessons(subject, subtopic);
+            return;
+          }
+
+          const missing = Array.isArray(data.missing_prerequisites)
+            ? data.missing_prerequisites
+            : [];
+          const message =
+            missing.length > 0
+              ? `Complete these prerequisite subtopics first:\n\n• ${missing.join(
+                  "\n• "
+                )}`
+              : "Complete the required prerequisites before starting this topic.";
+
+          alert(message);
+
+          if (typeof data.redirect_url === "string") {
+            window.location.href = data.redirect_url;
+          } else {
+            window.location.href = `/subjects/${subject}/${subtopic}/prerequisites`;
+          }
+        } catch (error) {
+          console.error("Error checking subtopic prerequisites:", error);
+          showInitialLessons(subject, subtopic);
+        }
+      }
+
       function showInitialLessons(subject, subtopic) {
         currentSubject = subject;
         currentSubtopic = subtopic;
@@ -1614,8 +1659,19 @@
             }
 
             // Add videos to sidebar
-            if (videoData.videos && Object.keys(videoData.videos).length > 0) {
-              Object.entries(videoData.videos).forEach(([videoId, video]) => {
+            const videosCollection = Array.isArray(videoData.videos)
+              ? videoData.videos
+              : Object.entries(videoData.videos || {}).map(
+                  ([videoId, video]) => ({ id: videoId, ...(video || {}) })
+                );
+
+            if (videosCollection.length > 0) {
+              videosCollection.forEach((video, index) => {
+                const videoId =
+                  video.id ||
+                  video.video_id ||
+                  video.topic_key ||
+                  `video-${index + 1}`;
                 const li = document.createElement("li");
                 const a = document.createElement("a");
                 a.href = "#";

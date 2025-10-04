@@ -392,6 +392,29 @@ def api_quiz_prerequisites(subject, subtopic):
         return jsonify({"error": str(e)}), 500
 
 
+@api_bp.route("/subtopic-prerequisites/<subject>/<subtopic>")
+def api_subtopic_prerequisites(subject, subtopic):
+    """Return prerequisite status for accessing a subtopic's content."""
+
+    try:
+        data_service = get_data_service()
+        progress_service = get_progress_service()
+
+        subject_config = data_service.load_subject_config(subject) or {}
+        subtopics = subject_config.get("subtopics", {})
+
+        if subtopic not in subtopics:
+            return jsonify({"error": "Subject/subtopic not found"}), 404
+
+        prerequisites = progress_service.check_subtopic_prerequisites(
+            subject, subtopic
+        )
+        return jsonify(prerequisites)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @api_bp.route("/recommend_videos", methods=["GET"])
 def recommend_videos_api():
     """API endpoint for video recommendations based on quiz performance."""

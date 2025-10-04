@@ -4,6 +4,8 @@ Handles core application routes including subject selection, quiz pages,
 and primary user-facing functionality.
 """
 
+import json
+
 from flask import (
     Blueprint,
     render_template,
@@ -14,7 +16,7 @@ from flask import (
     jsonify,
 )
 from services import get_data_service, get_progress_service, get_ai_service
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Set
 
 # Create the Blueprint
 main_bp = Blueprint("main", __name__)
@@ -132,7 +134,9 @@ def subject_page(subject):
 
                 # Count videos
                 video_data = get_video_data(subject, subtopic_id)
-                video_count = len(video_data) if video_data else 0
+                video_count = (
+                    len(video_data.get("videos", [])) if video_data else 0
+                )
 
                 # Update subtopic data with actual counts
                 subtopic_data["question_count"] = question_count
@@ -171,6 +175,48 @@ def subject_page(subject):
 def python_subject_page():
     """Direct route to Python subject - for backward compatibility."""
     return redirect(url_for("main.subject_page", subject="python"))
+
+
+@main_bp.route("/subjects/<subject>/<subtopic>/prerequisites")
+def subtopic_prerequisites(subject, subtopic):
+    """Display a friendly message when subtopic prerequisites are missing."""
+
+    try:
+        data_service = get_data_service()
+        progress_service = get_progress_service()
+
+        subject_config = data_service.load_subject_config(subject)
+        if not subject_config:
+            return redirect(url_for("main.subject_selection"))
+
+        subtopics = subject_config.get("subtopics", {})
+        if subtopic not in subtopics:
+            return redirect(url_for("main.subject_page", subject=subject))
+
+        prerequisite_status = progress_service.check_subtopic_prerequisites(
+            subject, subtopic
+        )
+
+        if prerequisite_status.get("can_access_subtopic"):
+            return redirect(url_for("main.subject_page", subject=subject))
+
+        subtopic_name = subtopics[subtopic].get("name", subtopic.title())
+
+        return render_template(
+            "prerequisites_error.html",
+            subject=subject,
+            subtopic=subtopic_name,
+            subtopic_id=subtopic,
+            missing_prerequisites=prerequisite_status.get(
+                "missing_prerequisites", []
+            ),
+            missing_ids=prerequisite_status.get("missing_prerequisite_ids", []),
+            prerequisites=prerequisite_status,
+        )
+
+    except Exception as exc:
+        print(f"Error rendering prerequisites page for {subject}/{subtopic}: {exc}")
+        return redirect(url_for("main.subject_page", subject=subject))
 
 
 # ============================================================================
@@ -342,6 +388,9 @@ def show_results_page():
         elif isinstance(raw_lessons, list):
             lesson_list = raw_lessons
 
+        deduped_topics: List[str] = []
+        seen_lessons: Set[str] = set()
+
         for topic in normalized_topics:
             match = None
             topic_lower = topic.lower()
@@ -356,12 +405,31 @@ def show_results_page():
                 match = lesson_list[0]
 
             if match:
+                lesson_identifier = match.get("id") or match.get("title")
+                if not lesson_identifier:
+                    tags_identifier = ",".join(
+                        sorted(tag.lower() for tag in match.get("tags", []) if isinstance(tag, str))
+                    )
+                    lesson_identifier = tags_identifier or json.dumps(match, sort_keys=True)
+                lesson_identifier = str(lesson_identifier).strip()
+                lesson_key = f"{current_subject}:{current_subtopic}:{lesson_identifier.lower()}"
+                if lesson_key in seen_lessons:
+                    continue
+
+                seen_lessons.add(lesson_key)
+                deduped_topics.append(topic)
+
                 # Include a shallow copy to avoid mutating original data
                 lesson_plan_map[topic] = {
                     **match,
                     "subject": current_subject,
                     "subtopic": current_subtopic,
                 }
+
+        if deduped_topics:
+            normalized_topics = deduped_topics
+            analysis["weak_topics"] = deduped_topics
+            session["quiz_analysis"] = analysis
 
         # Get video data for mapping
         video_data = get_video_data(current_subject, current_subtopic)

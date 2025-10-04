@@ -5,7 +5,7 @@ Extracts progress logic from the main application routes.
 """
 
 from flask import session, has_request_context
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 
 
@@ -21,6 +21,13 @@ class ProgressService:
     # ============================================================================
     # SESSION KEY MANAGEMENT
     # ============================================================================
+
+    def generate_session_key(self) -> str:
+        """Generate a secure, random session key."""
+
+        import secrets
+
+        return secrets.token_hex(32)
 
     def get_session_key(self, subject: str, subtopic: str, key_type: str) -> str:
         """Generate a prefixed session key for a specific subject/subtopic."""
@@ -481,8 +488,10 @@ class ProgressService:
     # PREREQUISITE CHECKING
     # ============================================================================
 
-    def check_quiz_prerequisites(self, subject: str, subtopic: str) -> Dict[str, Any]:
-        """Evaluate whether the learner can take the quiz for a subject/subtopic."""
+    def _collect_subtopic_content_status(
+        self, subject: str, subtopic: str
+    ) -> Dict[str, Any]:
+        """Gather lesson/video completion state for a subtopic."""
 
         from services import get_data_service  # Lazy import to avoid circular deps
 
@@ -490,9 +499,9 @@ class ProgressService:
         loader = data_service.data_loader
 
         lesson_data = loader.load_lesson_plans(subject, subtopic) or {}
-        raw_lessons = lesson_data.get("lessons", {})
+        raw_lessons = lesson_data.get("lessons", {}) or {}
 
-        lesson_items = []
+        lesson_items: List[Tuple[str, Dict[str, Any]]] = []
         if isinstance(raw_lessons, dict):
             lesson_items = list(raw_lessons.items())
         elif isinstance(raw_lessons, list):
@@ -513,20 +522,20 @@ class ProgressService:
             if lesson_id not in completed_lessons
         ]
 
-        videos_data = loader.load_videos(subject, subtopic) or {}
-        raw_videos = videos_data.get("videos", {})
+        videos_data = data_service.get_video_data(subject, subtopic) or {}
+        raw_videos = videos_data.get("videos", []) or []
 
-        video_titles = {}
+        video_titles: Dict[str, str] = {}
         video_ids: List[str] = []
-        if isinstance(raw_videos, dict):
-            for video_id, video in raw_videos.items():
-                video_ids.append(video_id)
-                video_titles[video_id] = video.get("title", video_id)
-        elif isinstance(raw_videos, list):
-            for index, video in enumerate(raw_videos):
+        for index, video in enumerate(raw_videos):
+            if isinstance(video, dict):
                 video_id = video.get("id") or f"video_{index + 1}"
-                video_ids.append(video_id)
-                video_titles[video_id] = video.get("title", video_id)
+                video_title = video.get("title", video_id)
+            else:
+                video_id = f"video_{index + 1}"
+                video_title = video_id
+            video_ids.append(video_id)
+            video_titles[video_id] = video_title
 
         watched_videos = set(self.get_watched_videos(subject, subtopic))
         missing_videos = [
@@ -537,29 +546,135 @@ class ProgressService:
 
         lessons_complete = len(missing_lessons) == 0 if lesson_ids else True
         videos_complete = len(missing_videos) == 0 if video_ids else True
+        all_content_complete = lessons_complete and videos_complete
 
         missing_items: List[str] = []
         missing_items.extend([f"Complete lesson: {title}" for title in missing_lessons])
         missing_items.extend([f"Watch video: {title}" for title in missing_videos])
 
+        return {
+            "lesson_ids": lesson_ids,
+            "video_ids": video_ids,
+            "missing_lessons": missing_lessons,
+            "missing_videos": missing_videos,
+            "lessons_complete": lessons_complete,
+            "videos_complete": videos_complete,
+            "missing_items": missing_items,
+            "lessons_completed": len(lesson_ids) - len(missing_lessons),
+            "videos_watched": len(video_ids) - len(missing_videos),
+            "total_lessons": len(lesson_ids),
+            "total_videos": len(video_ids),
+            "all_content_complete": all_content_complete,
+        }
+
+    def check_quiz_prerequisites(self, subject: str, subtopic: str) -> Dict[str, Any]:
+        """Evaluate whether the learner can take the quiz for a subject/subtopic."""
+
+        status = self._collect_subtopic_content_status(subject, subtopic)
+
         admin_override = self.get_admin_override_status()
-        all_met = admin_override or (lessons_complete and videos_complete)
+        all_met = admin_override or status["all_content_complete"]
 
         return {
             "subject": subject,
             "subtopic": subtopic,
-            "has_prerequisites": bool(lesson_ids or video_ids),
-            "lessons_complete": lessons_complete,
-            "lesson_total": len(lesson_ids),
-            "lessons_completed": len(lesson_ids) - len(missing_lessons),
-            "videos_complete": videos_complete,
-            "videos_total": len(video_ids),
-            "videos_watched": len(video_ids) - len(missing_videos),
-            "missing_items": missing_items,
-            "missing_lessons": missing_lessons,
-            "missing_videos": missing_videos,
+            "has_prerequisites": bool(
+                status["total_lessons"] or status["total_videos"]
+            ),
+            "lessons_complete": status["lessons_complete"],
+            "lesson_total": status["total_lessons"],
+            "lessons_completed": status["lessons_completed"],
+            "videos_complete": status["videos_complete"],
+            "videos_total": status["total_videos"],
+            "videos_watched": status["videos_watched"],
+            "missing_items": status["missing_items"],
+            "missing_lessons": status["missing_lessons"],
+            "missing_videos": status["missing_videos"],
             "admin_override": admin_override,
             "all_met": all_met,
             "can_take_quiz": all_met,
             "prerequisites_met": all_met,
+        }
+
+    def check_subtopic_prerequisites(self, subject: str, subtopic: str) -> Dict[str, Any]:
+        """Determine if prerequisite subtopics are complete for the target subtopic."""
+
+        from services import get_data_service  # Lazy import to avoid circular deps
+
+        data_service = get_data_service()
+        subject_config = data_service.load_subject_config(subject) or {}
+        subtopics_config = subject_config.get("subtopics", {})
+        target_config = subtopics_config.get(subtopic, {})
+
+        configured_prereqs = target_config.get("prerequisites", []) or []
+        prerequisite_ids = [
+            prereq
+            for prereq in configured_prereqs
+            if isinstance(prereq, str) and prereq.strip()
+        ]
+
+        admin_override = self.get_admin_override_status()
+
+        prerequisite_details: List[Dict[str, Any]] = []
+        missing_ids: List[str] = []
+        missing_names: List[str] = []
+
+        for prereq_id in prerequisite_ids:
+            prereq_config = subtopics_config.get(prereq_id, {})
+            display_name = prereq_config.get(
+                "name", prereq_id.replace("_", " ").title()
+            )
+
+            if prereq_id not in subtopics_config:
+                prerequisite_details.append(
+                    {
+                        "id": prereq_id,
+                        "name": display_name,
+                        "is_complete": False,
+                        "reason": "not_found",
+                        "lesson_total": 0,
+                        "lessons_completed": 0,
+                        "video_total": 0,
+                        "videos_watched": 0,
+                    }
+                )
+                missing_ids.append(prereq_id)
+                missing_names.append(display_name)
+                continue
+
+            progress = self._collect_subtopic_content_status(subject, prereq_id)
+            is_complete = progress["all_content_complete"]
+
+            prerequisite_details.append(
+                {
+                    "id": prereq_id,
+                    "name": display_name,
+                    "is_complete": is_complete,
+                    "lesson_total": progress["total_lessons"],
+                    "lessons_completed": progress["lessons_completed"],
+                    "video_total": progress["total_videos"],
+                    "videos_watched": progress["videos_watched"],
+                }
+            )
+
+            if not is_complete:
+                missing_ids.append(prereq_id)
+                missing_names.append(display_name)
+
+        prerequisites_met = admin_override or not missing_ids
+
+        return {
+            "subject": subject,
+            "subtopic": subtopic,
+            "has_prerequisites": bool(prerequisite_ids),
+            "admin_override": admin_override,
+            "prerequisite_ids": prerequisite_ids,
+            "prerequisite_details": prerequisite_details,
+            "missing_prerequisite_ids": missing_ids,
+            "missing_prerequisites": missing_names,
+            "completed_prerequisites": len(prerequisite_ids) - len(missing_ids),
+            "total_prerequisites": len(prerequisite_ids),
+            "can_access_subtopic": prerequisites_met,
+            "prerequisites_met": prerequisites_met,
+            "redirect_url": f"/subjects/{subject}/{subtopic}/prerequisites",
         }
