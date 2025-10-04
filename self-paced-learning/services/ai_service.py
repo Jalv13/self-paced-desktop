@@ -289,9 +289,11 @@ class AIService:
         }
         analysis["allowed_tags"] = allowed_tags
 
+        normalized_missed_tags = self._normalize_tags(wrong_tag_candidates)
+
         fallback_tags = self._filter_allowed_tags(wrong_tag_candidates, allowed_lookup)
         if not fallback_tags:
-            fallback_tags = self._normalize_tags(wrong_tag_candidates)
+            fallback_tags = normalized_missed_tags
 
         submission_text = "".join(submission_details) if submission_details else "[No submission details available]"
         system_message = (
@@ -332,6 +334,8 @@ class AIService:
             )
 
         analysis["raw_ai_response"] = ai_response
+
+        analysis["missed_tags"] = normalized_missed_tags
 
         if ai_response:
             parsed_response = self._extract_json_object(ai_response)

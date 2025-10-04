@@ -1275,14 +1275,21 @@ def admin_toggle_override():
         admin_service = get_admin_service()
 
         if request.method == "POST":
-            # Toggle override
-            result = admin_service.toggle_override()
-            return jsonify(result)
+            payload = request.get_json(silent=True) or {}
+
+            if "enabled" in payload:
+                result = admin_service.set_override(bool(payload.get("enabled")))
+            else:
+                result = admin_service.toggle_override()
+
+            status_code = 200 if result.get("success") else 400
+            return jsonify(result), status_code
         else:
             # Check current status
             override_status = admin_service.check_override_status()
-            return jsonify(override_status)
+            status_code = 200 if override_status.get("success") else 500
+            return jsonify(override_status), status_code
 
     except Exception as e:
         print(f"Error in admin override: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"success": False, "error": str(e)}), 500
