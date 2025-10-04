@@ -16,6 +16,7 @@ class ProgressService:
         """Initialize the progress service."""
         self._test_completed_lessons = {}
         self._test_watched_videos = {}
+        self._test_admin_override = False
 
     # ============================================================================
     # SESSION KEY MANAGEMENT
@@ -40,11 +41,28 @@ class ProgressService:
         watched_key = self.get_session_key(subject, subtopic, "watched_videos")
         self._test_watched_videos.pop(watched_key, None)
 
+    def reset_quiz_context(self) -> None:
+        """Clear cross-subject quiz context stored in the session."""
+
+        global_keys = [
+            "quiz_analysis",
+            "quiz_answers",
+            "quiz_generation_error",
+        ]
+
+        for key in global_keys:
+            session.pop(key, None)
+
+        # Remove the active quiz pointers – they will be re-populated for the next quiz
+        session.pop("current_subject", None)
+        session.pop("current_subtopic", None)
+
     def clear_all_session_data(self) -> None:
         """Clear all session data."""
         session.clear()
         self._test_completed_lessons.clear()
         self._test_watched_videos.clear()
+        self._test_admin_override = False
 
     # ============================================================================
     # LESSON PROGRESS TRACKING
@@ -219,6 +237,7 @@ class ProgressService:
             "weak_topics",
             "weak_tags",
             "weak_areas",
+            "missed_tags",
             "feedback",
             "ai_analysis",
             "recommendations",
@@ -379,23 +398,72 @@ class ProgressService:
     # ADMIN OVERRIDE FUNCTIONALITY
     # ============================================================================
 
+    def set_admin_override(self, enabled: bool) -> bool:
+        """Explicitly set the admin override status."""
+        if not has_request_context():
+            self._test_admin_override = bool(enabled)
+            return self._test_admin_override
+
+        status = bool(enabled)
+        session["admin_override"] = status
+        session.permanent = True
+        return status
+
     def toggle_admin_override(self) -> bool:
         """Toggle admin override status for debugging/testing."""
-        current_status = session.get("admin_override", False)
-        new_status = not current_status
-        session["admin_override"] = new_status
-        session.permanent = True
-        return new_status
+        current_status = self.get_admin_override_status()
+        return self.set_admin_override(not current_status)
 
     def get_admin_override_status(self) -> bool:
         """Get current admin override status."""
+        if not has_request_context():
+            return bool(self._test_admin_override)
         return session.get("admin_override", False)
 
     def admin_mark_complete(self, subject: str, subtopic: str) -> bool:
         """Mark a topic as complete for admin override functionality."""
         try:
-            # This is a simplified implementation - in a real system,
-            # you might want to mark all lessons and videos as complete
+            from services import get_data_service  # Lazy import to avoid circular deps
+
+            data_service = get_data_service()
+            loader = data_service.data_loader
+
+            # Mark all lessons as completed
+            lessons_payload = loader.load_lesson_plans(subject, subtopic) or {}
+            raw_lessons = lessons_payload.get("lessons", [])
+            lesson_ids: List[str] = []
+
+            if isinstance(raw_lessons, dict):
+                lesson_ids = list(raw_lessons.keys())
+            elif isinstance(raw_lessons, list):
+                for index, lesson in enumerate(raw_lessons):
+                    lesson_id = lesson.get("id") or f"lesson_{index + 1}"
+                    lesson_ids.append(lesson_id)
+
+            if lesson_ids:
+                completed_key = self.get_session_key(
+                    subject, subtopic, "completed_lessons"
+                )
+                # Use a unique ordered list to avoid duplicate entries
+                session[completed_key] = list(dict.fromkeys(lesson_ids))
+
+            # Mark all videos as watched
+            videos_payload = loader.load_videos(subject, subtopic) or {}
+            raw_videos = videos_payload.get("videos", [])
+            video_ids: List[str] = []
+
+            if isinstance(raw_videos, dict):
+                video_ids = list(raw_videos.keys())
+            elif isinstance(raw_videos, list):
+                for index, video in enumerate(raw_videos):
+                    video_id = video.get("id") or f"video_{index + 1}"
+                    video_ids.append(video_id)
+
+            if video_ids:
+                watched_key = self.get_session_key(subject, subtopic, "watched_videos")
+                session[watched_key] = list(dict.fromkeys(video_ids))
+
+            # Flag the subtopic as completed via admin override
             override_key = self.get_session_key(subject, subtopic, "admin_complete")
             session[override_key] = True
             session.permanent = True

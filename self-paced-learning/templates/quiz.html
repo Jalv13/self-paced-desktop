@@ -10,16 +10,17 @@
   </head>
   <body class="quiz-page">
     {% if admin_override %}
-    <div class="admin-controls">
-      <div class="admin-panel">
-        <div class="admin-info">
+    <div class="admin-controls-floating">
+      <div class="admin-override-panel">
+        <div class="admin-override-label">
           <i class="fas fa-shield-alt"></i>
           <span>Admin Override Active</span>
         </div>
         <button
           id="toggleOverride"
-          class="btn-override"
-          onclick="toggleAdminOverride()"
+          class="admin-override-toggle"
+          type="button"
+          onclick="disableAdminOverride()"
         >
           <i class="fas fa-power-off"></i>
           Disable Override
@@ -165,12 +166,13 @@
         });
 
       // Admin override functionality
-      function toggleAdminOverride() {
+      function disableAdminOverride() {
         fetch("/admin/toggle-override", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({ enabled: false }),
         })
           .then((response) => response.json())
           .then((data) => {
@@ -189,79 +191,6 @@
     </script>
 
     <style>
-      .admin-controls {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1000;
-      }
-
-      .admin-panel {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-        padding: 12px 20px;
-        border-radius: 12px;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        backdrop-filter: blur(10px);
-      }
-
-      .admin-info {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 600;
-        font-size: 14px;
-      }
-
-      .admin-info i {
-        color: #ffd700;
-      }
-
-      .btn-override {
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        padding: 6px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 12px;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        transition: all 0.3s ease;
-      }
-
-      .btn-override:hover {
-        background: rgba(255, 255, 255, 0.3);
-        transform: translateY(-1px);
-      }
-
-      @media (max-width: 768px) {
-        .admin-controls {
-          top: 10px;
-          right: 10px;
-        }
-
-        .admin-panel {
-          padding: 10px 15px;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .admin-info {
-          font-size: 12px;
-        }
-
-        .btn-override {
-          font-size: 11px;
-          padding: 5px 10px;
-        }
-      }
-
       /* Correct answer highlighting */
       .correct-answer {
         background-color: #d4edda !important;

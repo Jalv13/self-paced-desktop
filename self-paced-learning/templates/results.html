@@ -12,6 +12,21 @@
     <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
   </head>
   <body>
+    {% if admin_override %}
+    <div
+      class="admin-override-panel admin-override-panel-inline"
+      id="resultsAdminOverridePanel"
+    >
+      <div class="admin-override-label">Admin Override Active</div>
+      <button
+        type="button"
+        id="disableOverrideResults"
+        class="admin-override-toggle"
+      >
+        Disable Override
+      </button>
+    </div>
+    {% endif %}
     <div class="blackboard-layout">
       <nav id="results-sidebar" class="sidebar">
         <div class="sidebar-header">
@@ -25,8 +40,8 @@
           {% if is_admin %}
           <button
             id="adminMarkCompleteButton"
-            class="action-button admin-button"
-            style="background: #dc3545; margin-bottom: 10px"
+            class="admin-action-button"
+            type="button"
           >
             Admin: Mark All Complete
           </button>
@@ -113,12 +128,16 @@
               const continueButton = document.getElementById("continueButton");
               const backToTopicsButton =
                 document.getElementById("backToTopicsButton");
+              const disableOverrideButton = document.getElementById(
+                "disableOverrideResults"
+              );
               const adminMarkCompleteButton = document.getElementById(
                 "adminMarkCompleteButton"
               );
 
               // --- State Tracking ---
               let completionState = {};
+              const videoLookupCache = new Map();
               let currentPlayer = null;
               let currentVideoTopic = null;
               let videoProgressChecker = null;
@@ -194,6 +213,59 @@
                 return topicMappings[normalizedTopic] || topic;
               }
 
+              function lookupVideoData(topic, completionKey) {
+                if (!VIDEO_DATA || typeof VIDEO_DATA !== "object") {
+                  return null;
+                }
+
+                const cacheKey = `${topic || ""}::${completionKey || ""}`;
+                if (videoLookupCache.has(cacheKey)) {
+                  return videoLookupCache.get(cacheKey);
+                }
+
+                const normalizedTopic = (topic || "").trim();
+                const normalizedCompletion = (completionKey || normalizedTopic).trim();
+
+                const candidateKeys = [];
+                const pushCandidate = (key) => {
+                  if (!key) return;
+                  const keyString = String(key).trim();
+                  if (!keyString) return;
+                  if (!candidateKeys.includes(keyString)) {
+                    candidateKeys.push(keyString);
+                  }
+                };
+
+                pushCandidate(getVideoKeyForTopic(normalizedCompletion));
+                pushCandidate(getVideoKeyForTopic(normalizedTopic));
+                pushCandidate(normalizedCompletion);
+                pushCandidate(normalizedTopic);
+
+                const lowerTopic = normalizedTopic.toLowerCase();
+                const lowerCompletion = normalizedCompletion.toLowerCase();
+                if (
+                  lowerTopic.includes("function") ||
+                  lowerTopic.includes("parameter") ||
+                  lowerTopic.includes("argument") ||
+                  lowerCompletion.includes("function") ||
+                  lowerCompletion.includes("parameter") ||
+                  lowerCompletion.includes("argument")
+                ) {
+                  pushCandidate("functions");
+                }
+
+                let found = null;
+                for (const key of candidateKeys) {
+                  if (VIDEO_DATA[key]) {
+                    found = { key, data: VIDEO_DATA[key] };
+                    break;
+                  }
+                }
+
+                videoLookupCache.set(cacheKey, found);
+                return found;
+              }
+
               // --- Simplified Click Handler ---
               document.addEventListener("click", function (e) {
                 const link = e.target.closest("a[data-action]");
@@ -263,13 +335,18 @@
                   if (!lesson) return;
 
                   const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
+                  const hasVideo = Boolean(lookupVideoData(topic));
                   const groupLi = document.createElement("li");
                   groupLi.className = "topic-group";
                   groupLi.innerHTML = `
                    <span>${lesson.title || topic}</span>
                    <ul>
                      <li id="read-${safeTopicId}"><a href="#" data-topic="${topic}" data-weak-topic="${topic}" data-action="read">Read Remedial Lesson</a></li>
-                     <li id="watch-${safeTopicId}"><a href="#" data-topic="${topic}" data-weak-topic="${topic}" data-action="watch">Watch Video</a></li>
+                     ${
+                       hasVideo
+                         ? `<li id="watch-${safeTopicId}"><a href="#" data-topic="${topic}" data-weak-topic="${topic}" data-action="watch">Watch Video</a></li>`
+                         : ""
+                     }
                    </ul>
                  `;
                   topicsNavList.appendChild(groupLi);
@@ -278,8 +355,14 @@
 
               // --- Helper Functions ---
               function buildCompletionState(topics) {
+                completionState = {};
                 topics.forEach((topic) => {
-                  completionState[topic] = { read: false, watched: false };
+                  const state = { read: false };
+                  const videoInfo = lookupVideoData(topic);
+                  if (videoInfo && videoInfo.data) {
+                    state.watched = false;
+                  }
+                  completionState[topic] = state;
                 });
               }
 
@@ -318,67 +401,107 @@
                 }
               });
 
+              if (disableOverrideButton) {
+                disableOverrideButton.addEventListener(
+                  "click",
+                  async function () {
+                    try {
+                      disableOverrideButton.disabled = true;
+                      const response = await fetch("/admin/toggle-override", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ enabled: false }),
+                      });
+                      const data = await response.json();
+
+                      if (data.success) {
+                        window.location.reload();
+                      } else {
+                        disableOverrideButton.disabled = false;
+                        alert(
+                          data.error ||
+                            "Failed to disable admin override. Please try again."
+                        );
+                      }
+                    } catch (error) {
+                      console.error("Error disabling admin override", error);
+                      disableOverrideButton.disabled = false;
+                      alert(
+                        "A network error prevented disabling admin override."
+                      );
+                    }
+                  }
+                );
+              }
+
               // Admin mark complete functionality
               if (adminMarkCompleteButton) {
                 adminMarkCompleteButton.addEventListener("click", async function () {
                   if (
-                    confirm(
+                    !confirm(
                       "Mark all weak topics as complete? This will set all read and watch activities to 100% completion."
                     )
                   ) {
-                    try {
-                      // Get all current weak topics
-                      const weakTopics = Object.keys(completionState);
-                      let completedCount = 0;
+                    return;
+                  }
 
-                      // Mark each topic as complete
-                      for (const topic of weakTopics) {
-                        const response = await fetch("/api/admin/mark_complete", {
-                          method: "POST",
-                          headers: {
-                            "Content-Type": "application/json",
-                          },
-                          body: JSON.stringify({ topic: topic }),
-                        });
+                  if (!CURRENT_SUBJECT || !CURRENT_SUBTOPIC) {
+                    alert("Unable to determine the active subject and subtopic.");
+                    return;
+                  }
 
-                        if (response.ok) {
-                          // Mark both read and watched as complete
-                          completionState[topic].read = true;
-                          completionState[topic].watched = true;
-                          completedCount++;
+                  try {
+                    const response = await fetch("/api/admin/mark_complete", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        subject: CURRENT_SUBJECT,
+                        subtopic: CURRENT_SUBTOPIC,
+                      }),
+                    });
 
-                          // Update visual indicators for both read and watch
-                          const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
+                    const payload = await response.json().catch(() => ({}));
 
-                          // Mark read as complete
-                          const readElement = document.getElementById(
-                            `read-${safeTopicId}`
-                          );
-                          if (readElement) {
-                            readElement.classList.add("completed");
-                          }
+                    if (!response.ok || !payload.success) {
+                      throw new Error(payload.error || "Failed to mark topic as complete");
+                    }
 
-                          // Mark watch as complete
-                          const watchElement = document.getElementById(
-                            `watch-${safeTopicId}`
-                          );
-                          if (watchElement) {
-                            watchElement.classList.add("completed");
-                          }
+                    // Update local completion state for all weak topics
+                    const weakTopics = Object.keys(completionState);
+                    weakTopics.forEach((topic) => {
+                      if (!completionState[topic]) {
+                        completionState[topic] = {};
+                      }
+
+                      const state = completionState[topic];
+
+                      const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
+
+                      if ("read" in state) {
+                        state.read = true;
+                        const readElement = document.getElementById(`read-${safeTopicId}`);
+                        if (readElement) {
+                          readElement.classList.add("completed");
                         }
                       }
 
-                      // Show success message
-                      alert(
-                        `Successfully marked ${completedCount} topics as complete!`
-                      );
+                      if ("watched" in state) {
+                        state.watched = true;
+                        const watchElement = document.getElementById(`watch-${safeTopicId}`);
+                        if (watchElement) {
+                          watchElement.classList.add("completed");
+                        }
+                      }
+                    });
 
-                      // Check if all topics are now complete
-                      checkCompletionAndToggleButton();
-                    } catch (error) {
-                      console.error("Error marking topics complete:", error);
-                      alert("Error marking topics complete. Please try again.");
-                    }
+                    alert(payload.message || "Successfully marked this topic as complete.");
+
+                    checkCompletionAndToggleButton();
+                  } catch (error) {
+                    console.error("Error marking topics complete:", error);
+                    alert("Error marking topics complete. Please try again.");
                   }
                 });
               }
@@ -465,27 +588,9 @@
                 // Hide welcome message
                 welcomeMessageContainer.classList.add("hidden");
 
-                // Map the topic to an actual video key
-                const videoKey = getVideoKeyForTopic(completionKeyToUse);
-                const fallbackVideoKey = getVideoKeyForTopic(topic);
-
-                // Find video data using mapped keys
-                let videoData =
-                  VIDEO_DATA[videoKey] ||
-                  VIDEO_DATA[fallbackVideoKey] ||
-                  VIDEO_DATA[completionKeyToUse] ||
-                  VIDEO_DATA[topic];
-
-                // If still no video found, try to find any functions video as a default for function-related topics
-                if (
-                  !videoData &&
-                  (completionKeyToUse.includes("function") ||
-                    topic.includes("function") ||
-                    completionKeyToUse.includes("parameter") ||
-                    completionKeyToUse.includes("argument"))
-                ) {
-                  videoData = VIDEO_DATA["functions"];
-                }
+                const lookupResult = lookupVideoData(topic, completionKeyToUse);
+                const videoData = lookupResult ? lookupResult.data : null;
+                const resolvedKey = lookupResult ? lookupResult.key : null;
 
                 if (!videoData) {
                   contentDisplayArea.innerHTML = `
@@ -520,11 +625,9 @@
                   <div id="video-player-container">
                     <div class="video-header">
                       <h2>${videoData.title || completionKeyToUse}</h2>
-                      ${
-                        videoKey !== completionKeyToUse
-                          ? `<p><em>Note: Showing "${videoData.title}" which covers topics related to "${completionKeyToUse}"</em></p>`
-                          : ""
-                      }
+                      ${resolvedKey && resolvedKey !== completionKeyToUse
+                        ? `<p><em>Note: Showing "${videoData.title}" which covers topics related to "${completionKeyToUse}"</em></p>`
+                        : ""}
                     </div>
                     <div class="video-wrapper">
                       <div id="youtube-player"></div>
@@ -569,7 +672,11 @@
                */
               function updateCompletionState(topic, action) {
                 if (!completionState[topic]) {
-                  completionState[topic] = { read: false, watched: false };
+                  completionState[topic] = {};
+                }
+
+                if (!(action in completionState[topic])) {
+                  return;
                 }
 
                 if (completionState[topic][action]) {
@@ -603,13 +710,13 @@
 
                 let allCompleted = true;
 
-                for (const topic in completionState) {
-                  if (
-                    !completionState[topic].read ||
-                    !completionState[topic].watched
-                  ) {
-                    allCompleted = false;
-                    break;
+                topicLoop: for (const topic in completionState) {
+                  const actions = completionState[topic];
+                  for (const requirement in actions) {
+                    if (!actions[requirement]) {
+                      allCompleted = false;
+                      break topicLoop;
+                    }
                   }
                 }
 

@@ -42,7 +42,8 @@
             <button
               id="toggleOverrideBtn"
               onclick="toggleAdminOverride()"
-              class="action-btn secondary"
+              class="admin-override-toggle admin-override-toggle-inline"
+              type="button"
               title="Toggle admin override to bypass prerequisites"
             >
               <i class="fas fa-key"></i>
@@ -2590,11 +2591,15 @@
 
       // Admin override functionality
       function toggleAdminOverride() {
+        const btn = document.getElementById("toggleOverrideBtn");
+        const isActive = btn && btn.classList.contains("override-active");
+
         fetch("/admin/toggle-override", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({ enabled: !isActive }),
         })
           .then((response) => response.json())
           .then((data) => {
@@ -2622,6 +2627,12 @@
       function updateOverrideButton(isActive) {
         const btn = document.getElementById("toggleOverrideBtn");
         const status = document.getElementById("overrideStatus");
+
+        if (!btn || !status) {
+          return;
+        }
+
+        btn.dataset.active = isActive ? "true" : "false";
 
         if (isActive) {
           btn.classList.add("override-active");

@@ -193,6 +193,7 @@ def quiz_page(subject, subtopic):
 
         # Clear previous session data for this subject/subtopic
         progress_service.clear_session_data(subject, subtopic)
+        progress_service.reset_quiz_context()
 
         # Load quiz data
         quiz_questions = get_quiz_data(subject, subtopic)
@@ -256,8 +257,19 @@ def analyze_quiz():
         stored_analysis = progress_service.store_quiz_analysis(
             current_subject, current_subtopic, analysis_result
         )
+        weak_topic_candidates = (
+            stored_analysis.get("weak_tags")
+            or stored_analysis.get("weak_topics")
+            or stored_analysis.get("missed_tags")
+            or stored_analysis.get("weak_areas")
+            or []
+        )
+
+        if isinstance(weak_topic_candidates, str):
+            weak_topic_candidates = [weak_topic_candidates]
+
         progress_service.set_weak_topics(
-            current_subject, current_subtopic, stored_analysis.get("weak_tags", [])
+            current_subject, current_subtopic, weak_topic_candidates
         )
 
         session["quiz_analysis"] = stored_analysis
@@ -409,7 +421,13 @@ def generate_remedial_quiz():
 
         if not weak_topics:
             analysis = progress_service.get_quiz_analysis(current_subject, current_subtopic) or session.get("quiz_analysis", {}) or {}
-            fallback_topics = analysis.get("weak_tags") or analysis.get("weak_topics") or analysis.get("weak_areas") or []
+            fallback_topics = (
+                analysis.get("weak_tags")
+                or analysis.get("weak_topics")
+                or analysis.get("missed_tags")
+                or analysis.get("weak_areas")
+                or []
+            )
             if isinstance(fallback_topics, list):
                 weak_topics = [str(topic) for topic in fallback_topics if isinstance(topic, str)]
             elif isinstance(fallback_topics, str):

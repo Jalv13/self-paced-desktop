@@ -43,9 +43,19 @@ document.addEventListener("DOMContentLoaded", function () {
     fetch("/api/admin/status")
       .then((response) => response.json())
       .then((data) => {
-        isAdminOverride = data.is_admin || false;
+        if (data && typeof data.admin_override === "boolean") {
+          isAdminOverride = data.admin_override;
+        } else if (
+          data && typeof data.is_admin_override === "boolean"
+        ) {
+          isAdminOverride = data.is_admin_override;
+        } else if (data && typeof data.is_admin === "boolean") {
+          isAdminOverride = data.is_admin;
+        } else {
+          isAdminOverride = false;
+        }
       })
-      .catch((error) => {
+      .catch(() => {
         isAdminOverride = false;
       });
   }
