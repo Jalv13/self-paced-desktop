@@ -10,13 +10,31 @@ from utils.data_loader import DataLoader
 from typing import Dict, List, Optional, Any
 
 
+def _default_data_root() -> str:
+    """Return the default absolute path to the bundled data directory."""
+
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(current_dir)
+    return os.path.join(project_root, "data")
+
+
 class DataService:
     """Service class for handling all data operations."""
 
-    def __init__(self, data_root_path: str):
-        """Initialize the data service with the root data path."""
-        self.data_root_path = data_root_path
-        self.data_loader = DataLoader(data_root_path)
+    def __init__(self, data_root_path: Optional[str] = None):
+        """Initialize the data service with the root data path.
+
+        Args:
+            data_root_path: Optional explicit path to the data directory. When
+                omitted the service falls back to the repository's bundled
+                ``data`` directory.  This mirrors the historic behaviour used
+                throughout the tests, allowing ``DataService()`` to work
+                without requiring a caller-provided path.
+        """
+
+        resolved_path = data_root_path or _default_data_root()
+        self.data_root_path = os.path.abspath(resolved_path)
+        self.data_loader = DataLoader(self.data_root_path)
 
     # ============================================================================
     # QUIZ DATA OPERATIONS
@@ -217,19 +235,54 @@ class DataService:
     # ============================================================================
 
     def get_video_data(self, subject: str, subtopic: str) -> Optional[Dict]:
-        """Load video data for a specific subject/subtopic."""
-        return self.data_loader.load_videos(subject, subtopic)
+        """Load and normalise video data for a specific subject/subtopic."""
+
+        raw_data = self.data_loader.load_videos(subject, subtopic) or {}
+        videos_payload = raw_data.get("videos", {})
+
+        video_list: List[Dict[str, Any]] = []
+        video_map: Dict[str, Dict[str, Any]] = {}
+
+        if isinstance(videos_payload, dict):
+            for index, (video_id, video) in enumerate(videos_payload.items()):
+                normalised = {"id": video_id, **(video or {})}
+                video_list.append(normalised)
+                video_map[video_id] = normalised
+        elif isinstance(videos_payload, list):
+            for index, video in enumerate(videos_payload):
+                candidate_id = None
+                if isinstance(video, dict):
+                    candidate_id = (
+                        video.get("id")
+                        or video.get("video_id")
+                        or video.get("topic_key")
+                    )
+                video_id = candidate_id or f"video_{index + 1}"
+                normalised = {"id": video_id, **(video or {})}
+                video_list.append(normalised)
+                video_map[video_id] = normalised
+
+        normalised_data = {**raw_data, "videos": video_list}
+        if video_map:
+            normalised_data["video_map"] = video_map
+
+        return normalised_data
 
     def get_video_by_topic(
         self, subject: str, subtopic: str, topic_key: str
     ) -> Optional[Dict]:
         """Get specific video by topic key."""
-        video_data = self.get_video_data(subject, subtopic)
+        video_data = self.get_video_data(subject, subtopic) or {}
+        video_map = video_data.get("video_map", {})
 
-        if video_data and "videos" in video_data:
-            for video in video_data["videos"]:
-                if video.get("topic_key") == topic_key:
-                    return video
+        if topic_key in video_map:
+            return video_map[topic_key]
+
+        for video in video_data.get("videos", []):
+            if not isinstance(video, dict):
+                continue
+            if video.get("topic_key") == topic_key or video.get("id") == topic_key:
+                return video
 
         return None
 
