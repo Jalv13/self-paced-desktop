@@ -293,10 +293,23 @@ class TestAdminFeatures(unittest.TestCase):
 
         if lessons_overview["success"]:
             self.assertIn(
-                "lessons", lessons_overview, "Successful overview should have lessons"
+                "subjects",
+                lessons_overview,
+                "Successful overview should include subject breakdown",
             )
-            lessons = lessons_overview["lessons"]
-            print(f"  Total lessons in overview: {len(lessons) if lessons else 0}")
+            subjects = lessons_overview["subjects"]
+            self.assertIsInstance(
+                subjects, dict, "Lessons overview subjects should be a dictionary"
+            )
+            total_subjects = len(subjects)
+            total_lessons = sum(
+                subtopic.get("lesson_count", 0)
+                for subject in subjects.values()
+                for subtopic in subject.get("subtopics", [])
+            )
+            print(
+                f"  Lessons overview subjects: {total_subjects} | total lessons listed: {total_lessons}"
+            )
         else:
             print(
                 f"  Lessons overview failed: {lessons_overview.get('error', 'Unknown error')}"
@@ -327,6 +340,44 @@ class TestAdminFeatures(unittest.TestCase):
             print(
                 f"  Filtered overview failed: {filtered_overview.get('error', 'Unknown error')}"
             )
+
+        # Test questions overview structure
+        questions_overview = self.admin_service.get_questions_overview()
+        self.assertTrue(
+            questions_overview.get("success", False),
+            "Questions overview should succeed",
+        )
+        questions_subjects = questions_overview.get("subjects", {})
+        self.assertIsInstance(
+            questions_subjects, dict, "Questions overview subjects should be a dict"
+        )
+        if questions_subjects:
+            first_subject = next(iter(questions_subjects.values()))
+            self.assertIsInstance(
+                first_subject.get("subtopics", []),
+                list,
+                "Subtopics should be returned as a list",
+            )
+
+        # Test subtopics overview structure
+        subtopics_overview = self.admin_service.get_subtopics_overview()
+        self.assertTrue(
+            subtopics_overview.get("success", False),
+            "Subtopics overview should succeed",
+        )
+        subtopics_subjects = subtopics_overview.get("subjects", {})
+        self.assertIsInstance(
+            subtopics_subjects, dict, "Subtopics overview subjects should be a dict"
+        )
+        if subtopics_subjects:
+            first_subject = next(iter(subtopics_subjects.values()))
+            subtopics = first_subject.get("subtopics", [])
+            self.assertIsInstance(subtopics, list)
+            if subtopics:
+                sample = subtopics[0]
+                self.assertIn("lesson_count", sample)
+                self.assertIn("quiz_questions_count", sample)
+                self.assertIn("pool_questions_count", sample)
 
 
 class TestCacheAndPerformance(unittest.TestCase):
