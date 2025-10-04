@@ -148,6 +148,91 @@ class TestTaggingAndResults(unittest.TestCase):
         self.assertEqual(analysis_context["score"]["percentage"], 40)
         self.assertTrue(context["show_remedial"])
 
+    def test_results_page_deduplicates_identical_remedial_lessons(self):
+        """Weak topics that map to the same lesson should only surface once."""
+
+        client = self.app.test_client()
+        with client.session_transaction() as session:
+            session["quiz_analysis"] = {
+                "score": {"correct": 1, "total": 5, "percentage": 20},
+                "weak_tags": ["unknown-topic-1", "unknown-topic-2"],
+                "feedback": "Multiple areas need review.",
+            }
+            session["quiz_answers"] = ["A", "B", "C"]
+            session["current_subject"] = "python"
+            session["current_subtopic"] = "functions"
+
+        with capture_templates(self.app) as templates:
+            response = client.get("/results")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertGreater(len(templates), 0)
+
+        template, context = templates[0]
+        self.assertEqual(template.name, "results.html")
+
+        lesson_plans = context["LESSON_PLANS"]
+        self.assertEqual(len(lesson_plans), 1, "Expected duplicate lessons to be filtered out")
+        self.assertIn("unknown-topic-1", lesson_plans)
+
+        analysis_context = context["ANALYSIS_RESULTS"]
+        self.assertEqual(analysis_context.get("weak_topics"), ["unknown-topic-1"])
+
+    def test_full_quiz_flow_zero_score_triggers_remedial_once(self):
+        """Simulate a full quiz submission with zero correct answers."""
+
+        client = self.app.test_client()
+
+        # Ensure a clean session for the simulated learner journey
+        with client.session_transaction() as session:
+            session.clear()
+
+        # Start an actual quiz to seed session state and questions
+        quiz_response = client.get("/quiz/python/functions")
+        self.assertEqual(quiz_response.status_code, 200)
+
+        # Submit empty answers to mimic a 0% score scenario
+        analyze_response = client.post("/analyze", json={"answers": {}})
+        self.assertEqual(analyze_response.status_code, 200)
+
+        payload = analyze_response.get_json()
+        self.assertIsInstance(payload, dict)
+        self.assertTrue(payload.get("success"))
+
+        analysis = payload.get("analysis", {})
+        self.assertIsInstance(analysis, dict)
+        self.assertEqual(analysis.get("score", {}).get("percentage"), 0)
+
+        weak_topics = analysis.get("weak_topics") or []
+        self.assertGreater(len(weak_topics), 0, "Expected weak topics when every question is missed")
+
+        lowered_topics = [topic.lower() for topic in weak_topics]
+        self.assertEqual(len(lowered_topics), len(set(lowered_topics)), "Expected weak topics to be deduplicated")
+
+        # Render the results page using the captured analysis for this flow
+        with capture_templates(self.app) as templates:
+            results_response = client.get("/results")
+
+        self.assertEqual(results_response.status_code, 200)
+        self.assertGreater(len(templates), 0)
+
+        template, context = templates[0]
+        self.assertEqual(template.name, "results.html")
+
+        analysis_context = context["ANALYSIS_RESULTS"]
+        self.assertEqual(analysis_context["score"]["percentage"], 0)
+        self.assertTrue(context["show_remedial"], "A failing score should trigger remedial guidance")
+
+        lesson_plans = context["LESSON_PLANS"]
+        self.assertGreater(len(lesson_plans), 0)
+
+        seen_lessons = set()
+        for lesson in lesson_plans.values():
+            identifier = lesson.get("id") or lesson.get("title") or ""
+            key = f"{lesson.get('subject')}:{lesson.get('subtopic')}:{str(identifier).lower()}"
+            self.assertNotIn(key, seen_lessons, "Duplicate remedial lessons should be filtered out")
+            seen_lessons.add(key)
+
 
 if __name__ == "__main__":
     unittest.main()

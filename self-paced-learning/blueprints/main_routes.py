@@ -4,6 +4,8 @@ Handles core application routes including subject selection, quiz pages,
 and primary user-facing functionality.
 """
 
+import json
+
 from flask import (
     Blueprint,
     render_template,
@@ -14,7 +16,7 @@ from flask import (
     jsonify,
 )
 from services import get_data_service, get_progress_service, get_ai_service
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Set
 
 # Create the Blueprint
 main_bp = Blueprint("main", __name__)
@@ -342,6 +344,9 @@ def show_results_page():
         elif isinstance(raw_lessons, list):
             lesson_list = raw_lessons
 
+        deduped_topics: List[str] = []
+        seen_lessons: Set[str] = set()
+
         for topic in normalized_topics:
             match = None
             topic_lower = topic.lower()
@@ -356,12 +361,31 @@ def show_results_page():
                 match = lesson_list[0]
 
             if match:
+                lesson_identifier = match.get("id") or match.get("title")
+                if not lesson_identifier:
+                    tags_identifier = ",".join(
+                        sorted(tag.lower() for tag in match.get("tags", []) if isinstance(tag, str))
+                    )
+                    lesson_identifier = tags_identifier or json.dumps(match, sort_keys=True)
+                lesson_identifier = str(lesson_identifier).strip()
+                lesson_key = f"{current_subject}:{current_subtopic}:{lesson_identifier.lower()}"
+                if lesson_key in seen_lessons:
+                    continue
+
+                seen_lessons.add(lesson_key)
+                deduped_topics.append(topic)
+
                 # Include a shallow copy to avoid mutating original data
                 lesson_plan_map[topic] = {
                     **match,
                     "subject": current_subject,
                     "subtopic": current_subtopic,
                 }
+
+        if deduped_topics:
+            normalized_topics = deduped_topics
+            analysis["weak_topics"] = deduped_topics
+            session["quiz_analysis"] = analysis
 
         # Get video data for mapping
         video_data = get_video_data(current_subject, current_subtopic)
