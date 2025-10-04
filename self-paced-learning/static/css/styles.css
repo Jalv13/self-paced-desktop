@@ -1944,6 +1944,44 @@ body.quiz-page {
   width: calc(100% - 40px);
 }
 
+.admin-override-indicator-wrapper {
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin-override-indicator-wrapper.is-hidden {
+  display: none;
+}
+
+.admin-override-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  background: #f1f3f5;
+  color: #495057;
+  border: 1px solid #dee2e6;
+  transition: all 0.3s ease;
+}
+
+.admin-override-indicator i {
+  color: #6c757d;
+}
+
+.admin-override-indicator.active {
+  background: #fff3cd;
+  border-color: #ffe8a1;
+  color: #856404;
+}
+
+.admin-override-indicator.active i {
+  color: #856404;
+}
+
 .admin-override-label {
   display: flex;
   align-items: center;

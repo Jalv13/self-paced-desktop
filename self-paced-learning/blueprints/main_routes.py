@@ -159,6 +159,7 @@ def subject_page(subject):
             subject=subject,
             subject_info=subject_info,
             subtopics=subtopics,
+            admin_override=progress_service.get_admin_override_status(),
         )
 
     except Exception as e:

@@ -37,18 +37,21 @@
             <p class="subtitle">{{ subject_info.description }}</p>
           </div>
 
-          <!-- Admin Override Controls -->
-          <div class="admin-actions" style="margin-top: 10px">
-            <button
-              id="toggleOverrideBtn"
-              onclick="toggleAdminOverride()"
-              class="admin-override-toggle admin-override-toggle-inline"
-              type="button"
-              title="Toggle admin override to bypass prerequisites"
+          <!-- Admin Override Indicator -->
+          <div
+            class="admin-override-indicator-wrapper{% if not admin_override %} is-hidden{% endif %}"
+          >
+            <div
+              id="adminOverrideIndicator"
+              class="admin-override-indicator {% if admin_override %}active{% endif %}"
+              data-active="{{ 'true' if admin_override else 'false' }}"
+              title="Admin override status"
             >
-              <i class="fas fa-key"></i>
-              <span id="overrideStatus">Enable Override</span>
-            </button>
+              <i class="fas fa-shield-alt"></i>
+              <span id="adminOverrideIndicatorText">
+                {% if admin_override %}Admin Override Active{% else %}Admin Override Off{% endif %}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -2563,22 +2566,6 @@
         // for more accurate and efficient progress tracking
       }
 
-      function showNotification(message, type = "info") {
-        // Remove existing notifications
-        document.querySelectorAll(".notification").forEach((n) => n.remove());
-
-        const notification = document.createElement("div");
-        notification.className = `notification ${type}`;
-        notification.textContent = message;
-        document.body.appendChild(notification);
-
-        setTimeout(() => {
-          if (notification.parentNode) {
-            notification.remove();
-          }
-        }, 4000);
-      }
-
       // Load progress when page loads
       document.addEventListener("DOMContentLoaded", function () {
         loadLessonProgress();
@@ -2588,60 +2575,6 @@
           .getElementById("backToTopicsFromInitial")
           .addEventListener("click", backToTopicsFromInitial);
       });
-
-      // Admin override functionality
-      function toggleAdminOverride() {
-        const btn = document.getElementById("toggleOverrideBtn");
-        const isActive = btn && btn.classList.contains("override-active");
-
-        fetch("/admin/toggle-override", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ enabled: !isActive }),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.success) {
-              updateOverrideButton(data.admin_override);
-              showNotification(
-                data.message + " - Refreshing page...",
-                "success"
-              );
-
-              // Refresh the page after a short delay to show the notification
-              setTimeout(() => {
-                window.location.reload();
-              }, 1500);
-            } else {
-              showNotification("Error: " + data.error, "error");
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-            showNotification("Error toggling admin override", "error");
-          });
-      }
-
-      function updateOverrideButton(isActive) {
-        const btn = document.getElementById("toggleOverrideBtn");
-        const status = document.getElementById("overrideStatus");
-
-        if (!btn || !status) {
-          return;
-        }
-
-        btn.dataset.active = isActive ? "true" : "false";
-
-        if (isActive) {
-          btn.classList.add("override-active");
-          status.textContent = "Disable Override";
-        } else {
-          btn.classList.remove("override-active");
-          status.textContent = "Enable Override";
-        }
-      }
 
       // Notification system
       function showNotification(message, type = "info") {
@@ -2686,22 +2619,6 @@
           }
         }, 4000);
       }
-
-      // Check override status on page load
-      document.addEventListener("DOMContentLoaded", function () {
-        fetch("/admin/toggle-override", {
-          method: "GET",
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.success) {
-              updateOverrideButton(data.admin_override);
-            }
-          })
-          .catch((error) => {
-            console.error("Error checking override status:", error);
-          });
-      });
 
       // Function to handle quiz access with prerequisite checks
       function handleQuizAccess(subject, subtopic) {

@@ -63,15 +63,6 @@
               <p>Organize and manage subtopics for all subjects</p>
             </div>
             <div class="admin-actions">
-              <button
-                id="toggleOverrideBtn"
-                class="action-btn secondary"
-                onclick="toggleAdminOverride()"
-                title="Toggle admin override for testing prerequisites"
-              >
-                <i class="fas fa-shield-alt"></i>
-                <span id="overrideStatus">Enable Override</span>
-              </button>
               <button id="addSubtopicBtn" class="action-btn primary">
                 <i class="fas fa-plus"></i>
                 Add New Subtopic
@@ -2252,7 +2243,6 @@
           updateSubtopicCounts();
           setupEventListeners();
           updateEmptyState();
-          checkAdminOverrideStatus();
           setupVideoPreview();
 
           // Apply initial filter if subject parameter was provided
@@ -2375,65 +2365,6 @@
       }
 
       // Initialize page
-
-      function checkAdminOverrideStatus() {
-          // Check current override status and update UI
-          fetch('/admin/toggle-override', {
-              method: 'GET',
-              headers: {
-                  'Content-Type': 'application/json',
-              }
-          })
-          .then(response => response.json())
-          .then(data => {
-              updateOverrideButton(data.admin_override || false);
-          })
-          .catch(error => {
-              console.error('Error checking override status:', error);
-          });
-      }
-
-      function toggleAdminOverride() {
-          fetch('/admin/toggle-override', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-              }
-          })
-          .then(response => response.json())
-          .then(data => {
-              if (data.success) {
-                  updateOverrideButton(data.admin_override);
-                  showNotification(data.message + ' - Refreshing page...', 'success');
-
-                  // Refresh the page after a short delay to show the notification
-                  setTimeout(() => {
-                      window.location.reload();
-                  }, 1500);
-              } else {
-                  showNotification('Error toggling admin override: ' + data.error, 'error');
-              }
-          })
-          .catch(error => {
-              console.error('Error:', error);
-              showNotification('Error toggling admin override', 'error');
-          });
-      }
-
-      function updateOverrideButton(isActive) {
-          const btn = document.getElementById('toggleOverrideBtn');
-          const status = document.getElementById('overrideStatus');
-
-          if (isActive) {
-              btn.classList.add('override-active');
-              status.textContent = 'Disable Override';
-              btn.title = 'Admin override is active - prerequisites are bypassed';
-          } else {
-              btn.classList.remove('override-active');
-              status.textContent = 'Enable Override';
-              btn.title = 'Enable admin override to bypass prerequisites for testing';
-          }
-      }
 
       function setupEventListeners() {
           // Filter controls
