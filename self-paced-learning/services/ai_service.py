@@ -16,7 +16,11 @@ from typing import Any, Dict, List, Optional
 
 import openai
 
-from .quiz_analysis_utils import compute_basic_quiz_analysis, filter_allowed_tags
+from .quiz_analysis_utils import (
+    compute_basic_quiz_analysis,
+    filter_allowed_tags,
+    normalize_tags,
+)
 
 try:
     from openai import OpenAI as OpenAIClient
@@ -277,7 +281,23 @@ class AIService:
             str(tag).lower(): str(tag) for tag in (allowed_tags or []) if isinstance(tag, str)
         }
 
+        rule_based_insights = analysis.get("rule_based_insights") or []
+        wrong_tag_candidates: List[str] = []
+        for detail in rule_based_insights:
+            tags = detail.get("tags") if isinstance(detail, dict) else None
+            if isinstance(tags, list):
+                wrong_tag_candidates.extend(
+                    str(tag) for tag in tags if isinstance(tag, (str, int))
+                )
+
+        normalized_missed_tags = normalize_tags(wrong_tag_candidates)
+
         fallback_tags = analysis.get("weak_tags") or analysis.get("weak_topics") or []
+        if not fallback_tags:
+            fallback_tags = filter_allowed_tags(wrong_tag_candidates, allowed_lookup)
+            if not fallback_tags:
+                fallback_tags = normalized_missed_tags
+
         submission_details = analysis.get("submission_details") or []
         if not submission_details:
             submission_details = [
@@ -328,6 +348,7 @@ class AIService:
         )
 
         analysis["raw_ai_response"] = ai_response
+        analysis["missed_tags"] = normalized_missed_tags
 
         if ai_response:
             parsed_response = self._extract_json_object(ai_response)
