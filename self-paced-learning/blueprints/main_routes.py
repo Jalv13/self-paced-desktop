@@ -132,7 +132,9 @@ def subject_page(subject):
 
                 # Count videos
                 video_data = get_video_data(subject, subtopic_id)
-                video_count = len(video_data) if video_data else 0
+                video_count = (
+                    len(video_data.get("videos", [])) if video_data else 0
+                )
 
                 # Update subtopic data with actual counts
                 subtopic_data["question_count"] = question_count
@@ -171,6 +173,48 @@ def subject_page(subject):
 def python_subject_page():
     """Direct route to Python subject - for backward compatibility."""
     return redirect(url_for("main.subject_page", subject="python"))
+
+
+@main_bp.route("/subjects/<subject>/<subtopic>/prerequisites")
+def subtopic_prerequisites(subject, subtopic):
+    """Display a friendly message when subtopic prerequisites are missing."""
+
+    try:
+        data_service = get_data_service()
+        progress_service = get_progress_service()
+
+        subject_config = data_service.load_subject_config(subject)
+        if not subject_config:
+            return redirect(url_for("main.subject_selection"))
+
+        subtopics = subject_config.get("subtopics", {})
+        if subtopic not in subtopics:
+            return redirect(url_for("main.subject_page", subject=subject))
+
+        prerequisite_status = progress_service.check_subtopic_prerequisites(
+            subject, subtopic
+        )
+
+        if prerequisite_status.get("can_access_subtopic"):
+            return redirect(url_for("main.subject_page", subject=subject))
+
+        subtopic_name = subtopics[subtopic].get("name", subtopic.title())
+
+        return render_template(
+            "prerequisites_error.html",
+            subject=subject,
+            subtopic=subtopic_name,
+            subtopic_id=subtopic,
+            missing_prerequisites=prerequisite_status.get(
+                "missing_prerequisites", []
+            ),
+            missing_ids=prerequisite_status.get("missing_prerequisite_ids", []),
+            prerequisites=prerequisite_status,
+        )
+
+    except Exception as exc:
+        print(f"Error rendering prerequisites page for {subject}/{subtopic}: {exc}")
+        return redirect(url_for("main.subject_page", subject=subject))
 
 
 # ============================================================================
