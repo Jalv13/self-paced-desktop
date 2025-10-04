@@ -100,7 +100,7 @@ class TestAdminOverrideControls(unittest.TestCase):
                 is_admin=False,
             )
 
-        self.assertNotIn("Disable Override", html_disabled)
+        self.assertNotIn("Admin Override Active", html_disabled)
         self.assertNotIn("Admin: Mark All Complete", html_disabled)
 
         with self.app.test_request_context():
@@ -111,8 +111,9 @@ class TestAdminOverrideControls(unittest.TestCase):
                 is_admin=True,
             )
 
-        self.assertIn("Disable Override", html_enabled)
+        self.assertIn("Admin Override Active", html_enabled)
         self.assertIn("Admin: Mark All Complete", html_enabled)
+        self.assertNotIn("Disable Override", html_enabled)
 
 
 if __name__ == "__main__":

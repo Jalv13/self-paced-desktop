@@ -16,15 +16,6 @@
           <i class="fas fa-shield-alt"></i>
           <span>Admin Override Active</span>
         </div>
-        <button
-          id="toggleOverride"
-          class="admin-override-toggle"
-          type="button"
-          onclick="disableAdminOverride()"
-        >
-          <i class="fas fa-power-off"></i>
-          Disable Override
-        </button>
       </div>
     </div>
     {% endif %} {% if admin_override %}
@@ -164,30 +155,6 @@
             submitButton.classList.remove("disabled");
           }
         });
-
-      // Admin override functionality
-      function disableAdminOverride() {
-        fetch("/admin/toggle-override", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ enabled: false }),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.success) {
-              // Reload page to reflect new override state
-              window.location.reload();
-            } else {
-              alert("Error toggling admin override: " + data.error);
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-            alert("Error toggling admin override");
-          });
-      }
     </script>
 
     <style>

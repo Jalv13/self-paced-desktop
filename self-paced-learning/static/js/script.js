@@ -5,6 +5,15 @@ document.addEventListener("DOMContentLoaded", function () {
   const videoModal = document.getElementById("video-modal");
   const videoIframe = document.getElementById("video-iframe");
   const videoTitle = document.getElementById("current-video-title");
+  const adminOverrideIndicator = document.getElementById(
+    "adminOverrideIndicator"
+  );
+  const adminOverrideIndicatorText = document.getElementById(
+    "adminOverrideIndicatorText"
+  );
+  const adminOverrideIndicatorWrapper = document.querySelector(
+    ".admin-override-indicator-wrapper"
+  );
 
   // YouTube API variables
   let ytPlayer = null;
@@ -14,6 +23,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Load progress from server when page loads
   loadProgress();
+
+  // Initialize admin override indicator state from markup if available
+  if (adminOverrideIndicator) {
+    const initialState = adminOverrideIndicator.dataset.active === "true";
+    isAdminOverride = initialState;
+    updateAdminOverrideIndicator(initialState);
+  }
 
   // Check if user is admin
   checkAdminStatus();
@@ -43,21 +59,45 @@ document.addEventListener("DOMContentLoaded", function () {
     fetch("/api/admin/status")
       .then((response) => response.json())
       .then((data) => {
+        let overrideActive = false;
+
         if (data && typeof data.admin_override === "boolean") {
-          isAdminOverride = data.admin_override;
+          overrideActive = data.admin_override;
         } else if (
           data && typeof data.is_admin_override === "boolean"
         ) {
-          isAdminOverride = data.is_admin_override;
+          overrideActive = data.is_admin_override;
         } else if (data && typeof data.is_admin === "boolean") {
-          isAdminOverride = data.is_admin;
-        } else {
-          isAdminOverride = false;
+          overrideActive = data.is_admin;
         }
+
+        isAdminOverride = overrideActive;
+        updateAdminOverrideIndicator(overrideActive);
       })
       .catch(() => {
         isAdminOverride = false;
+        updateAdminOverrideIndicator(false);
       });
+  }
+
+  function updateAdminOverrideIndicator(isActive) {
+    if (!adminOverrideIndicator || !adminOverrideIndicatorText) {
+      return;
+    }
+
+    if (adminOverrideIndicatorWrapper) {
+      adminOverrideIndicatorWrapper.classList.toggle("is-hidden", !isActive);
+    }
+
+    if (isActive) {
+      adminOverrideIndicator.classList.add("active");
+      adminOverrideIndicator.dataset.active = "true";
+      adminOverrideIndicatorText.textContent = "Admin Override Active";
+    } else {
+      adminOverrideIndicator.classList.remove("active");
+      adminOverrideIndicator.dataset.active = "false";
+      adminOverrideIndicatorText.textContent = "Admin Override Off";
+    }
   }
 
   // YouTube API ready callback
