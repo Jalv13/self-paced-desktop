@@ -1710,6 +1710,9 @@
                   <div class="code-runner-block" id="code-runner-${blockId}">
                     <div class="code-runner-header">
                       <h4><i class="fas fa-play-circle"></i> Interactive Python Code</h4>
+                      <button class="code-runner-toggle" type="button" onclick="expandCodeRunner('${blockId}')" aria-expanded="false" aria-label="Expand code runner">
+                        <i class="fas fa-expand-alt"></i>
+                      </button>
                     </div>
                     <div class="code-runner-content">
                       <div class="code-editor">
@@ -1735,9 +1738,6 @@
                             ? `<button class="show-hints-btn" onclick="showHints('${blockId}')"><i class="fas fa-question-circle"></i> Show Hints</button>`
                             : ""
                         }
-                        <button class="expand-code-btn" onclick="expandCodeRunner('${blockId}')" aria-expanded="false">
-                          <i class="fas fa-expand"></i> Expand
-                        </button>
                       </div>
                       <div class="code-output">
                         <div class="output-header">Output:</div>
@@ -2996,21 +2996,23 @@ sys.stdout = StringIO()
       }
 
       function setExpandButtonState(blockId, isExpanded) {
-        const expandBtn = document.querySelector(
-          `#code-runner-${blockId} .expand-code-btn`
+        const toggleBtn = document.querySelector(
+          `#code-runner-${blockId} .code-runner-toggle`
         );
 
-        if (!expandBtn) {
+        if (!toggleBtn) {
           return;
         }
 
-        expandBtn.innerHTML = isExpanded
-          ? '<i class="fas fa-compress"></i> Collapse'
-          : '<i class="fas fa-expand"></i> Expand';
-        expandBtn.setAttribute("aria-expanded", isExpanded ? "true" : "false");
-        expandBtn.setAttribute("aria-hidden", isExpanded ? "true" : "false");
-        expandBtn.style.display = isExpanded ? "none" : "inline-flex";
-        expandBtn.disabled = isExpanded;
+        toggleBtn.innerHTML = isExpanded
+          ? '<i class="fas fa-compress-alt"></i>'
+          : '<i class="fas fa-expand-alt"></i>';
+        toggleBtn.setAttribute("aria-expanded", isExpanded ? "true" : "false");
+        toggleBtn.setAttribute(
+          "aria-label",
+          isExpanded ? "Collapse code runner" : "Expand code runner"
+        );
+        toggleBtn.classList.toggle("is-expanded", isExpanded);
       }
 
       function collectCodeRunnerQuestion(originalBlock) {
