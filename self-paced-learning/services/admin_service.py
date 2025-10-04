@@ -178,6 +178,93 @@ class AdminService:
     # LESSON MANAGEMENT
     # ============================================================================
 
+    def _build_subject_subtopic_overview(
+        self,
+        subject_filter: Optional[str] = None,
+        subtopic_filter: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Collect subtopic information for each subject with aggregated stats."""
+
+        subjects = self.data_service.discover_subjects()
+
+        overview: Dict[str, Any] = {}
+        stats = {
+            "total_subjects": 0,
+            "total_subtopics": 0,
+            "total_lessons": 0,
+            "total_initial_questions": 0,
+            "total_pool_questions": 0,
+            "subtopics_without_lessons": 0,
+            "subtopics_without_questions": 0,
+        }
+
+        for subject_id, subject_info in subjects.items():
+            if subject_filter and subject_id != subject_filter:
+                continue
+
+            subject_config = self.data_service.load_subject_config(subject_id)
+            if not subject_config or "subtopics" not in subject_config:
+                continue
+
+            subtopics_data = []
+
+            for subtopic_id, subtopic_cfg in subject_config["subtopics"].items():
+                if subtopic_filter and subtopic_id != subtopic_filter:
+                    continue
+
+                lessons = self.data_service.get_lesson_plans(subject_id, subtopic_id)
+                quiz_data = self.data_service.get_quiz_data(subject_id, subtopic_id)
+                pool_data = self.data_service.get_question_pool_questions(
+                    subject_id, subtopic_id
+                )
+
+                lesson_count = len(lessons) if lessons else 0
+                initial_count = (
+                    len(quiz_data.get("questions", [])) if quiz_data else 0
+                )
+                pool_count = len(pool_data) if pool_data else 0
+
+                subtopics_data.append(
+                    {
+                        "id": subtopic_id,
+                        "name": subtopic_cfg.get("name", subtopic_id.title()),
+                        "description": subtopic_cfg.get("description", ""),
+                        "order": subtopic_cfg.get("order", 0),
+                        "status": subtopic_cfg.get("status", "active"),
+                        "estimated_time": subtopic_cfg.get("estimated_time", ""),
+                        "video_count": subtopic_cfg.get("video_count", 0),
+                        "prerequisites": subtopic_cfg.get("prerequisites", []),
+                        "lesson_count": lesson_count,
+                        "quiz_questions_count": initial_count,
+                        "pool_questions_count": pool_count,
+                    }
+                )
+
+                stats["total_subtopics"] += 1
+                stats["total_lessons"] += lesson_count
+                stats["total_initial_questions"] += initial_count
+                stats["total_pool_questions"] += pool_count
+
+                if lesson_count == 0:
+                    stats["subtopics_without_lessons"] += 1
+                if initial_count == 0 and pool_count == 0:
+                    stats["subtopics_without_questions"] += 1
+
+            if subtopics_data:
+                subtopics_data.sort(key=lambda item: item.get("order", 0))
+                overview[subject_id] = {
+                    "id": subject_id,
+                    "name": subject_info.get("name", subject_id.title()),
+                    "description": subject_info.get("description", ""),
+                    "icon": subject_info.get("icon", "fas fa-book"),
+                    "color": subject_info.get("color", "#4a5568"),
+                    "subtopics": subtopics_data,
+                }
+
+        stats["total_subjects"] = len(overview)
+
+        return {"subjects": overview, "stats": stats}
+
     def get_lessons_overview(
         self,
         subject_filter: Optional[str] = None,
@@ -185,9 +272,9 @@ class AdminService:
     ) -> Dict[str, Any]:
         """Get comprehensive lessons overview with optional filtering."""
         try:
-            subjects = self.data_service.discover_subjects()
-
             if subject_filter and subtopic_filter:
+                subjects = self.data_service.discover_subjects()
+
                 # Filtered view for specific subject/subtopic
                 if not self.data_service.validate_subject_subtopic(
                     subject_filter, subtopic_filter
@@ -201,24 +288,28 @@ class AdminService:
                     subject_filter, subtopic_filter
                 )
 
-                # Add metadata to lessons
                 if lessons:
+                    subject_name = subjects.get(subject_filter, {}).get(
+                        "name", subject_filter.title()
+                    )
+                    subject_config = self.data_service.load_subject_config(
+                        subject_filter
+                    )
+                    subtopic_name = subtopic_filter.title()
+                    if (
+                        subject_config
+                        and "subtopics" in subject_config
+                        and subtopic_filter in subject_config["subtopics"]
+                    ):
+                        subtopic_name = subject_config["subtopics"][
+                            subtopic_filter
+                        ].get("name", subtopic_filter.title())
+
                     for lesson in lessons:
                         lesson["subject"] = subject_filter
                         lesson["subtopic"] = subtopic_filter
-                        lesson["subject_name"] = subjects[subject_filter].get(
-                            "name", subject_filter.title()
-                        )
-
-                        # Get subtopic name
-                        subject_config = self.data_service.load_subject_config(
-                            subject_filter
-                        )
-                        if subject_config and "subtopics" in subject_config:
-                            subtopic_name = subject_config["subtopics"][
-                                subtopic_filter
-                            ].get("name", subtopic_filter.title())
-                            lesson["subtopic_name"] = subtopic_name
+                        lesson["subject_name"] = subject_name
+                        lesson["subtopic_name"] = subtopic_name
 
                 return {
                     "success": True,
@@ -227,16 +318,72 @@ class AdminService:
                     "subject_filter": subject_filter,
                     "subtopic_filter": subtopic_filter,
                 }
-            else:
-                # Unfiltered view: Get all lessons
-                all_lessons = self.data_service.get_all_lessons()
 
-                return {
-                    "success": True,
-                    "lessons": all_lessons,
-                    "filtered_view": False,
-                    "subjects": subjects,
-                }
+            overview = self._build_subject_subtopic_overview(
+                subject_filter, subtopic_filter
+            )
+
+            subjects_overview = overview.get("subjects", {})
+
+            subjects_with_lessons = 0
+            subtopics_with_lessons = 0
+            total_lessons = 0
+
+            for subject_id, subject_data in subjects_overview.items():
+                subject_lesson_total = 0
+
+                for subtopic in subject_data.get("subtopics", []):
+                    lessons = self.data_service.get_lesson_plans(
+                        subject_id, subtopic.get("id")
+                    )
+
+                    normalized_lessons = []
+                    for lesson in lessons or []:
+                        normalized_lessons.append(
+                            {
+                                "id": lesson.get("id"),
+                                "title": lesson.get("title", "Untitled Lesson"),
+                                "type": lesson.get("type", "lesson"),
+                                "order": lesson.get("order", 0),
+                                "tags": lesson.get("tags", []),
+                                "content_length": len(lesson.get("content", []) or []),
+                                "updated_date": lesson.get("updated_date", ""),
+                            }
+                        )
+
+                    normalized_lessons.sort(
+                        key=lambda item: (
+                            item.get("order", 0),
+                            (item.get("title") or "").lower(),
+                        )
+                    )
+
+                    subtopic["lessons"] = normalized_lessons
+                    subtopic["lesson_count"] = len(normalized_lessons)
+
+                    if normalized_lessons:
+                        subtopics_with_lessons += 1
+
+                    subject_lesson_total += len(normalized_lessons)
+                    total_lessons += len(normalized_lessons)
+
+                subject_data["lesson_count"] = subject_lesson_total
+
+                if subject_lesson_total > 0:
+                    subjects_with_lessons += 1
+
+            stats = overview.get("stats", {})
+            stats["total_lessons"] = total_lessons
+            stats["subjects_with_lessons"] = subjects_with_lessons
+            stats["subtopics_with_lessons"] = subtopics_with_lessons
+
+            return {
+                "success": True,
+                "subjects": subjects_overview,
+                "stats": stats,
+                "subject_filter": subject_filter,
+                "subtopic_filter": subtopic_filter,
+            }
 
         except Exception as e:
             return {"success": False, "error": str(e)}
@@ -408,68 +555,15 @@ class AdminService:
     ) -> Dict[str, Any]:
         """Get comprehensive questions overview with optional filtering."""
         try:
-            subjects = self.data_service.discover_subjects()
-            subjects_data = {}
+            overview = self._build_subject_subtopic_overview(
+                subject_filter, subtopic_filter
+            )
 
-            stats = {
-                "total_initial_questions": 0,
-                "total_pool_questions": 0,
-                "total_subtopics": 0,
-                "subtopics_without_questions": 0,
-            }
-
-            for subject_id, subject_info in subjects.items():
-                # Skip if filtering by subject and this isn't the one
-                if subject_filter and subject_id != subject_filter:
-                    continue
-
-                subject_config = self.data_service.load_subject_config(subject_id)
-
-                if subject_config and "subtopics" in subject_config:
-                    subject_data = {
-                        "name": subject_info.get("name", subject_id),
-                        "description": subject_info.get("description", ""),
-                        "subtopics": {},
-                    }
-
-                    for subtopic_id, subtopic_data in subject_config[
-                        "subtopics"
-                    ].items():
-                        # Skip if filtering by subtopic and this isn't the one
-                        if subtopic_filter and subtopic_id != subtopic_filter:
-                            continue
-
-                        # Load quiz data and question pool to get counts
-                        quiz_data = self.data_service.get_quiz_data(
-                            subject_id, subtopic_id
-                        )
-                        pool_data = self.data_service.get_question_pool_questions(
-                            subject_id, subtopic_id
-                        )
-
-                        quiz_count = (
-                            len(quiz_data.get("questions", [])) if quiz_data else 0
-                        )
-                        pool_count = len(pool_data) if pool_data else 0
-
-                        subtopic_data["quiz_questions_count"] = quiz_count
-                        subtopic_data["pool_questions_count"] = pool_count
-
-                        # Update statistics
-                        stats["total_initial_questions"] += quiz_count
-                        stats["total_pool_questions"] += pool_count
-                        stats["total_subtopics"] += 1
-
-                        if quiz_count == 0 and pool_count == 0:
-                            stats["subtopics_without_questions"] += 1
-
-                        subject_data["subtopics"][subtopic_id] = subtopic_data
-
-                    subjects_data[subject_id] = subject_data
+            stats = overview["stats"]
 
             return {
                 "success": True,
-                "subjects": subjects_data,
+                "subjects": overview["subjects"],
                 "stats": stats,
                 "subject_filter": subject_filter,
                 "subtopic_filter": subtopic_filter,
@@ -477,6 +571,29 @@ class AdminService:
 
         except Exception as e:
             return {"success": False, "error": str(e)}
+
+    def get_subtopics_overview(
+        self,
+        subject_filter: Optional[str] = None,
+        subtopic_filter: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Get overview of all subtopics with lesson and question coverage."""
+
+        try:
+            overview = self._build_subject_subtopic_overview(
+                subject_filter, subtopic_filter
+            )
+
+            return {
+                "success": True,
+                "subjects": overview["subjects"],
+                "stats": overview["stats"],
+                "subject_filter": subject_filter,
+                "subtopic_filter": subtopic_filter,
+            }
+
+        except Exception as exc:
+            return {"success": False, "error": str(exc)}
 
     def save_quiz_questions(
         self,

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>All Subtopics Overview - Admin Panel</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body class="admin-body">
+    <div class="admin-layout">
+      <nav class="admin-sidebar">
+        <div class="admin-logo">
+          <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+          <a href="/" class="back-to-site">← Back to Site</a>
+        </div>
+        <ul class="admin-nav">
+          <li>
+            <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+          </li>
+          <li>
+            <a href="/admin/subjects"
+              ><i class="fas fa-book-open"></i> Subjects</a
+            >
+          </li>
+          <li>
+            <a href="/admin/subtopics/select-subject"
+              ><i class="fas fa-sitemap"></i> Subtopics</a
+            >
+          </li>
+          <li>
+            <a href="/admin/lessons/select-subject"
+              ><i class="fas fa-chalkboard-teacher"></i> Lessons</a
+            >
+          </li>
+          <li>
+            <a href="/admin/questions/select-subject"
+              ><i class="fas fa-question-circle"></i> Questions</a
+            >
+          </li>
+          <li>
+            <a href="/admin/export"
+              ><i class="fas fa-download"></i> Export/Import</a
+            >
+          </li>
+          <li>
+            <span class="nav-heading">Overview</span>
+          </li>
+          <li>
+            <a href="/admin/overview/subtopics" class="active"
+              ><i class="fas fa-layer-group"></i> All Subtopics</a
+            >
+          </li>
+          <li>
+            <a href="/admin/overview/lessons"
+              ><i class="fas fa-book-reader"></i> All Lessons</a
+            >
+          </li>
+          <li>
+            <a href="/admin/overview/questions"
+              ><i class="fas fa-list-ol"></i> All Questions</a
+            >
+          </li>
+        </ul>
+      </nav>
+
+      <main class="admin-content">
+        <header class="admin-header">
+          <div class="header-actions">
+            <div>
+              <h1><i class="fas fa-layer-group"></i> All Subtopics Overview</h1>
+              <p>Audit lesson and question coverage across every subtopic.</p>
+            </div>
+            <div class="admin-actions">
+              <a
+                href="{{ url_for('admin.admin_select_subject_for_subtopics') }}"
+                class="btn-primary"
+              >
+                <i class="fas fa-edit"></i>
+                Manage Subtopics
+              </a>
+              <a
+                href="{{ url_for('admin.admin_select_subject_for_lessons') }}"
+                class="btn-secondary"
+              >
+                <i class="fas fa-chalkboard"></i>
+                Manage Lessons
+              </a>
+            </div>
+          </div>
+        </header>
+
+        {% if error %}
+        <div class="empty-state">
+          <i class="fas fa-exclamation-triangle"></i>
+          <h3>Unable to load subtopics</h3>
+          <p>{{ error }}</p>
+        </div>
+        {% else %}
+        <section class="stats-overview">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-layer-group"></i>
+            </div>
+            <div class="stat-info">
+              <h3>{{ stats.total_subtopics | default(0) }}</h3>
+              <p>Total Subtopics</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #48bb78, #2f855a);">
+              <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+            <div class="stat-info">
+              <h3>{{ (stats.total_subtopics | default(0)) - (stats.subtopics_without_lessons | default(0)) }}</h3>
+              <p>With Lessons</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #4299e1, #3182ce);">
+              <i class="fas fa-clipboard-check"></i>
+            </div>
+            <div class="stat-info">
+              <h3>{{ stats.total_questions | default(0) }}</h3>
+              <p>Total Questions</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #f56565, #c53030);">
+              <i class="fas fa-question"></i>
+            </div>
+            <div class="stat-info">
+              <h3>{{ stats.subtopics_without_questions | default(0) }}</h3>
+              <p>Missing Questions</p>
+            </div>
+          </div>
+        </section>
+
+        {% if subjects %}
+        <section class="summary-grid">
+          {% for subject in subjects %}
+          <div class="summary-card">
+            <h3>{{ subject.name }}</h3>
+            <p>
+              {{ subject.subtopics|length }} subtopic{{ 's' if subject.subtopics|length != 1 else '' }} ·
+              {{ subject.lesson_ready_count }} ready for lessons ·
+              {{ subject.question_ready_count }} ready for quizzes
+            </p>
+            <a
+              href="{{ url_for('admin.admin_subtopics', subject=subject.id) }}"
+              class="btn-link"
+            >
+              Manage {{ subject.name }} subtopics
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+          {% endfor %}
+        </section>
+
+        {% for subject in subjects %}
+        <section class="subject-section">
+          <div class="subject-header">
+            <div class="subject-title">
+              <div
+                class="subject-icon"
+                style="background: {{ subject.color or '#4a5568' }};"
+              >
+                <i class="{{ subject.icon or 'fas fa-book' }}"></i>
+              </div>
+              <div>
+                <h2>{{ subject.name }}</h2>
+                <p>{{ subject.description }}</p>
+              </div>
+            </div>
+            <div class="admin-actions">
+              <span class="badge success">
+                <i class="fas fa-check"></i>
+                {{ subject.lesson_ready_count }} with lessons
+              </span>
+              <span class="badge warning">
+                <i class="fas fa-question"></i>
+                {{ subject.question_ready_count }} with questions
+              </span>
+            </div>
+          </div>
+
+          {% if subject.subtopics %}
+          <div class="table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Subtopic</th>
+                  <th>Lessons</th>
+                  <th>Questions</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for subtopic in subject.subtopics %}
+                <tr>
+                  <td>
+                    <strong>{{ subtopic.name }}</strong>
+                    {% if subtopic.estimated_time %}
+                    <div class="status-pill">
+                      <i class="fas fa-clock"></i>
+                      {{ subtopic.estimated_time }}
+                    </div>
+                    {% endif %}
+                    {% if subtopic.prerequisites %}
+                    <div class="status-pill warn">
+                      <i class="fas fa-link"></i>
+                      {{ subtopic.prerequisites|length }} prerequisite{{ 's' if subtopic.prerequisites|length != 1 else '' }}
+                    </div>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if subtopic.has_lessons %}
+                    <span class="badge success">
+                      <i class="fas fa-chalkboard-teacher"></i>
+                      {{ subtopic.lesson_count }}
+                    </span>
+                    {% else %}
+                    <span class="badge danger">
+                      <i class="fas fa-exclamation-triangle"></i>
+                      None
+                    </span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if subtopic.has_questions %}
+                    <span class="badge success">
+                      <i class="fas fa-list-ol"></i>
+                      {{ subtopic.total_questions }}
+                    </span>
+                    {% else %}
+                    <span class="badge danger">
+                      <i class="fas fa-exclamation-circle"></i>
+                      None
+                    </span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if subtopic.has_lessons and subtopic.has_questions %}
+                    <span class="status-pill good">
+                      <i class="fas fa-check"></i>
+                      Ready
+                    </span>
+                    {% elif subtopic.has_lessons %}
+                    <span class="status-pill warn">
+                      <i class="fas fa-question"></i>
+                      Add Questions
+                    </span>
+                    {% elif subtopic.has_questions %}
+                    <span class="status-pill warn">
+                      <i class="fas fa-chalkboard"></i>
+                      Add Lessons
+                    </span>
+                    {% else %}
+                    <span class="status-pill bad">
+                      <i class="fas fa-flag"></i>
+                      Needs Content
+                    </span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div class="admin-actions">
+                      <a
+                        href="{{ url_for('admin.admin_edit_subtopic', subject=subject.id, subtopic=subtopic.id) }}"
+                        class="btn-small"
+                      >
+                        <i class="fas fa-pen"></i>
+                        Edit
+                      </a>
+                      <a
+                        href="{{ url_for('admin.admin_lessons', subject=subject.id, subtopic=subtopic.id) }}"
+                        class="btn-small"
+                      >
+                        <i class="fas fa-book-reader"></i>
+                        Lessons
+                      </a>
+                      <a
+                        href="{{ url_for('admin.admin_questions', subject=subject.id, subtopic=subtopic.id) }}"
+                        class="btn-small"
+                      >
+                        <i class="fas fa-question-circle"></i>
+                        Questions
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="empty-state">
+            <i class="fas fa-layer-group"></i>
+            <h3>No subtopics found</h3>
+            <p>Use the manage subtopics tool to add new subtopics for {{ subject.name }}.</p>
+          </div>
+          {% endif %}
+        </section>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state">
+          <i class="fas fa-layer-group"></i>
+          <h3>No subjects available</h3>
+          <p>Create a subject to begin organising your curriculum.</p>
+          <a href="/admin/subjects/create" class="btn-primary">
+            <i class="fas fa-plus"></i>
+            Create Subject
+          </a>
+        </div>
+        {% endif %}
+        {% endif %}
+      </main>
+    </div>
+
+    {% include 'admin/partials/overview_styles.html' %}
+  </body>
+</html>
