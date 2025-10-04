@@ -15,7 +15,7 @@ from flask import (
     Response,
 )
 from services import get_admin_service, get_data_service, get_progress_service
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 import os
 import json
 from datetime import datetime
@@ -247,6 +247,266 @@ def admin_dashboard():
     except Exception as e:
         print(f"Error loading admin dashboard: {e}")
         return f"Error loading admin dashboard: {e}", 500
+
+
+@admin_bp.route("/overview/lessons")
+def admin_overview_lessons():
+    """Display all lessons across subjects and subtopics."""
+
+    try:
+        admin_service = get_admin_service()
+        overview = admin_service.get_lessons_overview()
+
+        if not overview.get("success", False):
+            return render_template(
+                "admin/all_lessons.html",
+                subjects=[],
+                stats={},
+                error=overview.get("error", "Unable to load lessons overview"),
+            )
+
+        stats = dict(overview.get("stats", {}))
+        subjects: List[Dict[str, Any]] = []
+
+        for subject_id, subject_data in overview.get("subjects", {}).items():
+            subtopics_data: List[Dict[str, Any]] = []
+
+            for subtopic in subject_data.get("subtopics", []):
+                lessons = subtopic.get("lessons", [])
+
+                subtopics_data.append(
+                    {
+                        "id": subtopic.get("id"),
+                        "name": subtopic.get(
+                            "name",
+                            (subtopic.get("id") or "").replace("_", " ").title(),
+                        ),
+                        "description": subtopic.get("description", ""),
+                        "order": subtopic.get("order", 0),
+                        "status": subtopic.get("status", "active"),
+                        "estimated_time": subtopic.get("estimated_time", ""),
+                        "prerequisites": subtopic.get("prerequisites", []),
+                        "video_count": subtopic.get("video_count", 0),
+                        "lesson_count": subtopic.get("lesson_count", len(lessons)),
+                        "lessons": lessons,
+                    }
+                )
+
+            subtopics_data.sort(
+                key=lambda item: (item.get("order", 0), item.get("name", "").lower())
+            )
+
+            subjects.append(
+                {
+                    "id": subject_id,
+                    "name": subject_data.get("name", subject_id.title()),
+                    "description": subject_data.get("description", ""),
+                    "icon": subject_data.get("icon", "fas fa-book"),
+                    "color": subject_data.get("color", "#4a5568"),
+                    "lesson_count": subject_data.get("lesson_count", 0),
+                    "subtopics": subtopics_data,
+                }
+            )
+
+        subjects.sort(key=lambda item: item.get("name", "").lower())
+
+        stats.setdefault(
+            "subjects_with_lessons",
+            sum(1 for subject in subjects if subject.get("lesson_count", 0) > 0),
+        )
+        stats.setdefault(
+            "subtopics_with_lessons",
+            sum(
+                1
+                for subject in subjects
+                for subtopic in subject.get("subtopics", [])
+                if subtopic.get("lesson_count", 0) > 0
+            ),
+        )
+        stats.setdefault(
+            "total_lessons",
+            sum(
+                subtopic.get("lesson_count", 0)
+                for subject in subjects
+                for subtopic in subject.get("subtopics", [])
+            ),
+        )
+
+        return render_template(
+            "admin/all_lessons.html",
+            subjects=subjects,
+            stats=stats,
+            error=None,
+        )
+
+    except Exception as exc:
+        print(f"Error loading lessons overview: {exc}")
+        return (
+            render_template(
+                "admin/all_lessons.html",
+                subjects=[],
+                stats={},
+                error=str(exc),
+            ),
+            500,
+        )
+
+
+@admin_bp.route("/overview/questions")
+def admin_overview_questions():
+    """Display all questions across subjects and subtopics."""
+
+    try:
+        admin_service = get_admin_service()
+        overview = admin_service.get_questions_overview()
+
+        if not overview.get("success", False):
+            return render_template(
+                "admin/all_questions.html",
+                subjects=[],
+                stats={},
+                error=overview.get("error", "Unable to load questions overview"),
+            )
+
+        stats = dict(overview.get("stats", {}))
+        stats["total_questions"] = stats.get("total_initial_questions", 0) + stats.get(
+            "total_pool_questions", 0
+        )
+
+        subjects = []
+        for subject_id, subject_data in overview.get("subjects", {}).items():
+            subtopics = []
+            total_initial = 0
+            total_pool = 0
+
+            for subtopic in subject_data.get("subtopics", []):
+                quiz_count = subtopic.get("quiz_questions_count", 0) or 0
+                pool_count = subtopic.get("pool_questions_count", 0) or 0
+                total_initial += quiz_count
+                total_pool += pool_count
+
+                subtopics.append(
+                    {
+                        **subtopic,
+                        "total_questions": quiz_count + pool_count,
+                    }
+                )
+
+            subjects.append(
+                {
+                    "id": subject_id,
+                    "name": subject_data.get("name", subject_id.title()),
+                    "description": subject_data.get("description", ""),
+                    "icon": subject_data.get("icon", "fas fa-book"),
+                    "color": subject_data.get("color", "#4a5568"),
+                    "subtopics": subtopics,
+                    "initial_count": total_initial,
+                    "pool_count": total_pool,
+                }
+            )
+
+        subjects.sort(key=lambda item: item["name"].lower())
+
+        return render_template(
+            "admin/all_questions.html",
+            subjects=subjects,
+            stats=stats,
+            error=None,
+        )
+
+    except Exception as exc:
+        print(f"Error loading questions overview: {exc}")
+        return (
+            render_template(
+                "admin/all_questions.html",
+                subjects=[],
+                stats={},
+                error=str(exc),
+            ),
+            500,
+        )
+
+
+@admin_bp.route("/overview/subtopics")
+def admin_overview_subtopics():
+    """Display all subtopics with lesson and question coverage."""
+
+    try:
+        admin_service = get_admin_service()
+        overview = admin_service.get_subtopics_overview()
+
+        if not overview.get("success", False):
+            return render_template(
+                "admin/all_subtopics.html",
+                subjects=[],
+                stats={},
+                error=overview.get("error", "Unable to load subtopics overview"),
+            )
+
+        stats = dict(overview.get("stats", {}))
+        stats["total_questions"] = stats.get("total_initial_questions", 0) + stats.get(
+            "total_pool_questions", 0
+        )
+
+        subjects = []
+        for subject_id, subject_data in overview.get("subjects", {}).items():
+            subtopics = []
+            lesson_ready = 0
+            question_ready = 0
+
+            for subtopic in subject_data.get("subtopics", []):
+                lesson_count = subtopic.get("lesson_count", 0) or 0
+                total_questions = (
+                    subtopic.get("quiz_questions_count", 0) or 0
+                ) + (subtopic.get("pool_questions_count", 0) or 0)
+
+                if lesson_count > 0:
+                    lesson_ready += 1
+                if total_questions > 0:
+                    question_ready += 1
+
+                subtopics.append(
+                    {
+                        **subtopic,
+                        "total_questions": total_questions,
+                        "has_lessons": lesson_count > 0,
+                        "has_questions": total_questions > 0,
+                    }
+                )
+
+            subjects.append(
+                {
+                    "id": subject_id,
+                    "name": subject_data.get("name", subject_id.title()),
+                    "description": subject_data.get("description", ""),
+                    "icon": subject_data.get("icon", "fas fa-book"),
+                    "color": subject_data.get("color", "#4a5568"),
+                    "subtopics": subtopics,
+                    "lesson_ready_count": lesson_ready,
+                    "question_ready_count": question_ready,
+                }
+            )
+
+        subjects.sort(key=lambda item: item["name"].lower())
+
+        return render_template(
+            "admin/all_subtopics.html",
+            subjects=subjects,
+            stats=stats,
+            error=None,
+        )
+
+    except Exception as exc:
+        print(f"Error loading subtopics overview: {exc}")
+        return (
+            render_template(
+                "admin/all_subtopics.html",
+                subjects=[],
+                stats={},
+                error=str(exc),
+            ),
+            500,
+        )
 
 
 # ============================================================================

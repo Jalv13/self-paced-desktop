@@ -100,6 +100,9 @@ class TestAllRoutes(unittest.TestCase):
             ("/admin/subtopics/select-subject", "Select subject for subtopics"),
             ("/admin/lessons/select-subject", "Select subject for lessons"),
             ("/admin/questions/select-subject", "Select subject for questions"),
+            ("/admin/overview/lessons", "All lessons overview"),
+            ("/admin/overview/subtopics", "All subtopics overview"),
+            ("/admin/overview/questions", "All questions overview"),
         ]
 
         for route, description in admin_routes:
@@ -121,6 +124,27 @@ class TestAllRoutes(unittest.TestCase):
                     )
                 else:
                     print(f"    ❌ {response.status_code} - Error in {description}")
+
+    def test_admin_overview_pages_content(self):
+        """Ensure overview pages render aggregated data."""
+
+        overview_pages = [
+            ("/admin/overview/lessons", "All Lessons Overview", "Python Functions"),
+            ("/admin/overview/questions", "All Questions Overview", "Python Functions"),
+            ("/admin/overview/subtopics", "All Subtopics Overview", "Python Functions"),
+        ]
+
+        for route, headline, expected in overview_pages:
+            with self.subTest(route=route):
+                response = self.client.get(route)
+                self.assertEqual(
+                    response.status_code,
+                    200,
+                    f"Overview page {route} should return 200",
+                )
+                content = response.get_data(as_text=True)
+                self.assertIn(headline, content)
+                self.assertIn(expected, content)
 
     def test_api_routes(self):
         """Test API endpoints."""
