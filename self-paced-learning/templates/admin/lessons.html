@@ -15,7 +15,7 @@
       <nav class="admin-sidebar">
         <div class="admin-logo">
           <h2><i class="fas fa-cog"></i> Admin Panel</h2>
-          <a href="/" class="back-to-site">? Back to Site</a>
+          <a href="/" class="back-to-site">↩ Back to Site</a>
         </div>
 
         <ul class="admin-nav">
@@ -26,7 +26,9 @@
             <a href="/admin/subjects"><i class="fas fa-book-open"></i> Subjects</a>
           </li>
           <li>
-            <a href="/admin/subtopics/select-subject"><i class="fas fa-sitemap"></i> Subtopics</a>
+            <a href="/admin/subtopics/select-subject"
+              ><i class="fas fa-sitemap"></i> Subtopics</a
+            >
           </li>
           <li>
             <a href="/admin/lessons/select-subject" class="active"
@@ -50,24 +52,23 @@
         <header class="admin-header">
           {% if filtered_view %}
           <h1>
-            Lessons for {{ subject_info.name or subject|title }} - {{
-            subtopic|title }}
+            Lessons for {{ subject_info.name or subject|title }} – {{ subtopic_name
+            or subtopic|title }}
           </h1>
-          <p>Manage lessons for this specific subtopic</p>
+          <p>Manage lessons for this specific subtopic.</p>
           <div class="breadcrumb">
-            <a href="/admin/lessons/select-subject">All Lessons</a> >
-            <a href="/admin/subjects"
-              >{{ subject_info.name or subject|title }}</a
-            >
-            > {{ subtopic|title }}
+            <a href="/admin/lessons/select-subject">All Lessons</a>
+            <span aria-hidden="true">›</span>
+            <a href="/admin/subjects">{{ subject_info.name or subject|title }}</a>
+            <span aria-hidden="true">›</span>
+            <span>{{ subtopic_name or subtopic|title }}</span>
           </div>
           {% else %}
           <h1>Lesson Management</h1>
-          <p>Create and manage remedial and initial lessons for all subjects</p>
+          <p>Create and manage remedial and initial lessons for all subjects.</p>
           {% endif %}
         </header>
 
-        <!-- Actions Bar -->
         <div class="actions-bar">
           <div class="search-filter">
             <input
@@ -75,15 +76,16 @@
               id="lessonSearch"
               placeholder="Search lessons..."
               class="search-input"
+              aria-label="Search lessons"
             />
             {% if not filtered_view %}
-            <select id="subjectFilter" class="filter-select">
+            <select id="subjectFilter" class="filter-select" aria-label="Filter by subject">
               <option value="">All Subjects</option>
               {% for subject_id, subject_data in subjects.items() %}
               <option value="{{ subject_id }}">{{ subject_data.name }}</option>
               {% endfor %}
             </select>
-            <select id="lessonTypeFilter" class="filter-select">
+            <select id="lessonTypeFilter" class="filter-select" aria-label="Filter by lesson type">
               <option value="">All Lesson Types</option>
               <option value="remedial">Remedial Lessons</option>
               <option value="initial">Initial Lessons</option>
@@ -96,7 +98,6 @@
                 class="action-btn primary dropdown-toggle"
                 type="button"
                 id="createDropdown"
-                data-toggle="dropdown"
                 aria-haspopup="true"
                 aria-expanded="false"
               >
@@ -104,125 +105,405 @@
                 <i class="fas fa-chevron-down"></i>
               </button>
               <div class="dropdown-menu" aria-labelledby="createDropdown">
-                <a
-                  class="dropdown-item"
-                  href="/admin/lessons/create?type=remedial"
-                >
+                <a class="dropdown-item" href="/admin/lessons/create?type=remedial">
                   <i class="fas fa-bandage"></i> Create Remedial Lesson
                 </a>
-                <a
-                  class="dropdown-item"
-                  href="/admin/lessons/create?type=initial"
-                >
+                <a class="dropdown-item" href="/admin/lessons/create?type=initial">
                   <i class="fas fa-seedling"></i> Create Initial Lesson
                 </a>
               </div>
             </div>
             {% if filtered_view %}
-            <a
-              href="/admin/lessons/select-subject"
-              class="action-btn secondary"
-            >
+            <a href="/admin/lessons/select-subject" class="action-btn secondary">
               <i class="fas fa-list"></i> View All Lessons
             </a>
             {% endif %}
           </div>
         </div>
 
-        <!-- Lessons Grid -->
-        <div class="lessons-grid">
-          {% if filtered_view %} 
-            {% if lessons %}
-              <!-- Lesson Type Sections -->
-              {% set initial_lessons = lessons.items() | selectattr('1.type', 'equalto', 'initial') | list %}
-              {% set remedial_lessons = lessons.items() | selectattr('1.type', 'ne', 'initial') | list %}
-              
-              <!-- Initial Lessons Section -->
-              {% if initial_lessons %}
-              <div class="lesson-section">
-                <div class="section-header">
-                  <h2><i class="fas fa-seedling"></i> Initial Lessons</h2>
-                  <p>Foundational lessons that introduce core concepts - drag to reorder</p>
+        <div
+          class="lessons-grid"
+          {% if filtered_view %}
+          data-subject="{{ subject }}"
+          data-subtopic="{{ subtopic }}"
+          {% endif %}
+        >
+          {% if filtered_view %}
+          {% set lesson_items = lessons.items() | list %}
+          {% if lesson_items %}
+          {% set initial_lessons = lesson_items | selectattr('1.type', 'equalto', 'initial') | list %}
+          {% set remedial_lessons = lesson_items | rejectattr('1.type', 'equalto', 'initial') | list %}
+
+          {% if initial_lessons %}
+          <section class="lesson-section">
+            <div class="section-header">
+              <h2><i class="fas fa-seedling"></i> Initial Lessons</h2>
+              <p>Foundational lessons that introduce core concepts – drag to reorder.</p>
+            </div>
+            <div
+              class="lessons-list"
+              data-list-type="initial"
+              data-subject="{{ subject }}"
+              data-subtopic="{{ subtopic }}"
+            >
+              {% for lesson_id, lesson_data in initial_lessons %}
+              <article
+                class="lesson-card lesson-list-item initial-lesson"
+                data-lesson-id="{{ lesson_id }}"
+                data-lesson-type="{{ lesson_data.type or 'initial' }}"
+                draggable="true"
+              >
+                <div class="lesson-drag-handle" aria-hidden="true">
+                  <i class="fas fa-grip-vertical"></i>
                 </div>
-                <div class="lessons-list" id="initial-lessons-list" data-subject="{{ subject }}" data-subtopic="{{ subtopic }}">
-                  {% for lesson_id, lesson_data in initial_lessons %}
-                  <div
-                    class="lesson-card lesson-list-item initial-lesson draggable"
-                    data-subject="{{ subject }}"
-                    data-lesson-id="{{ lesson_id }}"
-                    data-lesson-type="{{ lesson_data.type or 'initial' }}"
-                    data-order="{{ lesson_data.order or loop.index }}"
-                    draggable="true"
+                <div class="lesson-order-badge">{{ lesson_data.order or loop.index }}</div>
+                <div class="lesson-main-content">
+                  <div class="lesson-header-inline">
+                    <h3>{{ lesson_data.title }}</h3>
+                    <div class="lesson-meta-inline">
+                      <span
+                        class="subject-badge-small"
+                        style="background-color: {{ subject_info.color or '#007bff' }}"
+                        title="{{ subject_info.name or subject|title }}"
+                      >
+                        <i class="{{ subject_info.icon or 'fas fa-book' }}"></i>
+                      </span>
+                      <span class="lesson-type-badge initial">
+                        <i class="fas fa-seedling"></i> Initial
+                      </span>
+                    </div>
+                  </div>
+                  <div class="lesson-details">
+                    {% if lesson_data.videoId %}
+                    <div class="lesson-detail-item">
+                      <i class="fas fa-video"></i>
+                      <span>Video: {{ lesson_data.videoId }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="lesson-detail-item">
+                      <i class="fas fa-list"></i>
+                      <span>{{ lesson_data.content|length }} content blocks</span>
+                    </div>
+                    {% if lesson_data.tags %}
+                    <div class="lesson-detail-item lesson-tags-inline">
+                      <i class="fas fa-tags"></i>
+                      <span>
+                        {% for tag in lesson_data.tags %}
+                        <span class="tag-small">{{ tag }}</span>
+                        {% endfor %}
+                      </span>
+                    </div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="lesson-actions-inline">
+                  <a
+                    href="/admin/lessons/{{ subject }}/{{ subtopic }}/{{ lesson_id }}/edit"
+                    class="btn-action btn-edit"
+                    title="Edit Lesson"
                   >
-                    <div class="lesson-drag-handle">
-                      <i class="fas fa-grip-vertical"></i>
-                    </div>
-                    
-                    <div class="lesson-order-badge">
-                      {{ lesson_data.order or loop.index }}
-                    </div>
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <button
+                    type="button"
+                    class="btn-action btn-delete"
+                    onclick="deleteLesson('{{ subject }}', '{{ subtopic }}', '{{ lesson_id }}')"
+                    title="Delete Lesson"
+                  >
+                    <i class="fas fa-trash"></i>
+                  </button>
+                  <a
+                    href="/subjects/{{ subject }}?subtopic={{ subtopic }}&lesson={{ lesson_id }}"
+                    target="_blank"
+                    rel="noopener"
+                    class="btn-action btn-view"
+                    title="Preview Lesson"
+                  >
+                    <i class="fas fa-eye"></i>
+                  </a>
+                </div>
+              </article>
+              {% endfor %}
+            </div>
+          </section>
+          {% endif %}
 
-                    <div class="lesson-main-content">
-                      <div class="lesson-header-inline">
-                        <h3>{{ lesson_data.title }}</h3>
-                        <div class="lesson-meta-inline">
-                          <span
-                            class="subject-badge-small"
-                            style="background-color: {{ subject_info.color or '#007bff' }}"
-                          >
-                            <i class="{{ subject_info.icon or 'fas fa-book' }}"></i>
-                          </span>
-                          <span class="lesson-type-badge initial">
-                            <i class="fas fa-seedling"></i> Initial
-                          </span>
-                        </div>
-                      </div>
-
-                      <div class="lesson-details">
-                        {% if lesson_data.videoId %}
-                        <div class="lesson-detail-item">
-                          <i class="fas fa-video"></i>
-                          <span>Video: {{ lesson_data.videoId }}</span>
-                        </div>
-                        {% endif %}
-
-                        <div class="lesson-detail-item">
-                          <i class="fas fa-list"></i>
-                          <span>{{ lesson_data.content|length }} content blocks</span>
-                        </div>
-
-                        {% if lesson_data.tags %}
-                        <div class="lesson-detail-item lesson-tags-inline">
-                          <i class="fas fa-tags"></i>
-                          <span>
-                            {% for tag in lesson_data.tags %}
-                            <span class="tag-small">{{ tag }}</span>
-                            {% endfor %}
-                          </span>
-                        </div>
-                        {% endif %}
-                      </div>
-                    </div>
-
-                    <div class="lesson-actions-inline">
-                      <a
-                        href="/admin/lessons/{{ subject }}/{{ subtopic }}/{{ lesson_id }}/edit"
-                        class="btn-action btn-edit"
-                        title="Edit Lesson"
+          {% if remedial_lessons %}
+          <section class="lesson-section">
+            <div class="section-header">
+              <h2><i class="fas fa-bandage"></i> Remedial Lessons</h2>
+              <p>Targeted lessons to reinforce understanding – drag to reorder.</p>
+            </div>
+            <div
+              class="lessons-list"
+              data-list-type="remedial"
+              data-subject="{{ subject }}"
+              data-subtopic="{{ subtopic }}"
+            >
+              {% for lesson_id, lesson_data in remedial_lessons %}
+              <article
+                class="lesson-card lesson-list-item remedial-lesson"
+                data-lesson-id="{{ lesson_id }}"
+                data-lesson-type="{{ lesson_data.type or 'remedial' }}"
+                draggable="true"
+              >
+                <div class="lesson-drag-handle" aria-hidden="true">
+                  <i class="fas fa-grip-vertical"></i>
+                </div>
+                <div class="lesson-order-badge">{{ lesson_data.order or loop.index }}</div>
+                <div class="lesson-main-content">
+                  <div class="lesson-header-inline">
+                    <h3>{{ lesson_data.title }}</h3>
+                    <div class="lesson-meta-inline">
+                      <span
+                        class="subject-badge-small"
+                        style="background-color: {{ subject_info.color or '#007bff' }}"
+                        title="{{ subject_info.name or subject|title }}"
                       >
-                        <i class="fas fa-edit"></i>
-                      </a>
-                      <button
-                        class="btn-action btn-delete"
-                        onclick="deleteLesson('{{ subject }}', '{{ subtopic }}', '{{ lesson_id }}')"
-                        title="Delete Lesson"
-                      >
-                        <i class="fas fa-trash"></i>
-                      </button>
-                      <a
-                        href="/subjects/{{ subject }}?subtopic={{ subtopic }}&lesson={{ lesson_id }}"
-                        target="_blank"
-                        class="btn-action btn-view"
-                        title="Preview Lesson"
-                      >
-                        <i class="fas}}
+                        <i class="{{ subject_info.icon or 'fas fa-book' }}"></i>
+                      </span>
+                      <span class="lesson-type-badge remedial">
+                        <i class="fas fa-bandage"></i> {{ (lesson_data.type or 'Remedial')|title }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="lesson-details">
+                    {% if lesson_data.videoId %}
+                    <div class="lesson-detail-item">
+                      <i class="fas fa-video"></i>
+                      <span>Video: {{ lesson_data.videoId }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="lesson-detail-item">
+                      <i class="fas fa-list"></i>
+                      <span>{{ lesson_data.content|length }} content blocks</span>
+                    </div>
+                    {% if lesson_data.tags %}
+                    <div class="lesson-detail-item lesson-tags-inline">
+                      <i class="fas fa-tags"></i>
+                      <span>
+                        {% for tag in lesson_data.tags %}
+                        <span class="tag-small">{{ tag }}</span>
+                        {% endfor %}
+                      </span>
+                    </div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="lesson-actions-inline">
+                  <a
+                    href="/admin/lessons/{{ subject }}/{{ subtopic }}/{{ lesson_id }}/edit"
+                    class="btn-action btn-edit"
+                    title="Edit Lesson"
+                  >
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <button
+                    type="button"
+                    class="btn-action btn-delete"
+                    onclick="deleteLesson('{{ subject }}', '{{ subtopic }}', '{{ lesson_id }}')"
+                    title="Delete Lesson"
+                  >
+                    <i class="fas fa-trash"></i>
+                  </button>
+                  <a
+                    href="/subjects/{{ subject }}?subtopic={{ subtopic }}&lesson={{ lesson_id }}"
+                    target="_blank"
+                    rel="noopener"
+                    class="btn-action btn-view"
+                    title="Preview Lesson"
+                  >
+                    <i class="fas fa-eye"></i>
+                  </a>
+                </div>
+              </article>
+              {% endfor %}
+            </div>
+          </section>
+          {% endif %}
+
+          {% if not initial_lessons and not remedial_lessons %}
+          <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No lessons found for this subtopic yet.</p>
+          </div>
+          {% endif %}
+          {% else %}
+          <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No lessons found for this subtopic yet.</p>
+          </div>
+          {% endif %}
+          {% else %}
+          {% if lessons %}
+          <div class="lessons-table-wrapper">
+            <table class="lessons-table">
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Subtopic</th>
+                  <th>Title</th>
+                  <th>Type</th>
+                  <th>Content Blocks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for lesson in lessons %}
+                <tr>
+                  <td data-label="Subject">{{ lesson.subject_name or lesson.subject|title }}</td>
+                  <td data-label="Subtopic">{{ lesson.subtopic_name or lesson.subtopic|title }}</td>
+                  <td data-label="Title">{{ lesson.title }}</td>
+                  <td data-label="Type">{{ lesson.type|default('Remedial')|title }}</td>
+                  <td data-label="Content">{{ lesson.content_count or lesson.content|length }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="empty-state">
+            <i class="fas fa-info-circle"></i>
+            <p>Select a subject to manage lessons.</p>
+          </div>
+          {% endif %}
+          {% endif %}
+        </div>
+      </main>
+    </div>
+
+    <script>
+      function deleteLesson(subject, subtopic, lessonId) {
+        if (!confirm("Are you sure you want to delete this lesson?")) {
+          return;
+        }
+
+        fetch(`/admin/lessons/${subject}/${subtopic}/${lessonId}/delete`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              window.location.reload();
+            } else {
+              alert(data.error || "Failed to delete the lesson.");
+            }
+          })
+          .catch(() => alert("Failed to delete the lesson."));
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        const searchInput = document.getElementById("lessonSearch");
+        const lessonCards = document.querySelectorAll(".lesson-card");
+
+        if (searchInput && lessonCards.length) {
+          searchInput.addEventListener("input", function () {
+            const query = this.value.toLowerCase();
+            lessonCards.forEach((card) => {
+              const text = card.innerText.toLowerCase();
+              card.style.display = text.includes(query) ? "" : "none";
+            });
+          });
+        }
+
+        const lessonLists = document.querySelectorAll(".lessons-list");
+        if (!lessonLists.length) {
+          return;
+        }
+
+        let draggedCard = null;
+
+        lessonLists.forEach((list) => {
+          list.addEventListener("dragstart", (event) => {
+            const card = event.target.closest(".lesson-card");
+            if (!card) return;
+            draggedCard = card;
+            card.classList.add("dragging");
+            event.dataTransfer.effectAllowed = "move";
+          });
+
+          list.addEventListener("dragover", (event) => {
+            event.preventDefault();
+            const afterElement = getDragAfterElement(list, event.clientY);
+            if (afterElement == null) {
+              list.appendChild(draggedCard);
+            } else {
+              list.insertBefore(draggedCard, afterElement);
+            }
+            updateOrderBadges(list);
+          });
+
+          list.addEventListener("drop", (event) => {
+            event.preventDefault();
+            if (!draggedCard) return;
+            draggedCard.classList.remove("dragging");
+            persistLessonOrder();
+            draggedCard = null;
+          });
+
+          list.addEventListener("dragend", () => {
+            if (draggedCard) {
+              draggedCard.classList.remove("dragging");
+              draggedCard = null;
+            }
+          });
+        });
+
+        function getDragAfterElement(container, y) {
+          const draggableElements = [...container.querySelectorAll(".lesson-card:not(.dragging)")];
+
+          return draggableElements.reduce(
+            (closest, child) => {
+              const box = child.getBoundingClientRect();
+              const offset = y - box.top - box.height / 2;
+              if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+              } else {
+                return closest;
+              }
+            },
+            { offset: Number.NEGATIVE_INFINITY, element: null }
+          ).element;
+        }
+
+        function updateOrderBadges(list) {
+          list.querySelectorAll(".lesson-card").forEach((card, index) => {
+            const badge = card.querySelector(".lesson-order-badge");
+            if (badge) {
+              badge.textContent = index + 1;
+            }
+          });
+        }
+
+        function persistLessonOrder() {
+          const container = document.querySelector(".lessons-grid");
+          if (!container) return;
+          const subject = container.dataset.subject;
+          const subtopic = container.dataset.subtopic;
+          if (!subject || !subtopic) return;
+
+          const orderedIds = Array.from(
+            document.querySelectorAll(".lessons-list .lesson-card")
+          ).map((card) => card.dataset.lessonId);
+
+          fetch(`/admin/lessons/${subject}/${subtopic}/reorder`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(orderedIds),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (!data.success) {
+                console.error(data.error || "Failed to reorder lessons");
+              }
+            })
+            .catch((error) => console.error("Failed to reorder lessons", error));
+        }
+      });
+    </script>
+  </body>
+</html>
