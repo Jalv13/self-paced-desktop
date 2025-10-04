@@ -543,6 +543,9 @@
                       <div class="code-runner-block" id="code-runner-${blockId}">
                         <div class="code-runner-header">
                           <h4><i class="fas fa-play-circle"></i> Interactive Python Code</h4>
+                          <button class="code-runner-toggle" type="button" onclick="toggleCodeRunner('${blockId}')" aria-expanded="false" aria-label="Expand code runner">
+                            <i class="fas fa-expand-alt"></i>
+                          </button>
                         </div>
                         <div class="code-runner-content">
                           <div class="code-editor">
@@ -557,9 +560,6 @@
                             </button>
                             ${item.solution ? `<button class="show-solution-btn" onclick="showSolution('${blockId}')"><i class="fas fa-lightbulb"></i> Show Solution</button>` : ''}
                             ${item.hints && item.hints.length > 0 ? `<button class="show-hints-btn" onclick="showHints('${blockId}')"><i class="fas fa-question-circle"></i> Show Hints</button>` : ''}
-                            <button class="expand-code-btn" onclick="expandCodeRunner('${blockId}')">
-                              <i class="fas fa-expand"></i> Expand
-                            </button>
                           </div>
                           <div class="code-output">
                             <div class="output-header">Output:</div>
@@ -863,6 +863,46 @@
             });
 
             // Modal functions for expanding code runners
+            let activeCodeRunnerId = null;
+
+            function setExpandButtonState(blockId, isExpanded) {
+              const toggleButton = document.querySelector(
+                `#code-runner-${blockId} .code-runner-toggle`
+              );
+
+              if (!toggleButton) return;
+
+              toggleButton.setAttribute(
+                "aria-expanded",
+                isExpanded ? "true" : "false"
+              );
+              toggleButton.setAttribute(
+                "aria-label",
+                isExpanded ? "Collapse code runner" : "Expand code runner"
+              );
+              toggleButton.classList.toggle("is-expanded", isExpanded);
+              toggleButton.innerHTML = isExpanded
+                ? '<i class="fas fa-compress-alt"></i>'
+                : '<i class="fas fa-expand-alt"></i>';
+            }
+
+            function toggleCodeRunner(blockId) {
+              const modal = document.getElementById("code-runner-modal");
+              const isActive =
+                modal &&
+                modal.classList.contains("active") &&
+                activeCodeRunnerId === blockId;
+
+              if (isActive) {
+                closeCodeRunnerModal();
+              } else {
+                if (activeCodeRunnerId && activeCodeRunnerId !== blockId) {
+                  closeCodeRunnerModal();
+                }
+                expandCodeRunner(blockId);
+              }
+            }
+
             function expandCodeRunner(blockId) {
               const originalContainer = document.getElementById(`code-runner-${blockId}`);
               if (!originalContainer) return;
@@ -951,6 +991,8 @@
 
               // Show modal
               modal.classList.add('active');
+              activeCodeRunnerId = blockId;
+              setExpandButtonState(blockId, true);
 
               // Focus on textarea
               setTimeout(() => {
@@ -963,12 +1005,18 @@
 
             function closeCodeRunnerModal() {
               const modal = document.getElementById('code-runner-modal');
-              if (!modal) return;
+              if (!modal || !modal.classList.contains('active')) {
+                return;
+              }
 
               // Sync content back before closing
               syncFromModal();
 
               modal.classList.remove('active');
+              if (activeCodeRunnerId) {
+                setExpandButtonState(activeCodeRunnerId, false);
+              }
+              activeCodeRunnerId = null;
             }
 
             function syncToModal(blockId) {
