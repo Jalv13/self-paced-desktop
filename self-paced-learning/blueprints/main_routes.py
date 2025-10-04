@@ -4,6 +4,11 @@ Handles core application routes including subject selection, quiz pages,
 and primary user-facing functionality.
 """
 
+import threading
+import time
+import uuid
+from typing import Dict, List, Optional, Any
+
 from flask import (
     Blueprint,
     render_template,
@@ -13,11 +18,63 @@ from flask import (
     request,
     jsonify,
 )
+
 from services import get_data_service, get_progress_service, get_ai_service
-from typing import Dict, List, Optional, Any
+from services.quiz_analysis_utils import compute_basic_quiz_analysis
 
 # Create the Blueprint
 main_bp = Blueprint("main", __name__)
+
+_analysis_jobs: Dict[str, Dict[str, Any]] = {}
+_analysis_lock = threading.Lock()
+
+
+def _set_job_state(job_id: str, payload: Dict[str, Any]) -> None:
+    with _analysis_lock:
+        _analysis_jobs[job_id] = payload
+
+
+def _get_job_state(job_id: str) -> Optional[Dict[str, Any]]:
+    with _analysis_lock:
+        job = _analysis_jobs.get(job_id)
+        if not job:
+            return None
+        return dict(job)
+
+
+def _clear_job_state(job_id: str) -> None:
+    with _analysis_lock:
+        _analysis_jobs.pop(job_id, None)
+
+
+def _start_async_analysis(
+    job_id: str,
+    questions: List[Dict[str, Any]],
+    answers: List[str],
+    subject: str,
+    subtopic: str,
+) -> None:
+    def runner() -> None:
+        try:
+            ai_service = get_ai_service()
+            base_analysis = compute_basic_quiz_analysis(
+                questions,
+                answers,
+                subject,
+                subtopic,
+                data_service=get_data_service(),
+                include_submission_details=True,
+            )
+            result = ai_service.analyze_quiz_performance(
+                questions, answers, subject, subtopic, base_analysis
+            )
+            _set_job_state(job_id, {"status": "completed", "result": result})
+        except Exception as exc:  # pragma: no cover - defensive path
+            _set_job_state(job_id, {"status": "failed", "error": str(exc)})
+
+    _set_job_state(job_id, {"status": "in_progress"})
+    thread = threading.Thread(target=runner, daemon=True)
+    thread.start()
 
 
 # ============================================================================
@@ -223,6 +280,7 @@ def quiz_page(subject, subtopic):
 def analyze_quiz():
     """Analyze quiz results and provide recommendations."""
     try:
+        data_service = get_data_service()
         progress_service = get_progress_service()
         ai_service = get_ai_service()
 
@@ -249,25 +307,128 @@ def analyze_quiz():
         for index in range(len(questions)):
             answers.append(str(raw_answers.get(f"q{index}", "")).strip())
 
-        analysis_result = ai_service.analyze_quiz_performance(
-            questions, answers, current_subject, current_subtopic
+        basic_analysis = compute_basic_quiz_analysis(
+            questions,
+            answers,
+            current_subject,
+            current_subtopic,
+            data_service=data_service,
+            include_submission_details=True,
         )
 
         stored_analysis = progress_service.store_quiz_analysis(
-            current_subject, current_subtopic, analysis_result
+            current_subject, current_subtopic, basic_analysis
         )
         progress_service.set_weak_topics(
             current_subject, current_subtopic, stored_analysis.get("weak_tags", [])
         )
 
         session["quiz_analysis"] = stored_analysis
+        session["quiz_basic_analysis"] = stored_analysis
         session["quiz_answers"] = answers
+        session["enhanced_analysis_status"] = "pending"
+        session.pop("quiz_enhanced_analysis", None)
+        previous_job_id = session.pop("quiz_analysis_job_id", None)
+        if previous_job_id:
+            _clear_job_state(previous_job_id)
+        session["analysis_started_at"] = int(time.time())
+        session["analysis_subject"] = current_subject
+        session["analysis_subtopic"] = current_subtopic
 
-        return jsonify({"success": True, "analysis": stored_analysis})
+        # Warm caches for downstream rendering
+        try:
+            get_lesson_plans(current_subject, current_subtopic)
+            get_video_data(current_subject, current_subtopic)
+        except Exception as cache_error:
+            print(f"Cache warmup failed: {cache_error}")
+
+        return jsonify(
+            {
+                "success": True,
+                "analysis": stored_analysis,
+                "status": "basic_ready",
+            }
+        )
 
     except Exception as e:
         print(f"Error analyzing quiz: {e}")
         return f"Error analyzing quiz: {e}", 500
+
+
+@main_bp.route("/analyze/enhance", methods=["GET", "POST"])
+def enhance_quiz_analysis():
+    try:
+        progress_service = get_progress_service()
+
+        current_subject = session.get("current_subject")
+        current_subtopic = session.get("current_subtopic")
+        raw_answers = session.get("quiz_answers") or []
+        if isinstance(raw_answers, list):
+            answers = [str(item) for item in raw_answers]
+        else:
+            answers = []
+
+        if not current_subject or not current_subtopic:
+            return jsonify({"status": "error", "error": "No active quiz session."}), 400
+
+        quiz_session = progress_service.get_quiz_session_data(
+            current_subject, current_subtopic
+        )
+        questions = quiz_session.get("questions", []) or []
+
+        if not isinstance(questions, list) or not questions:
+            return jsonify({"status": "error", "error": "Quiz questions unavailable."}), 400
+
+        job_id = session.get("quiz_analysis_job_id")
+        status = session.get("enhanced_analysis_status", "pending")
+
+        if request.method == "POST":
+            if status == "in_progress":
+                return jsonify({"status": "in_progress"})
+            if status == "completed":
+                return jsonify({"status": "completed", "analysis": session.get("quiz_analysis")})
+
+            job_id = job_id or str(uuid.uuid4())
+            session["quiz_analysis_job_id"] = job_id
+            session["enhanced_analysis_status"] = "in_progress"
+            _start_async_analysis(job_id, questions, answers, current_subject, current_subtopic)
+            return jsonify({"status": "in_progress"})
+
+        # GET request - check job state
+        if not job_id:
+            return jsonify({"status": status})
+
+        job_state = _get_job_state(job_id)
+        if not job_state:
+            if status == "completed":
+                return jsonify({"status": "completed", "analysis": session.get("quiz_analysis")})
+            return jsonify({"status": status})
+
+        if job_state.get("status") == "completed":
+            enhanced = job_state.get("result") or {}
+            stored = progress_service.store_quiz_analysis(
+                current_subject, current_subtopic, enhanced
+            )
+            progress_service.set_weak_topics(
+                current_subject, current_subtopic, stored.get("weak_tags", [])
+            )
+            session["quiz_analysis"] = stored
+            session["quiz_enhanced_analysis"] = stored
+            session["enhanced_analysis_status"] = "completed"
+            _clear_job_state(job_id)
+            return jsonify({"status": "completed", "analysis": stored})
+
+        if job_state.get("status") == "failed":
+            session["enhanced_analysis_status"] = "failed"
+            error = job_state.get("error", "AI enhancement failed")
+            _clear_job_state(job_id)
+            return jsonify({"status": "failed", "error": error})
+
+        return jsonify({"status": "in_progress"})
+
+    except Exception as exc:
+        print(f"Error enhancing quiz analysis: {exc}")
+        return jsonify({"status": "error", "error": str(exc)}), 500
 @main_bp.route("/results")
 def show_results_page():
     """Display quiz results page with personalized learning recommendations."""
@@ -369,6 +530,10 @@ def show_results_page():
         score_percentage = analysis.get("score", {}).get("percentage", 0)
         show_remedial = score_percentage < 70  # Threshold for remedial quiz
 
+        enhancement_status = session.get("enhanced_analysis_status", "pending")
+        enhanced_analysis = session.get("quiz_enhanced_analysis")
+        job_id = session.get("quiz_analysis_job_id")
+
         return render_template(
             "results.html",
             analysis=analysis,
@@ -385,6 +550,10 @@ def show_results_page():
             admin_override=session.get("admin_override", False),
             is_admin=session.get("admin_override", False),
             quiz_generation_error=None,
+            ENHANCEMENT_STATUS=enhancement_status,
+            ENHANCEMENT_JOB_ID=job_id,
+            HAS_ENHANCED=bool(enhanced_analysis),
+            AI_AVAILABLE=ai_service.is_available(),
         )
 
     except Exception as e:

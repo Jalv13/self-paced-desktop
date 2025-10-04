@@ -224,6 +224,9 @@ class ProgressService:
             "recommendations",
             "allowed_tags",
             "used_ai",
+            "analysis_stage",
+            "basic_feedback",
+            "rule_based_insights",
         ]
 
         sanitized = {key: analysis.get(key) for key in keys_to_keep if key in analysis}
