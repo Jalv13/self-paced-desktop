@@ -310,6 +310,17 @@ class DataLoader:
         for key in cache_keys_to_remove:
             del self._cache[key]
 
+    def clear_cache_for_subject(self, subject: str) -> None:
+        """Clear all cache entries related to a subject."""
+        cache_keys_to_remove = [
+            key
+            for key in list(self._cache.keys())
+            if key == subject or key.startswith(f"{subject}_")
+        ]
+
+        for key in cache_keys_to_remove:
+            del self._cache[key]
+
     def validate_subject_subtopic(self, subject: str, subtopic: str) -> bool:
         """
         Check if a subject/subtopic combination exists.

@@ -416,3 +416,7 @@ class DataService:
     def clear_cache_for_subject_subtopic(self, subject: str, subtopic: str) -> None:
         """Clear cache for specific subject/subtopic."""
         self.data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
+
+    def clear_cache_for_subject(self, subject: str) -> None:
+        """Clear all cached data for a subject."""
+        self.data_loader.clear_cache_for_subject(subject)
