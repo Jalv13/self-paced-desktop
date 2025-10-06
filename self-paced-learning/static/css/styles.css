@@ -286,14 +286,6 @@ h2 {
   box-shadow: 0 4px 15px rgba(225, 112, 85, 0.3);
 }
 
-.status-info {
-  background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
-  border: none;
-  color: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(162, 155, 254, 0.3);
-}
-
 .feedback-section {
   margin-top: 25px;
   padding: 20px;

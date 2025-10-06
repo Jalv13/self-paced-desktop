@@ -545,14 +545,6 @@ def generate_remedial_quiz():
                 "error": "We couldn't find follow-up questions for your weak topics. Please review the materials and try again.",
             }), 404
 
-        # Limit stored remedial questions to avoid overflowing the client-side
-        # session cookie. Very large payloads can cause Flask's secure cookie to
-        # exceed browser limits, which then prevents the follow-up quiz from
-        # loading properly.
-        MAX_REMEDIAL_QUESTIONS = 10
-        if len(remedial_questions) > MAX_REMEDIAL_QUESTIONS:
-            remedial_questions = remedial_questions[:MAX_REMEDIAL_QUESTIONS]
-
         progress_service.set_remedial_quiz_data(
             current_subject, current_subtopic, remedial_questions, weak_topics
         )
