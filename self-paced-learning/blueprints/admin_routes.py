@@ -1311,11 +1311,8 @@ def admin_subtopics():
 def admin_reorder_subtopics(subject):
     """Reorder subtopics for a subject."""
     try:
-        from utils.data_loader import DataLoader
-        import os
-        import json
-
-        data_loader = DataLoader("data")
+        data_service = get_data_service()
+        data_loader = data_service.data_loader
 
         # Get the new order from request
         new_order = request.json.get("order", [])
@@ -1346,23 +1343,48 @@ def admin_reorder_subtopics(subject):
 
         # Create reordered subtopics dict
         reordered_subtopics = {}
+        seen_subtopics = set()
+        next_position = 1
+
         for subtopic_id in new_order:
-            reordered_subtopics[subtopic_id] = current_subtopics[subtopic_id]
+            subtopic_data = current_subtopics[subtopic_id]
+            if isinstance(subtopic_data, dict):
+                updated_data = dict(subtopic_data)
+                updated_data["order"] = next_position
+            else:
+                updated_data = subtopic_data
+
+            reordered_subtopics[subtopic_id] = updated_data
+            seen_subtopics.add(subtopic_id)
+            next_position += 1
 
         # Add any subtopics not in the new order (shouldn't happen, but safety)
         for subtopic_id, subtopic_data in current_subtopics.items():
-            if subtopic_id not in reordered_subtopics:
-                reordered_subtopics[subtopic_id] = subtopic_data
+            if subtopic_id in seen_subtopics:
+                continue
+
+            if isinstance(subtopic_data, dict):
+                updated_data = dict(subtopic_data)
+                updated_data["order"] = next_position
+            else:
+                updated_data = subtopic_data
+
+            reordered_subtopics[subtopic_id] = updated_data
+            next_position += 1
 
         # Update subject config
-        subject_config["subtopics"] = reordered_subtopics
+        updated_config = dict(subject_config)
+        updated_config["subtopics"] = reordered_subtopics
 
         # Save updated config
         config_file_path = os.path.join(
-            "data", "subjects", subject, "subject_config.json"
+            data_service.data_root_path,
+            "subjects",
+            subject,
+            "subject_config.json",
         )
         with open(config_file_path, "w", encoding="utf-8") as f:
-            json.dump(subject_config, f, indent=2)
+            json.dump(updated_config, f, indent=2, ensure_ascii=False)
 
         # Clear cache
         data_loader.clear_cache_for_subject(subject)
