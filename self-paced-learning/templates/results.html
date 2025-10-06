@@ -385,9 +385,55 @@
 
               // --- Score Display Function (duplicate click handler removed) ---
 
-              continueButton.addEventListener("click", function () {
-                if (!this.disabled) {
-                  window.location.href = "/generate_remedial_quiz";
+              continueButton.addEventListener("click", async function (event) {
+                if (this.disabled) {
+                  return;
+                }
+
+                event.preventDefault();
+
+                const originalText = this.textContent;
+                this.disabled = true;
+                this.textContent = "Preparing follow-up quiz...";
+
+                try {
+                  const response = await fetch("/generate_remedial_quiz", {
+                    headers: { Accept: "application/json" },
+                    credentials: "same-origin",
+                  });
+
+                  let payload = null;
+                  try {
+                    payload = await response.json();
+                  } catch (jsonError) {
+                    console.error("Unable to parse remedial quiz response:", jsonError);
+                  }
+
+                  if (!response.ok) {
+                    const message = payload && payload.error ? payload.error : undefined;
+                    throw new Error(
+                      message || `Unable to start the follow-up quiz (status ${response.status}).`
+                    );
+                  }
+
+                  if (payload && payload.success && payload.redirect_url) {
+                    window.location.href = payload.redirect_url;
+                    return;
+                  }
+
+                  throw new Error(
+                    (payload && payload.error) ||
+                      "We couldn't launch the follow-up quiz. Please refresh and try again."
+                  );
+                } catch (error) {
+                  console.error("Remedial quiz generation failed:", error);
+                  alert(
+                    (error && error.message) ||
+                      "We couldn't launch the follow-up quiz. Please refresh and try again."
+                  );
+                } finally {
+                  this.disabled = false;
+                  this.textContent = originalText;
                 }
               });
 
