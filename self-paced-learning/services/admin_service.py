@@ -508,8 +508,30 @@ class AdminService:
     def reorder_lessons(
         self, subject: str, subtopic: str, lesson_order: List[str]
     ) -> Dict[str, Any]:
-        """Reorder lessons for a specific subject/subtopic."""
+        """Reorder lessons for a specific subject/subtopic.
+
+        The admin UI posts an array of lesson identifiers in the desired
+        sequence.  Historically the file on disk only reflected the new list
+        ordering while keeping the stale ``order`` attribute on each lesson.
+        The public subject pages sort lessons using that attribute, so the
+        visual order never changed.  Normalising the payload and updating the
+        ``order`` field keeps both representations in sync.
+        """
         try:
+            # Normalise lesson order payload
+            if isinstance(lesson_order, dict):
+                lesson_order_list = lesson_order.get("order") or lesson_order.get(
+                    "lesson_order"
+                )
+            else:
+                lesson_order_list = lesson_order
+
+            if not isinstance(lesson_order_list, list):
+                return {
+                    "success": False,
+                    "error": "Invalid lesson order payload",
+                }
+
             # Get current lessons
             lessons = self.data_service.get_lesson_plans(subject, subtopic)
 
@@ -524,15 +546,20 @@ class AdminService:
 
             # Reorder lessons according to the provided order
             reordered_lessons = []
-            for lesson_id in lesson_order:
+            for lesson_id in lesson_order_list:
                 if lesson_id in lesson_map:
                     reordered_lessons.append(lesson_map[lesson_id])
 
             # Add any lessons not in the order list to the end
             for lesson in lessons:
                 lesson_id = lesson.get("id")
-                if lesson_id not in lesson_order:
+                if lesson_id not in lesson_order_list:
                     reordered_lessons.append(lesson)
+
+            # Update the explicit order attribute so the public site reflects
+            # the drag-and-drop ordering without needing additional sorting
+            for index, lesson in enumerate(reordered_lessons, start=1):
+                lesson["order"] = index
 
             # Save the reordered lessons
             lesson_file_path = os.path.join(
