@@ -17,7 +17,7 @@
     <!-- Pyodide for Python code execution -->
     <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
   </head>
-  <body>
+  <body data-subject="{{ subject }}">
     <header>
       <div class="header-content">
         <div class="header-actions">
@@ -62,10 +62,12 @@
       <div
         class="topic-card"
         id="{{ subtopic_id }}-card"
+        data-subject="{{ subject }}"
         data-subtopic="{{ subtopic_id }}"
         data-has-quiz="{{ 'true' if subtopic_data.question_count > 0 else 'false' }}"
         data-lesson-count="{{ subtopic_data.lesson_count }}"
         data-video-count="{{ subtopic_data.video_count }}"
+        data-total-count="{{ subtopic_data.lesson_count + subtopic_data.video_count }}"
       >
         <div
           class="topic-header"
@@ -80,40 +82,86 @@
         <div class="topic-content">
           <p class="topic-description">{{ subtopic_data.description }}</p>
 
-          <div class="topic-stats">
-            <div class="stat">
-              <i class="fas fa-clock"></i>
-              <span>{{ subtopic_data.estimated_time }}</span>
-            </div>
-            <div class="stat">
-              <i class="fas fa-video"></i>
-              <span>{{ subtopic_data.video_count }} Videos</span>
-            </div>
-            <div class="stat">
-              <i class="fas fa-book"></i>
-              <span id="{{ subtopic_id }}-lesson-progress"
-                >{{ subtopic_data.lesson_count }} Lessons</span
-              >
-            </div>
-            <div class="stat">
-              <i class="fas fa-question-circle"></i>
-              <span>{{ subtopic_data.question_count }} Questions</span>
-            </div>
-          </div>
-
           {% if subtopic_data.prerequisites %}
           <div class="prerequisites">
             <i class="fas fa-lock"></i>
-            <span
+            <span class="prereq-text"
               >Prerequisites: {{ subtopic_data.prerequisites | join(', ')
               }}</span
             >
           </div>
           {% endif %}
 
-          <div class="progress-container">
-            <div class="progress-bar" id="{{ subtopic_id }}-progress"></div>
+          {% set lesson_count = subtopic_data.lesson_count %}
+          {% set video_count = subtopic_data.video_count %}
+          {% set total_items = lesson_count + video_count %}
+          {% set progress_data = subtopic_data.progress or {} %}
+          {% set lesson_stats = progress_data.lessons or {} %}
+          {% set video_stats = progress_data.videos or {} %}
+          {% set overall_stats = progress_data.overall or {} %}
+          {% set completed_lessons = lesson_stats.completed_count
+            if lesson_stats.completed_count is not none
+            else (lesson_stats.completed_lessons | length if lesson_stats.completed_lessons is defined else 0)
+          %}
+          {% set completed_videos = video_stats.watched_count
+            if video_stats.watched_count is not none
+            else (video_stats.watched_videos | length if video_stats.watched_videos is defined else 0)
+          %}
+          {% set descriptor_parts = [] %}
+          {% if lesson_count > 0 %}
+            {% set descriptor_parts = descriptor_parts + ['lessons'] %}
+          {% endif %}
+          {% if video_count > 0 %}
+            {% set descriptor_parts = descriptor_parts + ['videos'] %}
+          {% endif %}
+          {% set descriptor =
+            'lessons and videos' if descriptor_parts | length > 1
+            else (descriptor_parts[0] if descriptor_parts | length == 1 else 'content')
+          %}
+          {% set completion_percentage = overall_stats.completion_percentage or 0 %}
+          {% set completion_percentage = 0 if completion_percentage is none else completion_percentage %}
+          {% if completion_percentage < 0 %}
+            {% set completion_percentage = 0 %}
+          {% elif completion_percentage > 100 %}
+            {% set completion_percentage = 100 %}
+          {% endif %}
+          {% set status_text =
+            'All ' ~ descriptor ~ ' complete'
+            if completion_percentage >= 100
+            else (completion_percentage | round(0, 'floor')) ~ '% of ' ~ descriptor ~ ' complete'
+          %}
+          {% set sr_segments = [] %}
+          {% if lesson_count > 0 %}
+            {% set sr_segments = sr_segments + [(completed_lessons | default(0)) ~ ' of ' ~ lesson_count ~ ' lessons'] %}
+          {% endif %}
+          {% if video_count > 0 %}
+            {% set sr_segments = sr_segments + [(completed_videos | default(0)) ~ ' of ' ~ video_count ~ ' videos'] %}
+          {% endif %}
+          {% set sr_summary = (sr_segments | join(' and ')) ~ ' complete' if sr_segments else 'No learning items completed yet' %}
+
+          {% if total_items > 0 %}
+          <div
+            class="progress-container"
+            data-progress="overall"
+            aria-hidden="false"
+          >
+            <span
+              id="{{ subtopic_id }}-progress-text"
+              class="sr-only"
+            >Progress update: {{ sr_summary }}. Overall status: {{ status_text }}.</span>
+            <div
+              class="progress-bar{% if completion_percentage >= 100 %} is-complete{% endif %}"
+              id="{{ subtopic_id }}-progress"
+              role="progressbar"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="{{ '%.0f' | format(completion_percentage) }}"
+              aria-valuetext="{{ status_text }}"
+              aria-describedby="{{ subtopic_id }}-progress-text"
+              style="width: {{ '%.2f' | format(completion_percentage) }}%;"
+            ></div>
           </div>
+          {% endif %}
 
           <div class="topic-actions">
             {% if subtopic_data.lesson_count > 0 %}
@@ -128,22 +176,6 @@
             {% endif %}
           </div>
 
-          <div
-            id="quiz-requirements-{{ subtopic_id }}"
-            class="quiz-requirements"
-            style="display: none"
-          >
-            <div class="requirement-item">
-              <i class="req-icon lessons-icon fas fa-book"></i>
-              <span class="req-text">Complete all lessons</span>
-              <span class="req-status lessons-status">-</span>
-            </div>
-            <div class="requirement-item">
-              <i class="req-icon video-icon fas fa-play"></i>
-              <span class="req-text">Watch required videos</span>
-              <span class="req-status video-status">-</span>
-            </div>
-          </div>
         </div>
       </div>
       {% endfor %}
@@ -369,36 +401,25 @@
         font-weight: 600;
       }
 
-      .topic-stats {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        margin: 1rem 0;
-        justify-content: center;
-      }
-
-      .stat {
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-        font-size: 0.85rem;
-        color: #666;
-        background: #f8f9fa;
-        padding: 0.3rem 0.6rem;
-        border-radius: 4px;
-      }
-
       .prerequisites {
         display: flex;
         align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
         gap: 0.5rem;
         margin: 1rem 0;
-        padding: 0.5rem;
+        padding: 0.5rem 0.75rem;
         background: #fff3cd;
         border: 1px solid #ffeaa7;
         border-radius: 4px;
         font-size: 0.9rem;
         color: #856404;
+        text-align: center;
+      }
+
+      .prereq-text {
+        display: inline-block;
+        line-height: 1.4;
       }
 
       .topic-actions {
@@ -693,11 +714,6 @@
           margin-left: 0;
           margin-top: 15px;
           justify-content: center;
-        }
-
-        .topic-stats {
-          flex-direction: column;
-          align-items: center;
         }
 
         .topic-actions {
@@ -2345,6 +2361,7 @@
             if (response.ok) {
               markVideoNavAsCompleted(videoId);
               updateQuizButtonStatus();
+              updateSubtopicProgressAfterCompletion();
               return true;
             }
             return false;
@@ -2502,7 +2519,7 @@
       async function updateSubtopicProgressAfterCompletion() {
         try {
           const response = await fetch(
-            `/api/lesson-progress/stats/${currentSubject}/${currentSubtopic}`
+            `/api/progress/check/${currentSubject}/${currentSubtopic}`
           );
           if (response.ok) {
             const stats = await response.json();
@@ -2534,8 +2551,8 @@
           const subtopic = card.getAttribute("data-subtopic");
 
           try {
-            const response = await fetch(
-              `/api/lesson-progress/stats/${subject}/${subtopic}`
+          const response = await fetch(
+              `/api/progress/check/${subject}/${subtopic}`
             );
             if (response.ok) {
               const stats = await response.json();
@@ -2548,16 +2565,8 @@
       }
 
       function updateSubtopicProgress(subtopic, stats) {
-        const progressElement = document.getElementById(
-          `${subtopic}-lesson-progress`
-        );
-        if (progressElement && stats.total_lessons > 0) {
-          const progressText =
-            stats.completed_lessons === stats.total_lessons
-              ? `${stats.total_lessons} Lessons <span style="color: #28a745;">✓ Complete</span>`
-              : `${stats.completed_lessons}/${stats.total_lessons} Lessons (${stats.completion_percentage}%)`;
-
-          progressElement.innerHTML = progressText;
+        if (typeof updateProgressBar === "function") {
+          updateProgressBar(subtopic, stats);
         }
       }
 
@@ -2714,23 +2723,71 @@
             : (data.videos_total || 0) === 0 ||
               (data.videos_watched || 0) >= (data.videos_total || 0);
 
+        const missingLessonsCount = Array.isArray(data.missing_lessons)
+          ? data.missing_lessons.length
+          : 0;
+        const lessonsCompletedCountRaw =
+          typeof data.lessons_completed === "number"
+            ? data.lessons_completed
+            : lessonsComplete
+            ? data.lesson_total || 0
+            : (data.lesson_total || 0) - missingLessonsCount;
+        const lessonsCompletedCount = Math.max(0, lessonsCompletedCountRaw);
+        const lessonsTotal = data.lesson_total || 0;
+
+        const missingVideosCount = Array.isArray(data.missing_videos)
+          ? data.missing_videos.length
+          : 0;
+        const videosWatchedCountRaw =
+          typeof data.videos_watched === "number"
+            ? data.videos_watched
+            : videosComplete
+            ? data.videos_total || 0
+            : (data.videos_total || 0) - missingVideosCount;
+        const videosWatchedCount = Math.max(0, videosWatchedCountRaw);
+        const videosTotal = data.videos_total || 0;
+
+        const adminOverrideActive = !!data.admin_override;
+
         containers.forEach((container) => {
           container.style.display = allMet ? "none" : "block";
 
           const lessonsStatus = container.querySelector(".lessons-status");
           if (lessonsStatus) {
-            lessonsStatus.className = `req-status ${
-              lessonsComplete ? "complete" : "incomplete"
-            }`;
-            lessonsStatus.innerHTML = lessonsComplete ? "?" : "?";
+            const lessonStatusClass = lessonsComplete
+              ? "complete"
+              : adminOverrideActive
+              ? "admin-override"
+              : "incomplete";
+            lessonsStatus.className = `req-status ${lessonStatusClass}`;
+
+            if (lessonsTotal === 0) {
+              lessonsStatus.textContent = "No lessons";
+            } else {
+              const lessonsSummary = `${lessonsCompletedCount}/${lessonsTotal}`;
+              lessonsStatus.textContent = lessonsComplete
+                ? `${lessonsSummary} ✓`
+                : lessonsSummary;
+            }
           }
 
           const videoStatus = container.querySelector(".video-status");
           if (videoStatus) {
-            videoStatus.className = `req-status ${
-              videosComplete ? "complete" : "incomplete"
-            }`;
-            videoStatus.innerHTML = videosComplete ? "?" : "?";
+            const videoStatusClass = videosComplete
+              ? "complete"
+              : adminOverrideActive
+              ? "admin-override"
+              : "incomplete";
+            videoStatus.className = `req-status ${videoStatusClass}`;
+
+            if (videosTotal === 0) {
+              videoStatus.textContent = "No videos";
+            } else {
+              const videosSummary = `${videosWatchedCount}/${videosTotal}`;
+              videoStatus.textContent = videosComplete
+                ? `${videosSummary} ✓`
+                : videosSummary;
+            }
           }
 
           const lessonsIcon = container.querySelector(".lessons-icon");
