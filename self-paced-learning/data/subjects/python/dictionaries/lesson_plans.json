@@ -1,0 +1,69 @@
+{
+  "lessons": {
+    "dict-introduction": {
+      "title": "Getting Started with Dictionaries",
+      "type": "initial",
+      "order": 1,
+      "videoId": "",
+      "tags": [
+        "python",
+        "dictionaries",
+        "fundamentals"
+      ],
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "Dictionaries store key-value pairs. Keys must be hashable and unique, while values can be any Python object."
+        },
+        {
+          "type": "code",
+          "text": "profile = {\n    \"name\": \"Amara\",\n    \"role\": \"Engineer\",\n    \"skills\": [\"Python\", \"APIs\"]\n}\nprint(profile[\"name\"])\nprint(profile.get(\"role\", \"Unknown\"))"
+        },
+        {
+          "type": "checklist",
+          "items": [
+            "Use descriptive keys that reflect the stored data.",
+            "Access values with square brackets when you expect the key to exist.",
+            "Use `.get()` to provide a default when the key might be missing."
+          ]
+        }
+      ]
+    },
+    "dict-updates": {
+      "title": "Updating and Iterating Dictionaries",
+      "type": "initial",
+      "order": 2,
+      "videoId": "",
+      "tags": [
+        "python",
+        "dictionaries",
+        "mutation"
+      ],
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "Dictionaries are mutable. You can add, update, or remove key-value pairs using familiar syntax."
+        },
+        {
+          "type": "list",
+          "items": [
+            "Assign with `my_dict[key] = value` to insert or update.",
+            "Call `del my_dict[key]` to remove a key.",
+            "Iterate with `.items()`, `.keys()`, or `.values()` depending on what you need."
+          ]
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "inventory = {\"apples\": 10, \"bananas\": 5}\n# TODO: increase bananas to 12 and add oranges with quantity 7\n# Your code here\nprint(inventory)",
+          "expected_output": "{'apples': 10, 'bananas': 12, 'oranges': 7}",
+          "solution": "inventory = {\"apples\": 10, \"bananas\": 5}\ninventory[\"bananas\"] = 12\ninventory[\"oranges\"] = 7\nprint(inventory)",
+          "hints": [
+            "Assign directly to change an existing quantity.",
+            "Use the same syntax to add a brand new key."
+          ]
+        }
+      ]
+    }
+  },
+  "updated_date": "2025-10-06"
+}

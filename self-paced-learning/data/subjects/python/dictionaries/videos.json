@@ -1,0 +1,33 @@
+{
+  "videos": [
+    {
+      "id": "dict-basics-video",
+      "title": "Python Dictionaries Explained",
+      "provider": "youtube",
+      "url": "https://www.youtube.com/watch?v=daefaLgNkw0",
+      "duration_seconds": 720,
+      "topic_key": "dict-introduction",
+      "tags": [
+        "dictionaries",
+        "python",
+        "fundamentals"
+      ],
+      "description": "A beginner-friendly overview of dictionary syntax, creation, and safe access patterns."
+    },
+    {
+      "id": "dict-iteration-video",
+      "title": "Iterating Through Dictionaries",
+      "provider": "youtube",
+      "url": "https://www.youtube.com/watch?v=9sm_j0nFDbg",
+      "duration_seconds": 510,
+      "topic_key": "dict-updates",
+      "tags": [
+        "dictionaries",
+        "iteration",
+        "python"
+      ],
+      "description": "Hands-on examples that cover updating dictionaries and iterating with `.items()`."
+    }
+  ],
+  "updated_date": "2025-10-06"
+}
