@@ -203,6 +203,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 "success"
               );
             }
+            if (typeof updateSubtopicProgressAfterCompletion === "function") {
+              updateSubtopicProgressAfterCompletion();
+            }
           }
         })
         .catch((error) => console.error("Error marking video watched:", error));
@@ -235,6 +238,9 @@ document.addEventListener("DOMContentLoaded", function () {
           .then((data) => {
             if (data.success) {
               showVideoCompletionNotification();
+              if (typeof updateSubtopicProgressAfterCompletion === "function") {
+                updateSubtopicProgressAfterCompletion();
+              }
             }
           })
           .catch((error) =>
@@ -264,15 +270,37 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Load progress from server API
   function loadProgress() {
-    fetch("/api/progress")
-      .then((response) => response.json())
-      .then((data) => {
-        // Update progress bars based on data
-        for (const topic in data) {
-          updateProgressBar(topic, data[topic]);
-        }
-      })
-      .catch((error) => console.error("Error loading progress:", error));
+    const topicCards = document.querySelectorAll(
+      ".topic-card[data-subtopic]"
+    );
+    if (!topicCards.length) {
+      return;
+    }
+
+    const subjectSlug = document.body?.dataset?.subject || null;
+
+    topicCards.forEach((card) => {
+      const subtopicId = card.dataset.subtopic;
+      const subjectForCard = card.dataset.subject || subjectSlug;
+
+      if (!subtopicId || !subjectForCard) {
+        return;
+      }
+
+      fetch(`/api/progress/check/${subjectForCard}/${subtopicId}`)
+        .then((response) => (response.ok ? response.json() : null))
+        .then((data) => {
+          if (data) {
+            updateProgressBar(subtopicId, data);
+          }
+        })
+        .catch((error) =>
+          console.error(
+            `Error loading progress for ${subtopicId}:`,
+            error
+          )
+        );
+    });
   }
 
   // Open video modal with selected topic
@@ -500,22 +528,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Save progress to server
   function saveProgress(topic, progress) {
-    fetch("/api/progress/update", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        topic: topic,
-        progress: progress,
-      }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        // Update main page progress bar
-        updateProgressBar(topic, progress);
-      })
-      .catch((error) => console.error("Error saving progress:", error));
+    updateProgressBar(topic, progress);
   }
 
   // Update topic progress bar and completion badge
@@ -524,12 +537,142 @@ document.addEventListener("DOMContentLoaded", function () {
     const completionBadge = document.getElementById(`${topic}-badge`);
 
     if (progressBar) {
-      progressBar.style.width = `${progress}%`;
+      const progressContainer = progressBar.closest(".progress-container");
+      const srText = document.getElementById(`${topic}-progress-text`);
+      const topicCard = progressBar.closest(".topic-card");
 
-      // Show completion badge if 100%
-      if (progress === 100 && completionBadge) {
-        completionBadge.style.display = "inline";
+      const lessonTotal = Number(topicCard?.dataset?.lessonCount || 0);
+      const videoTotal = Number(topicCard?.dataset?.videoCount || 0);
+      const totalItemsAttr = Number(topicCard?.dataset?.totalCount || 0);
+      const totalItems = totalItemsAttr || lessonTotal + videoTotal;
+
+      let numericProgress = 0;
+      let completedLessons = 0;
+      let completedVideos = 0;
+      let statsLessonTotal = lessonTotal;
+      let statsVideoTotal = videoTotal;
+
+      if (typeof progress === "number") {
+        numericProgress = progress;
+      } else if (progress && typeof progress === "object") {
+        const lessons = progress.lessons || progress.lesson_stats || {};
+        const videos = progress.videos || progress.video_stats || {};
+        const overall = progress.overall || {};
+
+        if (typeof lessons.total_count === "number") {
+          statsLessonTotal = lessons.total_count;
+        }
+        if (typeof videos.total_count === "number") {
+          statsVideoTotal = videos.total_count;
+        }
+
+        if (typeof lessons.completed_count === "number") {
+          completedLessons = lessons.completed_count;
+        } else if (Array.isArray(lessons.completed_lessons)) {
+          completedLessons = lessons.completed_lessons.length;
+        } else if (typeof lessons.completed === "number") {
+          completedLessons = lessons.completed;
+        }
+
+        if (typeof videos.watched_count === "number") {
+          completedVideos = videos.watched_count;
+        } else if (Array.isArray(videos.watched_videos)) {
+          completedVideos = videos.watched_videos.length;
+        } else if (typeof videos.completed_count === "number") {
+          completedVideos = videos.completed_count;
+        }
+
+        if (typeof overall.completion_percentage === "number") {
+          numericProgress = overall.completion_percentage;
+        } else if (typeof progress.completion_percentage === "number") {
+          numericProgress = progress.completion_percentage;
+        }
+      }
+
+      const derivedLessonTotal = Number.isFinite(statsLessonTotal)
+        ? statsLessonTotal
+        : lessonTotal;
+      const derivedVideoTotal = Number.isFinite(statsVideoTotal)
+        ? statsVideoTotal
+        : videoTotal;
+      const totalFromStats = derivedLessonTotal + derivedVideoTotal;
+      const completedItems = completedLessons + completedVideos;
+
+      if (!Number.isFinite(numericProgress)) {
+        numericProgress = 0;
+      }
+
+      if (numericProgress === 0 && totalFromStats > 0) {
+        numericProgress = (completedItems / totalFromStats) * 100;
+      }
+
+      numericProgress = Math.max(0, Math.min(100, numericProgress));
+
+      progressBar.style.width = `${numericProgress}%`;
+      progressBar.setAttribute("aria-valuenow", numericProgress.toString());
+
+      if (progressContainer) {
+        if (totalItems <= 0 && totalFromStats <= 0) {
+          progressContainer.classList.add("is-hidden");
+          progressContainer.setAttribute("aria-hidden", "true");
+        } else {
+          progressContainer.classList.remove("is-hidden");
+          progressContainer.setAttribute("aria-hidden", "false");
+        }
+      }
+
+      const descriptorParts = [];
+      if (derivedLessonTotal > 0 || lessonTotal > 0) {
+        descriptorParts.push("lessons");
+      }
+      if (derivedVideoTotal > 0 || videoTotal > 0) {
+        descriptorParts.push("videos");
+      }
+
+      const descriptor =
+        descriptorParts.length > 1
+          ? "lessons and videos"
+          : descriptorParts[0] || "content";
+      const rounded = Math.round(numericProgress);
+      const statusText =
+        rounded >= 100
+          ? `All ${descriptor} complete`
+          : `${descriptor.charAt(0).toUpperCase() + descriptor.slice(1)} ${rounded}% complete`;
+      progressBar.setAttribute("aria-valuetext", statusText);
+
+      if (srText) {
+        const lessonSummary =
+          derivedLessonTotal > 0
+            ? `${completedLessons} of ${derivedLessonTotal} lessons`
+            : null;
+        const videoSummary =
+          derivedVideoTotal > 0
+            ? `${completedVideos} of ${derivedVideoTotal} videos`
+            : null;
+        const summaries = [lessonSummary, videoSummary].filter(Boolean);
+        const detailText = summaries.length
+          ? `${summaries.join(" and ")} complete.`
+          : "No learning items completed yet.";
+        srText.textContent = `Progress update: ${detailText} Overall status: ${statusText}.`;
+      }
+
+      if (numericProgress === 100) {
+        progressBar.classList.add("is-complete");
+        if (completionBadge) {
+          completionBadge.style.display = "inline";
+        }
+      } else {
+        progressBar.classList.remove("is-complete");
+      }
+
+      if (topicCard) {
+        topicCard.dataset.progress = numericProgress.toString();
+        topicCard.dataset.completedLessons = completedLessons.toString();
+        topicCard.dataset.completedVideos = completedVideos.toString();
       }
     }
   }
+
+  window.updateProgressBar = updateProgressBar;
+  window.loadProgress = loadProgress;
 });
