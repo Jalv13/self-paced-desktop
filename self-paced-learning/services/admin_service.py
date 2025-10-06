@@ -522,17 +522,31 @@ class AdminService:
             # Create a mapping of lesson ID to lesson data
             lesson_map = {lesson.get("id"): lesson for lesson in lessons}
 
-            # Reorder lessons according to the provided order
-            reordered_lessons = []
-            for lesson_id in lesson_order:
-                if lesson_id in lesson_map:
-                    reordered_lessons.append(lesson_map[lesson_id])
+            # Reorder lessons according to the provided order and update their
+            # numeric order attribute so the student experience reflects the new
+            # arrangement.
+            reordered_lessons: List[Dict[str, Any]] = []
+            seen_lessons = set()
 
-            # Add any lessons not in the order list to the end
+            for position, lesson_id in enumerate(lesson_order, start=1):
+                if lesson_id in lesson_map:
+                    lesson_copy = dict(lesson_map[lesson_id])
+                    lesson_copy["order"] = position
+                    reordered_lessons.append(lesson_copy)
+                    seen_lessons.add(lesson_id)
+
+            # Add any lessons not in the order list to the end while
+            # continuing the sequential numbering.
+            next_position = len(reordered_lessons) + 1
             for lesson in lessons:
                 lesson_id = lesson.get("id")
-                if lesson_id not in lesson_order:
-                    reordered_lessons.append(lesson)
+                if lesson_id in seen_lessons:
+                    continue
+
+                lesson_copy = dict(lesson)
+                lesson_copy["order"] = next_position
+                reordered_lessons.append(lesson_copy)
+                next_position += 1
 
             # Save the reordered lessons
             lesson_file_path = os.path.join(
@@ -552,6 +566,11 @@ class AdminService:
 
             with open(lesson_file_path, "w", encoding="utf-8") as f:
                 json.dump(lesson_plans_data, f, indent=2, ensure_ascii=False)
+
+            # Ensure subsequent reads observe the updated ordering
+            self.data_service.data_loader.clear_cache_for_subject_subtopic(
+                subject, subtopic
+            )
 
             return {"success": True, "message": "Lessons reordered successfully"}
 
