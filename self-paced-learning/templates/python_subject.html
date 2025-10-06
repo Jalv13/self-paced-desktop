@@ -1428,8 +1428,24 @@
       }
 
       #initial-topics-nav a.completed {
-        background-color: #f8f9fa;
-        border-left: 4px solid #28a745;
+        background: linear-gradient(135deg, #1f2937, #111827);
+        border-left: 4px solid #34d399;
+        color: #f3f4f6;
+        box-shadow: 0 12px 24px rgba(15, 118, 110, 0.25);
+      }
+
+      #initial-topics-nav a.completed:hover {
+        background: linear-gradient(135deg, #111827, #0f172a);
+        border-color: #6ee7b7;
+      }
+
+      #initial-topics-nav a.completed .lesson-order-number {
+        background-color: rgba(16, 185, 129, 0.2);
+        color: #bbf7d0;
+      }
+
+      #initial-topics-nav a.completed .progress-indicator {
+        color: #6ee7b7;
       }
 
       .quiz-section {
@@ -1650,7 +1666,9 @@
                 const li = document.createElement("li");
                 const a = document.createElement("a");
                 a.href = "#";
-                a.dataset.lessonId = lessonId;
+                const resolvedLessonId = resolveLessonId(lesson, lessonId);
+                a.dataset.lessonId = resolvedLessonId;
+                a.dataset.lessonKey = lessonId;
                 if (lesson.completed) {
                   a.classList.add("completed");
                 }
@@ -1667,7 +1685,12 @@
                     .querySelectorAll("#initial-topics-nav a")
                     .forEach((link) => link.classList.remove("active"));
                   e.target.closest("a").classList.add("active");
-                  displayInitialLesson(lesson, lessonId, subject, subtopic);
+                  displayInitialLesson(
+                    lesson,
+                    resolvedLessonId,
+                    subject,
+                    subtopic
+                  );
                 };
                 li.appendChild(a);
                 navList.appendChild(li);
@@ -1752,6 +1775,13 @@
         `;
 
         const resolvedLessonId = resolveLessonId(lesson, lessonId);
+        const activeNavLink = Array.from(
+          document.querySelectorAll("#initial-topics-nav a")
+        ).find((link) => link.dataset.lessonId === resolvedLessonId);
+
+        if (activeNavLink) {
+          activeNavLink.classList.add("active");
+        }
         markLessonNavAsCompleted(resolvedLessonId);
         if (!lesson.completed) {
           persistLessonCompletion({
@@ -2269,15 +2299,23 @@
       function markLessonNavAsCompleted(lessonId) {
         if (!lessonId) return;
         document
-          .querySelectorAll(`#initial-topics-nav a[data-lesson-id=\"${lessonId}\"]`)
-          .forEach((link) => link.classList.add("completed"));
+          .querySelectorAll("#initial-topics-nav a")
+          .forEach((link) => {
+            if (link.dataset.lessonId === lessonId) {
+              link.classList.add("completed");
+            }
+          });
       }
 
       function markVideoNavAsCompleted(videoId) {
         if (!videoId) return;
         document
-          .querySelectorAll(`#initial-topics-nav a[data-video-id=\"${videoId}\"]`)
-          .forEach((link) => link.classList.add("completed"));
+          .querySelectorAll("#initial-topics-nav a")
+          .forEach((link) => {
+            if (link.dataset.videoId === videoId) {
+              link.classList.add("completed");
+            }
+          });
       }
 
       
