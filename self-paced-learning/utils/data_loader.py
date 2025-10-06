@@ -19,7 +19,20 @@ class DataLoader:
         Args:
             data_root_path: Path to the data directory (e.g., "/path/to/data")
         """
-        self.data_root = data_root_path
+        # Resolve the data root path so relative inputs such as "data" continue
+        # to work regardless of the current working directory of the running
+        # process.  When the initial absolute resolution does not exist we fall
+        # back to resolving relative to the project root (one directory above
+        # this utils module).
+        resolved_root = os.path.abspath(data_root_path)
+
+        if not os.path.exists(resolved_root) and not os.path.isabs(data_root_path):
+            module_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+            candidate = os.path.join(module_root, data_root_path)
+            if os.path.exists(candidate):
+                resolved_root = candidate
+
+        self.data_root = resolved_root
         self._cache = {}
 
     def _load_json_file(self, file_path: str) -> Optional[Dict[str, Any]]:
