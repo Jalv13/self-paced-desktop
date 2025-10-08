@@ -16,6 +16,9 @@
     <script src="https://www.youtube.com/iframe_api"></script>
     <!-- Pyodide for Python code execution -->
     <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+    <!-- Markdown rendering and sanitization -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   </head>
   <body data-subject="{{ subject }}">
     <header>
@@ -1557,6 +1560,57 @@
       const lessonCompletionCache = new Map();
       const videoCompletionCache = new Map();
 
+      const MARKDOWN_OPTIONS = {
+        mangle: false,
+        headerIds: false,
+        breaks: true,
+      };
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function hasMarkdownSupport() {
+        return (
+          typeof window !== "undefined" &&
+          typeof window.DOMPurify !== "undefined" &&
+          typeof window.marked !== "undefined"
+        );
+      }
+
+      function renderInlineMarkdown(text) {
+        const rawText = String(text ?? "");
+        if (!rawText) {
+          return "";
+        }
+
+        if (!hasMarkdownSupport()) {
+          return escapeHtml(rawText);
+        }
+
+        const rendered = window.marked.parseInline(rawText, MARKDOWN_OPTIONS);
+        return window.DOMPurify.sanitize(rendered);
+      }
+
+      function renderBlockMarkdown(text) {
+        const rawText = String(text ?? "");
+        if (!rawText) {
+          return "";
+        }
+
+        if (!hasMarkdownSupport()) {
+          return `<p>${escapeHtml(rawText)}</p>`;
+        }
+
+        const rendered = window.marked.parse(rawText, MARKDOWN_OPTIONS);
+        return window.DOMPurify.sanitize(rendered);
+      }
+
       async function handleSubtopicAccess(subject, subtopic) {
         try {
           const response = await fetch(
@@ -2134,10 +2188,11 @@
 
         // Add video if available
         if (lesson.videoId) {
+          const safeVideoId = escapeHtml(lesson.videoId);
           contentHtml += `
             <div class="lesson-video">
-              <iframe width="100%" height="400" 
-                      src="https://www.youtube.com/embed/${lesson.videoId}" 
+              <iframe width="100%" height="400"
+                      src="https://www.youtube.com/embed/${safeVideoId}"
                       frameborder="0" allowfullscreen>
               </iframe>
             </div>
@@ -2151,27 +2206,54 @@
           lesson.content.forEach((block) => {
             switch (block.type) {
               case "header":
-                contentHtml += `<h3 class="content-header">${block.text}</h3>`;
+                {
+                  const headerHtml = renderInlineMarkdown(block.text || "");
+                  if (headerHtml) {
+                    contentHtml += `<h3 class="content-header">${headerHtml}</h3>`;
+                  }
+                }
                 break;
               case "paragraph":
-                contentHtml += `<p class="content-paragraph">${block.text}</p>`;
+                {
+                  const paragraphHtml = renderBlockMarkdown(block.text || "");
+                  if (paragraphHtml) {
+                    contentHtml += `<div class="content-paragraph">${paragraphHtml}</div>`;
+                  }
+                }
                 break;
               case "code":
-                contentHtml += `<pre class="content-code"><code>${block.text}</code></pre>`;
+                contentHtml += `<pre class="content-code"><code>${escapeHtml(
+                  block.text || ""
+                )}</code></pre>`;
                 break;
               case "list":
-                const listItems = block.items
-                  .map((item) => `<li>${item}</li>`)
-                  .join("");
-                contentHtml += `<ul class="content-list">${listItems}</ul>`;
+                {
+                  const listItems = (block.items || [])
+                    .map((item) => {
+                      const itemHtml = renderInlineMarkdown(item || "");
+                      return itemHtml ? `<li>${itemHtml}</li>` : "";
+                    })
+                    .join("");
+                  if (listItems) {
+                    contentHtml += `<ul class="content-list">${listItems}</ul>`;
+                  }
+                }
                 break;
               case "summary":
-                contentHtml += `<div class="content-summary"><h4>Summary</h4><p>${block.text}</p></div>`;
+                {
+                  const summaryHtml = renderBlockMarkdown(block.text || "");
+                  if (summaryHtml) {
+                    contentHtml += `<div class="content-summary"><h4>Summary</h4>${summaryHtml}</div>`;
+                  }
+                }
                 break;
               default:
-                contentHtml += `<div class="content-block">${
-                  block.text || ""
-                }</div>`;
+                {
+                  const blockHtml = renderBlockMarkdown(block.text || "");
+                  if (blockHtml) {
+                    contentHtml += `<div class="content-block">${blockHtml}</div>`;
+                  }
+                }
             }
           });
 

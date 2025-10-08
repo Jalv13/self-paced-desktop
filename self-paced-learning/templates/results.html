@@ -10,6 +10,9 @@
     />
     <!-- Pyodide for Python code execution -->
     <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+    <!-- Markdown rendering and sanitization -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   </head>
   <body>
     {% if admin_override %}
@@ -99,6 +102,57 @@
       const CURRENT_SUBJECT = {{ CURRENT_SUBJECT | tojson | safe }};
       const CURRENT_SUBTOPIC = {{ CURRENT_SUBTOPIC | tojson | safe }};
       const ANALYSIS_RESULTS = {{ ANALYSIS_RESULTS | tojson | safe }};
+
+      const MARKDOWN_OPTIONS = {
+        mangle: false,
+        headerIds: false,
+        breaks: true,
+      };
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function hasMarkdownSupport() {
+        return (
+          typeof window !== "undefined" &&
+          typeof window.DOMPurify !== "undefined" &&
+          typeof window.marked !== "undefined"
+        );
+      }
+
+      function renderInlineMarkdown(text) {
+        const rawText = String(text ?? "");
+        if (!rawText) {
+          return "";
+        }
+
+        if (!hasMarkdownSupport()) {
+          return escapeHtml(rawText);
+        }
+
+        const rendered = window.marked.parseInline(rawText, MARKDOWN_OPTIONS);
+        return window.DOMPurify.sanitize(rendered);
+      }
+
+      function renderBlockMarkdown(text) {
+        const rawText = String(text ?? "");
+        if (!rawText) {
+          return "";
+        }
+
+        if (!hasMarkdownSupport()) {
+          return `<p>${escapeHtml(rawText)}</p>`;
+        }
+
+        const rendered = window.marked.parse(rawText, MARKDOWN_OPTIONS);
+        return window.DOMPurify.sanitize(rendered);
+      }
     </script>
 
     <script>
@@ -300,7 +354,10 @@
 
                 if (weakTopics.length > 0) {
                   welcomeMessageContainer.classList.remove("hidden");
-                  feedbackContentDiv.innerHTML = analysisData.feedback;
+                  const feedbackHtml = renderBlockMarkdown(
+                    analysisData.feedback || ""
+                  );
+                  feedbackContentDiv.innerHTML = feedbackHtml;
 
                   buildCompletionState(weakTopics);
                   displayWeakTopics(weakTopics);
@@ -513,25 +570,45 @@
                 // Hide the welcome message and show lesson content
                 welcomeMessageContainer.classList.add("hidden");
 
-                let contentHtml = `<h2>${lesson.title}</h2>`;
+                const lessonTitle = renderInlineMarkdown(lesson.title || "Lesson");
+                let contentHtml = `<h2>${lessonTitle}</h2>`;
                 (lesson.content || []).forEach((item) => {
                   if (item.type === "header") {
-                    contentHtml += `<h5>${item.text}</h5>`;
+                    const headerHtml = renderInlineMarkdown(item.text || "");
+                    if (headerHtml) {
+                      contentHtml += `<h5>${headerHtml}</h5>`;
+                    }
                   } else if (item.type === "paragraph") {
-                    contentHtml += `<p>${item.text}</p>`;
+                    const paragraphHtml = renderBlockMarkdown(item.text || "");
+                    if (paragraphHtml) {
+                      contentHtml += paragraphHtml;
+                    }
                   } else if (item.type === "list") {
-                    contentHtml += "<ul>";
-                    (item.items || []).forEach((li_text) => {
-                      contentHtml += `<li>${li_text}</li>`;
-                    });
-                    contentHtml += "</ul>";
+                    const listItems = (item.items || [])
+                      .map((li_text) => {
+                        const liHtml = renderInlineMarkdown(li_text || "");
+                        return liHtml ? `<li>${liHtml}</li>` : "";
+                      })
+                      .join("");
+                    if (listItems) {
+                      contentHtml += `<ul>${listItems}</ul>`;
+                    }
                   } else if (item.type === "code") {
-                    const escapedCode = (item.text || "")
-                      .replace(/</g, "&lt;")
-                      .replace(/>/g, "&gt;");
+                    const escapedCode = escapeHtml(item.text || "");
                     contentHtml += `<pre><code>${escapedCode}</code></pre>`;
                   } else if (item.type === "code_runner") {
                     const blockId = Math.random().toString(36).substr(2, 9);
+                    const starterCode = escapeHtml(
+                      item.starter_code || '# Write your Python code here\nprint("Hello, World!")'
+                    );
+                    const expectedOutput = escapeHtml(item.expected_output || "");
+                    const hintsHtml = (item.hints || [])
+                      .map((hint) => {
+                        const hintHtml = renderInlineMarkdown(hint || "");
+                        return hintHtml ? `<li>${hintHtml}</li>` : "";
+                      })
+                      .join("");
+                    const solutionHtml = escapeHtml(item.solution || "");
                     contentHtml += `
                       <div class="code-runner-block" id="code-runner-${blockId}">
                         <div class="code-runner-header">
@@ -542,7 +619,7 @@
                         </div>
                         <div class="code-runner-content">
                           <div class="code-editor">
-                            <textarea id="code-editor-${blockId}" class="python-editor" placeholder="Write your Python code here...">${item.starter_code || '# Write your Python code here\nprint("Hello, World!")'}</textarea>
+                            <textarea id="code-editor-${blockId}" class="python-editor" placeholder="Write your Python code here...">${starterCode}</textarea>
                           </div>
                           <div class="code-controls">
                             <button class="run-code-btn" onclick="runPythonCode('${blockId}')">
@@ -551,21 +628,24 @@
                             <button class="clear-output-btn" onclick="clearOutput('${blockId}')">
                               <i class="fas fa-trash"></i> Clear Output
                             </button>
-                            ${item.solution ? `<button class="show-solution-btn" onclick="showSolution('${blockId}')"><i class="fas fa-lightbulb"></i> Show Solution</button>` : ''}
-                            ${item.hints && item.hints.length > 0 ? `<button class="show-hints-btn" onclick="showHints('${blockId}')"><i class="fas fa-question-circle"></i> Show Hints</button>` : ''}
+                            ${solutionHtml ? `<button class="show-solution-btn" onclick="showSolution('${blockId}')"><i class="fas fa-lightbulb"></i> Show Solution</button>` : ''}
+                            ${hintsHtml ? `<button class="show-hints-btn" onclick="showHints('${blockId}')"><i class="fas fa-question-circle"></i> Show Hints</button>` : ''}
                           </div>
                           <div class="code-output">
                             <div class="output-header">Output:</div>
                             <pre id="code-output-${blockId}" class="output-content"></pre>
                           </div>
-                          ${item.expected_output ? `<div class="expected-output"><strong>Expected Output:</strong><pre>${item.expected_output}</pre></div>` : ''}
-                          ${item.hints && item.hints.length > 0 ? `<div class="hints-content" id="hints-${blockId}" style="display: none;"><strong>Hints:</strong><ul>${item.hints.map(hint => `<li>${hint}</li>`).join('')}</ul></div>` : ''}
-                          ${item.solution ? `<div class="solution-content" id="solution-${blockId}" style="display: none;"><strong>Solution:</strong><pre><code>${item.solution}</code></pre></div>` : ''}
+                          ${expectedOutput ? `<div class="expected-output"><strong>Expected Output:</strong><pre>${expectedOutput}</pre></div>` : ''}
+                          ${hintsHtml ? `<div class="hints-content" id="hints-${blockId}" style="display: none;"><strong>Hints:</strong><ul>${hintsHtml}</ul></div>` : ''}
+                          ${solutionHtml ? `<div class="solution-content" id="solution-${blockId}" style="display: none;"><strong>Solution:</strong><pre><code>${solutionHtml}</code></pre></div>` : ''}
                         </div>
                       </div>
                     `;
                   } else if (item.type === "summary") {
-                    contentHtml += `<p><strong>${item.text}</strong></p>`;
+                    const summaryHtml = renderBlockMarkdown(item.text || "");
+                    if (summaryHtml) {
+                      contentHtml += `<div class="lesson-summary">${summaryHtml}</div>`;
+                    }
                   }
                 });
 
