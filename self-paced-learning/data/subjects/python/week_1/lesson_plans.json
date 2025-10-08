@@ -103,9 +103,7 @@
           "text": "This is the legendary Hello World spell - every programmer's first step."
         }
       ],
-      "tags": [
-        "Print"
-      ],
+      "tags": ["Print"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 3,
@@ -136,9 +134,7 @@
           "text": "Think of this as your hero shouting their stats to the villagers."
         }
       ],
-      "tags": [
-        "Print"
-      ],
+      "tags": ["Print"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 4,
@@ -172,9 +168,7 @@
           ]
         }
       ],
-      "tags": [
-        "Print"
-      ],
+      "tags": ["Print"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 5,
@@ -205,9 +199,7 @@
           "text": "Use comments to explain code, leave reminders, or just write funny thoughts for future heroes."
         }
       ],
-      "tags": [
-        "Comment"
-      ],
+      "tags": ["Comment"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 6,
@@ -241,10 +233,7 @@
           ]
         }
       ],
-      "tags": [
-        "Print",
-        "Comment"
-      ],
+      "tags": ["Print", "Comment"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 7,
@@ -278,10 +267,7 @@
           ]
         }
       ],
-      "tags": [
-        "Print",
-        "Comment"
-      ],
+      "tags": ["Print", "Comment"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 8,
@@ -304,10 +290,7 @@
           "text": "Next week: the hero will need stats (HP, coins, weapons). We'll learn about variables and data types to give the hero strength."
         }
       ],
-      "tags": [
-        "Print",
-        "Comment"
-      ],
+      "tags": ["Print", "Comment"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 9,
@@ -548,10 +531,7 @@
           ]
         }
       ],
-      "tags": [
-        "Print",
-        "Comment"
-      ],
+      "tags": ["Print", "Comment"],
       "type": "remedial",
       "updated_date": "2025-10-08",
       "order": 2,

@@ -61,12 +61,7 @@
     {
       "question": "Which symbol starts a comment in Python?",
       "type": "multiple_choice",
-      "options": [
-        "//",
-        "#",
-        "/* */",
-        "--"
-      ],
+      "options": ["//", "#", "/* */", "--"],
       "answer_index": 1,
       "tags": ["Comment"]
     },
