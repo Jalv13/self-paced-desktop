@@ -2031,10 +2031,13 @@
               const filteredLessons = [];
               Object.entries(data.lessons).forEach(([lessonId, lesson]) => {
                 const lessonTypeValue = lesson.type || "remedial"; // Default to remedial if no type specified
+                const resolvedLessonId =
+                  lesson.id || lesson.lesson_id || lessonId;
 
                 if (lessonType === "all" || lessonTypeValue === lessonType) {
                   filteredLessons.push({
-                    lesson_id: lessonId,
+                    id: resolvedLessonId,
+                    lesson_id: resolvedLessonId,
                     title: lesson.title,
                     type: lessonTypeValue,
                     tags: lesson.tags || [],
