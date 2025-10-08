@@ -4,6 +4,7 @@ import os
 import sys
 import unittest
 from contextlib import contextmanager
+from unittest.mock import patch
 
 from flask import template_rendered
 
@@ -19,6 +20,7 @@ from app_refactored import app  # noqa: E402
 from services import (  # noqa: E402
     get_ai_service,
     get_data_service,
+    get_progress_service,
     init_services,
 )
 
@@ -55,6 +57,7 @@ class TestTaggingAndResults(unittest.TestCase):
         init_services(data_root_path)
         cls.data_service = get_data_service()
         cls.ai_service = get_ai_service()
+        cls.progress_service = get_progress_service()
 
     @classmethod
     def tearDownClass(cls):
@@ -232,6 +235,144 @@ class TestTaggingAndResults(unittest.TestCase):
             key = f"{lesson.get('subject')}:{lesson.get('subtopic')}:{str(identifier).lower()}"
             self.assertNotIn(key, seen_lessons, "Duplicate remedial lessons should be filtered out")
             seen_lessons.add(key)
+
+    def _resolve_expected_answer(self, question):
+        question_type = (question.get("type") or "multiple_choice").strip().lower()
+        if question_type == "multiple_choice":
+            options = question.get("options", []) or []
+            answer_index = question.get("answer_index")
+            if answer_index is None:
+                answer_index = question.get("correct_answer_index")
+            if isinstance(answer_index, int) and 0 <= answer_index < len(options):
+                return str(options[answer_index])
+            return str(question.get("correct_answer", ""))
+        if question_type in {"fill_in_the_blank", "fill_blank"}:
+            correct = question.get("correct_answer")
+            if isinstance(correct, list):
+                return str(correct[0]) if correct else ""
+            if correct:
+                return str(correct)
+            acceptable = question.get("acceptable_answers") or question.get("correct_answers")
+            if isinstance(acceptable, list) and acceptable:
+                return str(acceptable[0])
+            return ""
+        return str(
+            question.get("correct_answer")
+            or question.get("expected_answer")
+            or question.get("expected_output")
+            or ""
+        )
+
+    def test_remedial_quiz_resets_question_context(self):
+        """Remedial quiz generation should refresh session question data."""
+
+        client = self.app.test_client()
+
+        with client.session_transaction() as session:
+            session.clear()
+
+        quiz_response = client.get("/quiz/python/functions")
+        self.assertEqual(quiz_response.status_code, 200)
+
+        analyze_response = client.post("/analyze", json={"answers": {}})
+        self.assertEqual(analyze_response.status_code, 200)
+
+        analysis_payload = analyze_response.get_json()
+        self.assertTrue(analysis_payload.get("success"))
+        weak_topics = analysis_payload.get("analysis", {}).get("weak_topics") or []
+        self.assertGreater(len(weak_topics), 0, "Weak topics should be detected for remedial generation")
+
+        custom_pool = []
+        for idx in range(9):
+            tag = weak_topics[idx % len(weak_topics)]
+            custom_pool.append(
+                {
+                    "id": f"remedial-{idx}",
+                    "question": f"Custom remedial question {idx + 1}",
+                    "type": "multiple_choice",
+                    "options": ["A", "B", "C", "D"],
+                    "answer_index": idx % 4,
+                    "tags": [tag],
+                }
+            )
+
+        with patch.object(
+            self.data_service,
+            "get_question_pool_questions",
+            return_value=custom_pool,
+        ):
+            remedial_response = client.get("/generate_remedial_quiz")
+
+        self.assertEqual(remedial_response.status_code, 200)
+        remedial_payload = remedial_response.get_json()
+        self.assertTrue(remedial_payload.get("success"))
+
+        stored_count = remedial_payload.get("stored_question_count")
+        self.assertGreaterEqual(stored_count, 7)
+        self.assertLessEqual(stored_count, len(custom_pool))
+
+        with client.session_transaction() as session:
+            remedial_key = self.progress_service.get_session_key(
+                "python", "functions", "remedial_questions"
+            )
+            session_remedial = session.get(remedial_key)
+            analysis_key = self.progress_service.get_session_key(
+                "python", "functions", "questions_served_for_analysis"
+            )
+            analysis_questions = session.get(analysis_key)
+            quiz_type_key = self.progress_service.get_session_key(
+                "python", "functions", "current_quiz_type"
+            )
+            active_quiz_type = session.get(quiz_type_key)
+
+        self.assertIsInstance(session_remedial, list)
+        self.assertEqual(len(session_remedial), stored_count)
+        self.assertIsInstance(analysis_questions, list)
+        self.assertEqual(len(analysis_questions), stored_count)
+        self.assertEqual(active_quiz_type, "remedial")
+
+        remedial_ids = {
+            str(item.get("id") or item.get("question")) for item in session_remedial
+        }
+        analysis_ids = {
+            str(item.get("id") or item.get("question")) for item in analysis_questions
+        }
+        self.assertEqual(
+            remedial_ids,
+            analysis_ids,
+            "Remedial quiz context should match stored question set",
+        )
+
+        answer_payload = {}
+        for index, question in enumerate(analysis_questions):
+            answer_payload[f"q{index}"] = self._resolve_expected_answer(question)
+
+        remedial_analyze_response = client.post(
+            "/analyze", json={"answers": answer_payload}
+        )
+        self.assertEqual(remedial_analyze_response.status_code, 200)
+
+        remedial_analysis_payload = remedial_analyze_response.get_json()
+        self.assertTrue(remedial_analysis_payload.get("success"))
+        remedial_analysis = remedial_analysis_payload.get("analysis", {})
+
+        score_block = remedial_analysis.get("score", {})
+        self.assertEqual(score_block.get("total"), len(analysis_questions))
+        self.assertEqual(score_block.get("correct"), len(analysis_questions))
+        self.assertEqual(score_block.get("percentage"), 100)
+        self.assertFalse(remedial_analysis.get("wrong_question_indices"))
+
+        with client.session_transaction() as session:
+            analysis_session_key = self.progress_service.get_session_key(
+                "python", "functions", "analysis_results"
+            )
+            stored_analysis = session.get(analysis_session_key)
+        self.assertIsNotNone(stored_analysis)
+        self.assertEqual(
+            stored_analysis.get("score", {}).get("percentage"),
+            100,
+            "Stored remedial analysis should reflect the latest attempt",
+        )
 
 
 if __name__ == "__main__":
