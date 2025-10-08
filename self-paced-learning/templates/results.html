@@ -8,6 +8,10 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/styles.css') }}"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
     <!-- Pyodide for Python code execution -->
     <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
   </head>
@@ -499,6 +503,96 @@
                 });
               }
 
+              function processInlineCode(text) {
+                if (!text) return text;
+                return text.replace(/`([^`]+)`/g, "<code>$1</code>");
+              }
+
+              function formatLessonContent(contentArray) {
+                return (contentArray || [])
+                  .map((item) => {
+                    switch (item.type) {
+                      case "header":
+                        return `<h3>${processInlineCode(item.text)}</h3>`;
+                      case "paragraph":
+                        return `<p>${processInlineCode(item.text)}</p>`;
+                      case "code":
+                        return `<pre><code>${(item.text || "")
+                          .replace(/</g, "&lt;")
+                          .replace(/>/g, "&gt;")}</code></pre>`;
+                      case "list":
+                        const listItems = (item.items || [])
+                          .map((listItem) => `<li>${processInlineCode(listItem)}</li>`)
+                          .join("");
+                        return `<ul>${listItems}</ul>`;
+                      case "code_runner":
+                        const blockId = Math.random().toString(36).substr(2, 9);
+                        return `
+                          <div class="code-runner-block" id="code-runner-${blockId}">
+                            <div class="code-runner-header">
+                              <h4><i class="fas fa-play-circle"></i> Interactive Python Code</h4>
+                              <button class="code-runner-toggle" type="button" onclick="expandCodeRunner('${blockId}')" aria-expanded="false" aria-label="Expand code runner">
+                                <i class="fas fa-expand-alt"></i>
+                              </button>
+                            </div>
+                            <div class="code-runner-content">
+                              <div class="code-editor">
+                                <textarea id="code-editor-${blockId}" class="python-editor" placeholder="Write your Python code here...">${
+                                  item.starter_code ||
+                                  '# Write your Python code here\nprint("Hello, World!")'
+                                }</textarea>
+                              </div>
+                              <div class="code-controls">
+                                <button class="run-code-btn" onclick="runPythonCode('${blockId}')">
+                                  <i class="fas fa-play"></i> Run Code
+                                </button>
+                                <button class="clear-output-btn" onclick="clearOutput('${blockId}')">
+                                  <i class="fas fa-trash"></i> Clear Output
+                                </button>
+                                ${
+                                  item.solution
+                                    ? `<button class="show-solution-btn" onclick="showSolution('${blockId}')"><i class="fas fa-lightbulb"></i> Show Solution</button>`
+                                    : ""
+                                }
+                                ${
+                                  item.hints && item.hints.length > 0
+                                    ? `<button class="show-hints-btn" onclick="showHints('${blockId}')"><i class="fas fa-question-circle"></i> Show Hints</button>`
+                                    : ""
+                                }
+                              </div>
+                              <div class="code-output">
+                                <div class="output-header">Output:</div>
+                                <pre id="code-output-${blockId}" class="output-content"></pre>
+                              </div>
+                              ${
+                                item.expected_output
+                                  ? `<div class="expected-output"><strong>Expected Output:</strong><pre>${item.expected_output}</pre></div>`
+                                  : ""
+                              }
+                              ${
+                                item.hints && item.hints.length > 0
+                                  ? `<div class="hints-content" id="hints-${blockId}" style="display: none;"><strong>Hints:</strong><ul>${item.hints
+                                      .map((hint) => `<li>${hint}</li>`)
+                                      .join("")}</ul></div>`
+                                  : ""
+                              }
+                              ${
+                                item.solution
+                                  ? `<div class="solution-content" id="solution-${blockId}" style="display: none;"><strong>Solution:</strong><pre><code>${item.solution}</code></pre></div>`
+                                  : ""
+                              }
+                            </div>
+                          </div>
+                        `;
+                      case "summary":
+                        return `<p><strong>${processInlineCode(item.text)}</strong></p>`;
+                      default:
+                        return "";
+                    }
+                  })
+                  .join("");
+              }
+
               /**
                * Renders lesson content in the main content area.
                */
@@ -513,63 +607,24 @@
                 // Hide the welcome message and show lesson content
                 welcomeMessageContainer.classList.add("hidden");
 
-                let contentHtml = `<h2>${lesson.title}</h2>`;
-                (lesson.content || []).forEach((item) => {
-                  if (item.type === "header") {
-                    contentHtml += `<h5>${item.text}</h5>`;
-                  } else if (item.type === "paragraph") {
-                    contentHtml += `<p>${item.text}</p>`;
-                  } else if (item.type === "list") {
-                    contentHtml += "<ul>";
-                    (item.items || []).forEach((li_text) => {
-                      contentHtml += `<li>${li_text}</li>`;
-                    });
-                    contentHtml += "</ul>";
-                  } else if (item.type === "code") {
-                    const escapedCode = (item.text || "")
-                      .replace(/</g, "&lt;")
-                      .replace(/>/g, "&gt;");
-                    contentHtml += `<pre><code>${escapedCode}</code></pre>`;
-                  } else if (item.type === "code_runner") {
-                    const blockId = Math.random().toString(36).substr(2, 9);
-                    contentHtml += `
-                      <div class="code-runner-block" id="code-runner-${blockId}">
-                        <div class="code-runner-header">
-                          <h4><i class="fas fa-play-circle"></i> Interactive Python Code</h4>
-                          <button class="code-runner-toggle" type="button" onclick="toggleCodeRunner('${blockId}')" aria-expanded="false" aria-label="Expand code runner">
-                            <i class="fas fa-expand-alt"></i>
-                          </button>
-                        </div>
-                        <div class="code-runner-content">
-                          <div class="code-editor">
-                            <textarea id="code-editor-${blockId}" class="python-editor" placeholder="Write your Python code here...">${item.starter_code || '# Write your Python code here\nprint("Hello, World!")'}</textarea>
-                          </div>
-                          <div class="code-controls">
-                            <button class="run-code-btn" onclick="runPythonCode('${blockId}')">
-                              <i class="fas fa-play"></i> Run Code
-                            </button>
-                            <button class="clear-output-btn" onclick="clearOutput('${blockId}')">
-                              <i class="fas fa-trash"></i> Clear Output
-                            </button>
-                            ${item.solution ? `<button class="show-solution-btn" onclick="showSolution('${blockId}')"><i class="fas fa-lightbulb"></i> Show Solution</button>` : ''}
-                            ${item.hints && item.hints.length > 0 ? `<button class="show-hints-btn" onclick="showHints('${blockId}')"><i class="fas fa-question-circle"></i> Show Hints</button>` : ''}
-                          </div>
-                          <div class="code-output">
-                            <div class="output-header">Output:</div>
-                            <pre id="code-output-${blockId}" class="output-content"></pre>
-                          </div>
-                          ${item.expected_output ? `<div class="expected-output"><strong>Expected Output:</strong><pre>${item.expected_output}</pre></div>` : ''}
-                          ${item.hints && item.hints.length > 0 ? `<div class="hints-content" id="hints-${blockId}" style="display: none;"><strong>Hints:</strong><ul>${item.hints.map(hint => `<li>${hint}</li>`).join('')}</ul></div>` : ''}
-                          ${item.solution ? `<div class="solution-content" id="solution-${blockId}" style="display: none;"><strong>Solution:</strong><pre><code>${item.solution}</code></pre></div>` : ''}
-                        </div>
-                      </div>
-                    `;
-                  } else if (item.type === "summary") {
-                    contentHtml += `<p><strong>${item.text}</strong></p>`;
-                  }
-                });
+                let lessonHTML = "";
+                if (Array.isArray(lesson.content)) {
+                  lessonHTML = formatLessonContent(lesson.content);
+                } else if (typeof lesson.content === "string") {
+                  lessonHTML = processInlineCode(lesson.content);
+                } else {
+                  lessonHTML = "<p>Lesson content not available.</p>";
+                }
 
-                contentDisplayArea.innerHTML = contentHtml;
+                const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
+                contentDisplayArea.innerHTML = `
+                  <div class="lesson-content" id="lesson-content-${safeTopicId}">
+                    <h2>${lesson.title}</h2>
+                    <div class="lesson-body">
+                      ${lessonHTML}
+                    </div>
+                  </div>
+                `;
               }
 
               /**
@@ -856,267 +911,287 @@
             });
 
             // Modal functions for expanding code runners
-            let activeCodeRunnerId = null;
+            function expandCodeRunner(blockId) {
+              const existingModal = document.getElementById(`code-runner-modal-${blockId}`);
+
+              if (existingModal) {
+                closeCodeRunnerModal(blockId);
+              } else {
+                openCodeRunnerModal(blockId);
+              }
+            }
 
             function setExpandButtonState(blockId, isExpanded) {
-              const toggleButton = document.querySelector(
+              const toggleBtn = document.querySelector(
                 `#code-runner-${blockId} .code-runner-toggle`
               );
 
-              if (!toggleButton) return;
+              if (!toggleBtn) {
+                return;
+              }
 
-              toggleButton.setAttribute(
-                "aria-expanded",
-                isExpanded ? "true" : "false"
-              );
-              toggleButton.setAttribute(
+              toggleBtn.innerHTML = isExpanded
+                ? '<i class="fas fa-compress-alt"></i>'
+                : '<i class="fas fa-expand-alt"></i>';
+              toggleBtn.setAttribute("aria-expanded", isExpanded ? "true" : "false");
+              toggleBtn.setAttribute(
                 "aria-label",
                 isExpanded ? "Collapse code runner" : "Expand code runner"
               );
-              toggleButton.classList.toggle("is-expanded", isExpanded);
-              toggleButton.innerHTML = isExpanded
-                ? '<i class="fas fa-compress-alt"></i>'
-                : '<i class="fas fa-expand-alt"></i>';
+              toggleBtn.classList.toggle("is-expanded", isExpanded);
             }
 
-            function toggleCodeRunner(blockId) {
-              const modal = document.getElementById("code-runner-modal");
-              const isActive =
-                modal &&
-                modal.classList.contains("active") &&
-                activeCodeRunnerId === blockId;
+            function collectCodeRunnerQuestion(originalBlock) {
+              const fragments = [];
+              let pointer = originalBlock.previousElementSibling;
+              let steps = 0;
 
-              if (isActive) {
-                closeCodeRunnerModal();
+              while (pointer && steps < 3) {
+                if (
+                  pointer.classList &&
+                  pointer.classList.contains("code-runner-block")
+                ) {
+                  break;
+                }
+
+                if (!pointer.matches("p, ul, ol, h2, h3, h4, h5")) {
+                  break;
+                }
+
+                fragments.unshift(pointer.outerHTML);
+                steps += 1;
+
+                if (pointer.matches("h2, h3, h4, h5")) {
+                  break;
+                }
+
+                pointer = pointer.previousElementSibling;
+              }
+
+              return fragments.join("");
+            }
+
+            function openCodeRunnerModal(blockId) {
+              const originalBlock = document.getElementById(`code-runner-${blockId}`);
+              if (!originalBlock) {
+                return;
+              }
+
+              const codeRunnerContent = originalBlock.querySelector(
+                ".code-runner-content"
+              );
+              if (!codeRunnerContent) {
+                return;
+              }
+
+              const modal = document.createElement("div");
+              modal.className = "code-runner-modal active";
+              modal.id = `code-runner-modal-${blockId}`;
+
+              const modalContent = document.createElement("div");
+              modalContent.className = "code-runner-modal-content";
+
+              const header = document.createElement("div");
+              header.className = "code-runner-modal-header";
+
+              const title = document.createElement("h4");
+              title.innerHTML =
+                '<i class="fas fa-play-circle"></i> Interactive Python Code';
+
+              const actions = document.createElement("div");
+              actions.className = "code-runner-modal-actions";
+
+              const collapseBtn = document.createElement("button");
+              collapseBtn.type = "button";
+              collapseBtn.className = "code-runner-modal-collapse";
+              collapseBtn.innerHTML = '<i class="fas fa-compress-alt"></i> Collapse';
+              collapseBtn.addEventListener("click", () =>
+                closeCodeRunnerModal(blockId)
+              );
+
+              const closeBtn = document.createElement("button");
+              closeBtn.type = "button";
+              closeBtn.className = "code-runner-modal-close";
+              closeBtn.innerHTML = "&times;";
+              closeBtn.addEventListener("click", () =>
+                closeCodeRunnerModal(blockId)
+              );
+
+              actions.appendChild(collapseBtn);
+              actions.appendChild(closeBtn);
+
+              header.appendChild(title);
+              header.appendChild(actions);
+
+              const body = document.createElement("div");
+              body.className = "code-runner-modal-body";
+
+              const layout = document.createElement("div");
+              layout.className = "code-runner-expanded-grid";
+
+              const questionHTML = collectCodeRunnerQuestion(originalBlock);
+              if (questionHTML) {
+                const question = document.createElement("div");
+                question.className = "code-runner-modal-question";
+                question.innerHTML = questionHTML;
+                layout.appendChild(question);
               } else {
-                if (activeCodeRunnerId && activeCodeRunnerId !== blockId) {
-                  closeCodeRunnerModal();
+                layout.classList.add("no-question");
+              }
+
+              const expectedOutput = codeRunnerContent.querySelector(
+                ".expected-output"
+              );
+              const codeOutput = codeRunnerContent.querySelector(".code-output");
+              const hintsElement = codeRunnerContent.querySelector(
+                `#hints-${blockId}`
+              );
+              const solutionElement = codeRunnerContent.querySelector(
+                `#solution-${blockId}`
+              );
+
+              const placeholder = document.createElement("div");
+              placeholder.id = `code-runner-placeholder-${blockId}`;
+              placeholder.className = "code-runner-placeholder";
+              placeholder.innerHTML =
+                '<i class="fas fa-external-link-alt"></i><span>Code runner is open in the expanded view</span>';
+
+              originalBlock.insertBefore(placeholder, codeRunnerContent);
+
+              codeRunnerContent.classList.add("code-runner-expanded");
+
+              if (expectedOutput) {
+                expectedOutput.classList.add("code-runner-modal-expected");
+                layout.appendChild(expectedOutput);
+              } else {
+                layout.classList.add("no-expected");
+              }
+
+              const editorWrapper = document.createElement("div");
+              editorWrapper.className = "code-runner-grid-editor";
+              editorWrapper.appendChild(codeRunnerContent);
+              layout.appendChild(editorWrapper);
+
+              const outputWrapper = document.createElement("div");
+              outputWrapper.className = "code-runner-grid-output";
+
+              if (codeOutput) {
+                outputWrapper.appendChild(codeOutput);
+              }
+              if (hintsElement) {
+                outputWrapper.appendChild(hintsElement);
+              }
+              if (solutionElement) {
+                outputWrapper.appendChild(solutionElement);
+              }
+
+              if (outputWrapper.childNodes.length > 0) {
+                layout.appendChild(outputWrapper);
+              } else {
+                layout.classList.add("no-output");
+              }
+
+              body.appendChild(layout);
+
+              modalContent.appendChild(header);
+              modalContent.appendChild(body);
+              modal.appendChild(modalContent);
+              document.body.appendChild(modal);
+
+              modal._extractedElements = {
+                expectedOutput,
+                codeOutput,
+                hintsElement,
+                solutionElement,
+              };
+
+              const escHandler = (event) => {
+                if (event.key === "Escape") {
+                  closeCodeRunnerModal(blockId);
                 }
-                expandCodeRunner(blockId);
-              }
-            }
+              };
+              document.addEventListener("keydown", escHandler);
 
-            function expandCodeRunner(blockId) {
-              const originalContainer = document.getElementById(`code-runner-${blockId}`);
-              if (!originalContainer) return;
-
-              // Create modal if it doesn't exist
-              let modal = document.getElementById('code-runner-modal');
-              if (!modal) {
-                modal = document.createElement('div');
-                modal.id = 'code-runner-modal';
-                modal.className = 'code-runner-modal';
-                modal.innerHTML = `
-                  <div class="code-runner-modal-content">
-                    <div class="code-runner-modal-header">
-                      <h3><i class="fas fa-expand"></i> Expanded Code Editor</h3>
-                      <button class="code-runner-modal-close" onclick="closeCodeRunnerModal()">
-                        <i class="fas fa-times"></i>
-                      </button>
-                    </div>
-                    <div class="code-runner-modal-body" id="modal-code-content">
-                      <!-- Code runner content will be inserted here -->
-                    </div>
-                  </div>
-                `;
-                document.body.appendChild(modal);
-
-                // Close modal when clicking outside
-                modal.addEventListener('click', function(e) {
-                  if (e.target === modal) {
-                    closeCodeRunnerModal();
-                  }
-                });
-
-                // Close modal with Escape key
-                document.addEventListener('keydown', function(e) {
-                  if (e.key === 'Escape' && modal.classList.contains('active')) {
-                    closeCodeRunnerModal();
-                  }
-                });
-              }
-
-              // Clone and modify the code runner content
-              const originalContent = originalContainer.querySelector('.code-runner-content');
-              const modalBody = modal.querySelector('#modal-code-content');
-              modalBody.innerHTML = originalContent.innerHTML;
-
-              // Update IDs and event handlers for modal version
-              const modalTextarea = modalBody.querySelector(`#code-editor-${blockId}`);
-              const modalButtons = modalBody.querySelectorAll('button');
-
-              if (modalTextarea) {
-                modalTextarea.id = `code-editor-${blockId}-modal`;
-              }
-
-              modalButtons.forEach(button => {
-                const onclick = button.getAttribute('onclick');
-                if (onclick) {
-                  // Update function calls to use modal versions
-                  const newOnclick = onclick
-                    .replace(`runPythonCode('${blockId}')`, `runPythonCodeModal('${blockId}')`)
-                    .replace(`clearOutput('${blockId}')`, `clearOutputModal('${blockId}')`)
-                    .replace(`showSolution('${blockId}')`, `showSolutionModal('${blockId}')`)
-                    .replace(`showHints('${blockId}')`, `showHintsModal('${blockId}')`);
-                  button.setAttribute('onclick', newOnclick);
+              const outsideClickHandler = (event) => {
+                if (event.target === modal) {
+                  closeCodeRunnerModal(blockId);
                 }
-              });
+              };
+              modal.addEventListener("click", outsideClickHandler);
 
-              // Update output element ID
-              const modalOutput = modalBody.querySelector(`#code-output-${blockId}`);
-              if (modalOutput) {
-                modalOutput.id = `code-output-${blockId}-modal`;
-              }
+              modal._escapeHandler = escHandler;
+              modal._outsideClickHandler = outsideClickHandler;
 
-              // Update hints and solution IDs
-              const modalHints = modalBody.querySelector(`#hints-${blockId}`);
-              if (modalHints) {
-                modalHints.id = `hints-${blockId}-modal`;
-              }
-
-              const modalSolution = modalBody.querySelector(`#solution-${blockId}`);
-              if (modalSolution) {
-                modalSolution.id = `solution-${blockId}-modal`;
-              }
-
-              // Sync content
-              syncToModal(blockId);
-
-              // Show modal
-              modal.classList.add('active');
-              activeCodeRunnerId = blockId;
               setExpandButtonState(blockId, true);
+            }
 
-              // Focus on textarea
-              setTimeout(() => {
-                const modalTextareaFinal = modal.querySelector(`#code-editor-${blockId}-modal`);
-                if (modalTextareaFinal) {
-                  modalTextareaFinal.focus();
+            function closeCodeRunnerModal(blockId) {
+              const modal = document.getElementById(`code-runner-modal-${blockId}`);
+              const originalBlock = document.getElementById(`code-runner-${blockId}`);
+              const placeholder = document.getElementById(
+                `code-runner-placeholder-${blockId}`
+              );
+
+              const codeRunnerContent = modal
+                ? modal.querySelector(".code-runner-content")
+                : originalBlock
+                ? originalBlock.querySelector(".code-runner-content")
+                : null;
+
+              const extracted = modal ? modal._extractedElements || {} : {};
+
+              if (codeRunnerContent) {
+                const {
+                  codeOutput,
+                  expectedOutput,
+                  hintsElement,
+                  solutionElement,
+                } = extracted;
+
+                if (codeOutput && !codeRunnerContent.contains(codeOutput)) {
+                  codeRunnerContent.appendChild(codeOutput);
                 }
-              }, 100);
-            }
 
-            function closeCodeRunnerModal() {
-              const modal = document.getElementById('code-runner-modal');
-              if (!modal || !modal.classList.contains('active')) {
-                return;
-              }
-
-              // Sync content back before closing
-              syncFromModal();
-
-              modal.classList.remove('active');
-              if (activeCodeRunnerId) {
-                setExpandButtonState(activeCodeRunnerId, false);
-              }
-              activeCodeRunnerId = null;
-            }
-
-            function syncToModal(blockId) {
-              const original = document.getElementById(`code-editor-${blockId}`);
-              const modal = document.getElementById(`code-editor-${blockId}-modal`);
-
-              if (original && modal) {
-                modal.value = original.value;
-              }
-            }
-
-            function syncFromModal() {
-              const modal = document.getElementById('code-runner-modal');
-              if (!modal) return;
-
-              const modalTextarea = modal.querySelector('textarea[id$="-modal"]');
-              if (!modalTextarea) return;
-
-              const blockId = modalTextarea.id.replace('code-editor-', '').replace('-modal', '');
-              const original = document.getElementById(`code-editor-${blockId}`);
-
-              if (original && modalTextarea) {
-                original.value = modalTextarea.value;
-              }
-            }
-
-            // Modal versions of the code runner functions
-            window.runPythonCodeModal = async function(blockId) {
-              const codeElement = document.getElementById(`code-editor-${blockId}-modal`);
-              const outputElement = document.getElementById(`code-output-${blockId}-modal`);
-              const runButton = document.querySelector(`#modal-code-content .run-code-btn`);
-
-              if (!codeElement || !outputElement) return;
-
-              const code = codeElement.value;
-              if (!code.trim()) {
-                outputElement.textContent = "Please enter some Python code to run.";
-                return;
-              }
-
-              runButton.disabled = true;
-              runButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Running...`;
-              outputElement.textContent = "Initializing Python environment...";
-
-              try {
-                const py = await initPyodide();
-                py.runPython(`
-      import sys
-      from io import StringIO
-      sys.stdout = StringIO()
-      `);
-
-                try {
-                  py.runPython(code);
-                  const output = py.runPython("sys.stdout.getvalue()");
-                  outputElement.textContent = output || "Code executed successfully (no output)";
-                  outputElement.className = "output-content success";
-                } catch (pythonError) {
-                  outputElement.textContent = `Error: ${pythonError.message}`;
-                  outputElement.className = "output-content error";
+                if (expectedOutput && !codeRunnerContent.contains(expectedOutput)) {
+                  expectedOutput.classList.remove("code-runner-modal-expected");
+                  codeRunnerContent.appendChild(expectedOutput);
                 }
-              } catch (error) {
-                outputElement.textContent = `Failed to run code: ${error.message}`;
-                outputElement.className = "output-content error";
-              } finally {
-                runButton.disabled = false;
-                runButton.innerHTML = `<i class="fas fa-play"></i> Run Code`;
+
+                if (hintsElement && !codeRunnerContent.contains(hintsElement)) {
+                  codeRunnerContent.appendChild(hintsElement);
+                }
+
+                if (solutionElement && !codeRunnerContent.contains(solutionElement)) {
+                  codeRunnerContent.appendChild(solutionElement);
+                }
               }
-            };
 
-            window.clearOutputModal = function(blockId) {
-              const outputElement = document.getElementById(`code-output-${blockId}-modal`);
-              if (outputElement) {
-                outputElement.textContent = "";
-                outputElement.className = "output-content";
-              }
-            };
-
-            window.showSolutionModal = function(blockId) {
-              const solutionElement = document.getElementById(`solution-${blockId}-modal`);
-              const button = document.querySelector(`#modal-code-content .show-solution-btn`);
-
-              if (solutionElement && button) {
-                if (solutionElement.style.display === "none") {
-                  solutionElement.style.display = "block";
-                  button.innerHTML = '<i class="fas fa-lightbulb"></i> Hide Solution';
+              if (codeRunnerContent && originalBlock) {
+                codeRunnerContent.classList.remove("code-runner-expanded");
+                if (placeholder && originalBlock.contains(placeholder)) {
+                  originalBlock.insertBefore(codeRunnerContent, placeholder);
                 } else {
-                  solutionElement.style.display = "none";
-                  button.innerHTML = '<i class="fas fa-lightbulb"></i> Show Solution';
+                  originalBlock.appendChild(codeRunnerContent);
                 }
               }
-            };
 
-            window.showHintsModal = function(blockId) {
-              const hintsElement = document.getElementById(`hints-${blockId}-modal`);
-              const button = document.querySelector(`#modal-code-content .show-hints-btn`);
-
-              if (hintsElement && button) {
-                if (hintsElement.style.display === "none") {
-                  hintsElement.style.display = "block";
-                  button.innerHTML = '<i class="fas fa-question-circle"></i> Hide Hints';
-                } else {
-                  hintsElement.style.display = "none";
-                  button.innerHTML = '<i class="fas fa-question-circle"></i> Show Hints';
-                }
+              if (placeholder && placeholder.parentNode) {
+                placeholder.remove();
               }
-            };
+
+              if (modal) {
+                if (modal._escapeHandler) {
+                  document.removeEventListener("keydown", modal._escapeHandler);
+                }
+                if (modal._outsideClickHandler) {
+                  modal.removeEventListener("click", modal._outsideClickHandler);
+                }
+                delete modal._extractedElements;
+                modal.remove();
+              }
+
+              setExpandButtonState(blockId, false);
+            }
     </script>
   </body>
 </html>
