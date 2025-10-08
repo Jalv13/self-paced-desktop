@@ -14,6 +14,9 @@
     />
     <!-- Pyodide for Python code execution -->
     <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+    <!-- Markdown rendering and sanitization -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   </head>
   <body>
     {% if admin_override %}
@@ -103,6 +106,57 @@
       const CURRENT_SUBJECT = {{ CURRENT_SUBJECT | tojson | safe }};
       const CURRENT_SUBTOPIC = {{ CURRENT_SUBTOPIC | tojson | safe }};
       const ANALYSIS_RESULTS = {{ ANALYSIS_RESULTS | tojson | safe }};
+
+      const MARKDOWN_OPTIONS = {
+        mangle: false,
+        headerIds: false,
+        breaks: true,
+      };
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function hasMarkdownSupport() {
+        return (
+          typeof window !== "undefined" &&
+          typeof window.DOMPurify !== "undefined" &&
+          typeof window.marked !== "undefined"
+        );
+      }
+
+      function renderInlineMarkdown(text) {
+        const rawText = String(text ?? "");
+        if (!rawText) {
+          return "";
+        }
+
+        if (!hasMarkdownSupport()) {
+          return escapeHtml(rawText);
+        }
+
+        const rendered = window.marked.parseInline(rawText, MARKDOWN_OPTIONS);
+        return window.DOMPurify.sanitize(rendered);
+      }
+
+      function renderBlockMarkdown(text) {
+        const rawText = String(text ?? "");
+        if (!rawText) {
+          return "";
+        }
+
+        if (!hasMarkdownSupport()) {
+          return `<p>${escapeHtml(rawText)}</p>`;
+        }
+
+        const rendered = window.marked.parse(rawText, MARKDOWN_OPTIONS);
+        return window.DOMPurify.sanitize(rendered);
+      }
     </script>
 
     <script>
@@ -304,7 +358,9 @@
 
                 if (weakTopics.length > 0) {
                   welcomeMessageContainer.classList.remove("hidden");
-                  feedbackContentDiv.innerHTML = analysisData.feedback;
+                  feedbackContentDiv.innerHTML = renderBlockMarkdown(
+                    analysisData.feedback || ""
+                  );
 
                   buildCompletionState(weakTopics);
                   displayWeakTopics(weakTopics);
@@ -330,15 +386,17 @@
 
                   const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
                   const hasVideo = Boolean(lookupVideoData(topic));
+                  const topicAttr = escapeHtml(topic);
+                  const displayTitle = renderInlineMarkdown(lesson.title || topic);
                   const groupLi = document.createElement("li");
                   groupLi.className = "topic-group";
                   groupLi.innerHTML = `
-                   <span>${lesson.title || topic}</span>
+                   <span>${displayTitle || escapeHtml(lesson.title || topic)}</span>
                    <ul>
-                     <li id="read-${safeTopicId}"><a href="#" data-topic="${topic}" data-weak-topic="${topic}" data-action="read">Read Remedial Lesson</a></li>
+                     <li id="read-${safeTopicId}"><a href="#" data-topic="${topicAttr}" data-weak-topic="${topicAttr}" data-action="read">Read Remedial Lesson</a></li>
                      ${
                        hasVideo
-                         ? `<li id="watch-${safeTopicId}"><a href="#" data-topic="${topic}" data-weak-topic="${topic}" data-action="watch">Watch Video</a></li>`
+                         ? `<li id="watch-${safeTopicId}"><a href="#" data-topic="${topicAttr}" data-weak-topic="${topicAttr}" data-action="watch">Watch Video</a></li>`
                          : ""
                      }
                    </ul>
@@ -504,29 +562,48 @@
               }
 
               function processInlineCode(text) {
-                if (!text) return text;
-                return text.replace(/`([^`]+)`/g, "<code>$1</code>");
+                return renderInlineMarkdown(text);
               }
 
               function formatLessonContent(contentArray) {
                 return (contentArray || [])
                   .map((item) => {
                     switch (item.type) {
-                      case "header":
-                        return `<h3>${processInlineCode(item.text)}</h3>`;
-                      case "paragraph":
-                        return `<p>${processInlineCode(item.text)}</p>`;
-                      case "code":
-                        return `<pre><code>${(item.text || "")
-                          .replace(/</g, "&lt;")
-                          .replace(/>/g, "&gt;")}</code></pre>`;
-                      case "list":
+                      case "header": {
+                        const headerHtml = processInlineCode(item.text);
+                        return headerHtml ? `<h3>${headerHtml}</h3>` : "";
+                      }
+                      case "paragraph": {
+                        const paragraphHtml = renderBlockMarkdown(item.text);
+                        return paragraphHtml || "";
+                      }
+                      case "code": {
+                        const escapedCode = escapeHtml(item.text || "");
+                        return `<pre><code>${escapedCode}</code></pre>`;
+                      }
+                      case "list": {
                         const listItems = (item.items || [])
-                          .map((listItem) => `<li>${processInlineCode(listItem)}</li>`)
+                          .map((listItem) => {
+                            const listHtml = processInlineCode(listItem);
+                            return listHtml ? `<li>${listHtml}</li>` : "";
+                          })
                           .join("");
-                        return `<ul>${listItems}</ul>`;
+                        return listItems ? `<ul>${listItems}</ul>` : "";
+                      }
                       case "code_runner":
                         const blockId = Math.random().toString(36).substr(2, 9);
+                        const starterCode = escapeHtml(
+                          item.starter_code ||
+                            '# Write your Python code here\nprint("Hello, World!")'
+                        );
+                        const expectedOutput = escapeHtml(item.expected_output || "");
+                        const hintsHtml = (item.hints || [])
+                          .map((hint) => {
+                            const hintHtml = processInlineCode(hint);
+                            return hintHtml ? `<li>${hintHtml}</li>` : "";
+                          })
+                          .join("");
+                        const solutionHtml = escapeHtml(item.solution || "");
                         return `
                           <div class="code-runner-block" id="code-runner-${blockId}">
                             <div class="code-runner-header">
@@ -537,10 +614,7 @@
                             </div>
                             <div class="code-runner-content">
                               <div class="code-editor">
-                                <textarea id="code-editor-${blockId}" class="python-editor" placeholder="Write your Python code here...">${
-                                  item.starter_code ||
-                                  '# Write your Python code here\nprint("Hello, World!")'
-                                }</textarea>
+                                <textarea id="code-editor-${blockId}" class="python-editor" placeholder="Write your Python code here...">${starterCode}</textarea>
                               </div>
                               <div class="code-controls">
                                 <button class="run-code-btn" onclick="runPythonCode('${blockId}')">
@@ -550,12 +624,12 @@
                                   <i class="fas fa-trash"></i> Clear Output
                                 </button>
                                 ${
-                                  item.solution
+                                  solutionHtml
                                     ? `<button class="show-solution-btn" onclick="showSolution('${blockId}')"><i class="fas fa-lightbulb"></i> Show Solution</button>`
                                     : ""
                                 }
                                 ${
-                                  item.hints && item.hints.length > 0
+                                  hintsHtml
                                     ? `<button class="show-hints-btn" onclick="showHints('${blockId}')"><i class="fas fa-question-circle"></i> Show Hints</button>`
                                     : ""
                                 }
@@ -565,27 +639,29 @@
                                 <pre id="code-output-${blockId}" class="output-content"></pre>
                               </div>
                               ${
-                                item.expected_output
-                                  ? `<div class="expected-output"><strong>Expected Output:</strong><pre>${item.expected_output}</pre></div>`
+                                expectedOutput
+                                  ? `<div class="expected-output"><strong>Expected Output:</strong><pre>${expectedOutput}</pre></div>`
                                   : ""
                               }
                               ${
-                                item.hints && item.hints.length > 0
-                                  ? `<div class="hints-content" id="hints-${blockId}" style="display: none;"><strong>Hints:</strong><ul>${item.hints
-                                      .map((hint) => `<li>${hint}</li>`)
-                                      .join("")}</ul></div>`
+                                hintsHtml
+                                  ? `<div class="hints-content" id="hints-${blockId}" style="display: none;"><strong>Hints:</strong><ul>${hintsHtml}</ul></div>`
                                   : ""
                               }
                               ${
-                                item.solution
-                                  ? `<div class="solution-content" id="solution-${blockId}" style="display: none;"><strong>Solution:</strong><pre><code>${item.solution}</code></pre></div>`
+                                solutionHtml
+                                  ? `<div class="solution-content" id="solution-${blockId}" style="display: none;"><strong>Solution:</strong><pre><code>${solutionHtml}</code></pre></div>`
                                   : ""
                               }
                             </div>
                           </div>
                         `;
-                      case "summary":
-                        return `<p><strong>${processInlineCode(item.text)}</strong></p>`;
+                      case "summary": {
+                        const summaryHtml = processInlineCode(item.text);
+                        return summaryHtml
+                          ? `<p><strong>${summaryHtml}</strong></p>`
+                          : "";
+                      }
                       default:
                         return "";
                     }
@@ -600,7 +676,8 @@
                 const lesson = resolveLesson(topic);
 
                 if (!lesson) {
-                  contentDisplayArea.innerHTML = `<h2>Content Not Found</h2><p>Sorry, we couldn't find a lesson for "${topic}".</p>`;
+                  const escapedTopic = escapeHtml(topic || "");
+                  contentDisplayArea.innerHTML = `<h2>Content Not Found</h2><p>Sorry, we couldn't find a lesson for "${escapedTopic}".</p>`;
                   return;
                 }
 
@@ -611,15 +688,16 @@
                 if (Array.isArray(lesson.content)) {
                   lessonHTML = formatLessonContent(lesson.content);
                 } else if (typeof lesson.content === "string") {
-                  lessonHTML = processInlineCode(lesson.content);
+                  lessonHTML = renderBlockMarkdown(lesson.content);
                 } else {
                   lessonHTML = "<p>Lesson content not available.</p>";
                 }
 
                 const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
+                const lessonTitle = renderInlineMarkdown(lesson.title || "Lesson");
                 contentDisplayArea.innerHTML = `
                   <div class="lesson-content" id="lesson-content-${safeTopicId}">
-                    <h2>${lesson.title}</h2>
+                    <h2>${lessonTitle}</h2>
                     <div class="lesson-body">
                       ${lessonHTML}
                     </div>
