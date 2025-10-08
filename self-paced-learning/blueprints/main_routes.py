@@ -545,14 +545,15 @@ def generate_remedial_quiz():
                 "error": "We couldn't find follow-up questions for your weak topics. Please review the materials and try again.",
             }), 404
 
-        progress_service.set_remedial_quiz_data(
+        stored_count = progress_service.set_remedial_quiz_data(
             current_subject, current_subtopic, remedial_questions, weak_topics
         )
 
         return jsonify(
             {
                 "success": True,
-                "question_count": len(remedial_questions),
+                "question_count": stored_count,
+                "stored_question_count": stored_count,
                 "redirect_url": url_for("main.take_remedial_quiz_page"),
             }
         )

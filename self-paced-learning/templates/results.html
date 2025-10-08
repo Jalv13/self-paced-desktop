@@ -385,10 +385,46 @@
 
               // --- Score Display Function (duplicate click handler removed) ---
 
-              continueButton.addEventListener("click", function () {
-                if (!this.disabled) {
-                  window.location.href = "/generate_remedial_quiz";
+              continueButton.addEventListener("click", async function (event) {
+                event.preventDefault();
+                if (this.disabled) {
+                  return;
                 }
+
+                const originalText = this.textContent;
+                this.disabled = true;
+                this.textContent = "Loading...";
+
+                try {
+                  const response = await fetch("/generate_remedial_quiz", {
+                    headers: {
+                      Accept: "application/json",
+                    },
+                    credentials: "same-origin",
+                  });
+
+                  if (!response.ok) {
+                    throw new Error(`Request failed with status ${response.status}`);
+                  }
+
+                  const data = await response.json();
+
+                  if (data.success && data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                    return;
+                  }
+
+                  const errorMessage =
+                    (data && (data.error || data.message)) ||
+                    "Unable to start the follow-up quiz. Please review the lessons and try again.";
+                  alert(errorMessage);
+                } catch (error) {
+                  console.error("Error starting remedial quiz:", error);
+                  alert("We couldn't start the follow-up quiz. Please try again.");
+                }
+
+                this.disabled = false;
+                this.textContent = originalText;
               });
 
               // Admin mark complete functionality
