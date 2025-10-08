@@ -311,7 +311,7 @@ class ProgressService:
     ) -> None:
         """Persist remedial quiz questions and related topics."""
         sanitized_questions = self._sanitize_questions_for_session(
-            questions, max_questions=3
+            questions, max_questions=10
         )
         questions_key = self.get_session_key(subject, subtopic, "remedial_questions")
         session[questions_key] = sanitized_questions

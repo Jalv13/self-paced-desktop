@@ -518,26 +518,11 @@ def generate_remedial_quiz():
                 "error": "No question pool available for remedial quiz.",
             }), 404
 
-        target_tags = {topic.strip().lower() for topic in weak_topics}
-        remedial_questions = []
-        seen_identifiers = set()
-
-        for question in question_pool:
-            question_tags_raw = question.get("tags", [])
-            question_tags = [
-                str(tag).strip().lower()
-                for tag in question_tags_raw
-                if isinstance(tag, str) and tag.strip()
-            ]
-
-            if not question_tags:
-                continue
-
-            if target_tags.intersection(question_tags):
-                identifier = question.get("id") or question.get("question")
-                if identifier and identifier not in seen_identifiers:
-                    remedial_questions.append(question)
-                    seen_identifiers.add(identifier)
+        ai_service = get_ai_service()
+        remedial_questions = ai_service.select_remedial_questions(
+            question_pool,
+            weak_topics,
+        )
 
         if not remedial_questions:
             return jsonify({
@@ -547,6 +532,10 @@ def generate_remedial_quiz():
 
         stored_count = progress_service.set_remedial_quiz_data(
             current_subject, current_subtopic, remedial_questions, weak_topics
+        )
+
+        progress_service.set_quiz_session_data(
+            current_subject, current_subtopic, "remedial", remedial_questions
         )
 
         return jsonify(

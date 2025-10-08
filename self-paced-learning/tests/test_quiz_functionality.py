@@ -8,6 +8,7 @@ import os
 import sys
 import unittest
 import json
+import random
 from unittest.mock import patch, MagicMock
 
 # Add the parent directory to the path
@@ -15,7 +16,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from app_refactored import app
-    from services import init_services, get_data_service, get_progress_service
+    from services import (
+        init_services,
+        get_data_service,
+        get_progress_service,
+        get_ai_service,
+    )
 except ImportError as e:
     print(f"Import error: {e}")
     print("Make sure to run tests from the correct directory with venv activated")
@@ -41,6 +47,7 @@ class TestQuizFunctionality(unittest.TestCase):
         init_services(cls.data_root_path)
         cls.data_service = get_data_service()
         cls.progress_service = get_progress_service()
+        cls.ai_service = get_ai_service()
 
         print("\n🧪 Setting up quiz functionality tests...")
 
@@ -280,6 +287,7 @@ class TestQuestionPoolManagement(unittest.TestCase):
         cls.data_root_path = os.path.join(os.path.dirname(__file__), "..", "data")
         init_services(cls.data_root_path)
         cls.data_service = get_data_service()
+        cls.ai_service = get_ai_service()
 
         print("\n🧪 Setting up question pool tests...")
 
@@ -344,33 +352,46 @@ class TestQuestionPoolManagement(unittest.TestCase):
                         )
                         print(f"    Pool has {len(pool_questions)} questions")
 
-                        # Test selecting random questions for remedial quiz
-                        import random
+                        # Build a tag set so we prioritise relevant questions
+                        target_tags = set()
+                        for question in pool_questions:
+                            for tag in question.get("tags", []) or []:
+                                if isinstance(tag, str) and tag.strip():
+                                    target_tags.add(tag)
 
-                        # Select up to 5 questions for remedial quiz
-                        max_questions = min(5, len(pool_questions))
-                        selected_questions = random.sample(
-                            pool_questions, max_questions
+                        state = random.getstate()
+                        random.seed(42)
+                        selected_questions = self.ai_service.select_remedial_questions(
+                            pool_questions, target_tags
                         )
+                        random.setstate(state)
 
                         print(
                             f"    Selected {len(selected_questions)} questions for remedial quiz"
                         )
-                        self.assertEqual(
+
+                        expected_min = min(7, len(pool_questions))
+                        expected_max = min(10, len(pool_questions))
+
+                        self.assertGreaterEqual(
                             len(selected_questions),
-                            max_questions,
-                            "Should select correct number of questions",
+                            expected_min,
+                            "Should select at least the minimum remedial question count",
+                        )
+                        self.assertLessEqual(
+                            len(selected_questions),
+                            expected_max,
+                            "Should not exceed the maximum remedial question count",
                         )
 
-                        # Test that selected questions are from the pool
                         for question in selected_questions:
                             self.assertIn(
                                 question,
                                 pool_questions,
-                                "Selected question should be from the pool",
+                                "Selected question should originate from the pool",
                             )
 
-                        print(f"    ✅ Remedial quiz generation successful")
+                        print("    ✅ Remedial quiz generation successful")
                         return  # Test one successful case
 
         print("    ⚠️ No question pools available for remedial quiz testing")

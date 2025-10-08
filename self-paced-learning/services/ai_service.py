@@ -6,9 +6,10 @@ and learning recommendations. Extracts AI logic from the main application routes
 
 import openai
 import os
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Iterable, Set
 import json
 import re
+import random
 
 try:
     from openai import OpenAI as OpenAIClient
@@ -663,7 +664,6 @@ Keep the response concise and student-friendly.
         if not question_pool:
             return []
 
-        # Identify topics from wrong answers
         weak_topics = set()
         for wrong_index in wrong_answers:
             if wrong_index < len(original_questions):
@@ -671,25 +671,90 @@ Keep the response concise and student-friendly.
                 if topic:
                     weak_topics.add(topic.lower())
 
-        # Filter question pool for remedial topics
-        remedial_questions = []
+        return self.select_remedial_questions(question_pool, weak_topics)
+
+    def select_remedial_questions(
+        self,
+        question_pool: Optional[Iterable[Dict]],
+        target_tags: Optional[Iterable[str]] = None,
+        min_questions: int = 7,
+        max_questions: int = 10,
+    ) -> List[Dict]:
+        """Select a balanced set of remedial questions.
+
+        The selector prioritizes questions that match the learner's weak topics
+        while ensuring we always surface between ``min_questions`` and
+        ``max_questions`` when enough questions are available.
+        """
+
+        if not question_pool:
+            return []
+
+        normalized_targets: Set[str] = set()
+        if target_tags:
+            for tag in target_tags:
+                if not isinstance(tag, str):
+                    continue
+                cleaned = tag.strip().lower()
+                if cleaned:
+                    normalized_targets.add(cleaned)
+
+        prioritized: List[Dict] = []
+        fallback: List[Dict] = []
+        seen_identifiers: Set[str] = set()
 
         for question in question_pool:
-            question_topic = question.get("topic", "").lower()
-            question_tags = [tag.lower() for tag in question.get("tags", [])]
+            if not isinstance(question, dict):
+                continue
 
-            # Check if question matches weak topics
-            if question_topic in weak_topics or any(
-                tag in weak_topics for tag in question_tags
-            ):
-                remedial_questions.append(question)
+            identifier = question.get("id") or question.get("question")
+            if identifier is None:
+                try:
+                    identifier = json.dumps(question, sort_keys=True)
+                except TypeError:
+                    identifier = str(id(question))
+            key = str(identifier).strip().lower()
+            if key in seen_identifiers:
+                continue
+            seen_identifiers.add(key)
 
-        # If no specific matches, use random questions from pool
-        if not remedial_questions:
-            remedial_questions = question_pool[:5]  # Fallback to first 5 questions
+            tags: Set[str] = set()
+            raw_tags = question.get("tags", [])
+            if isinstance(raw_tags, (list, tuple, set)):
+                for tag in raw_tags:
+                    if isinstance(tag, str):
+                        cleaned_tag = tag.strip().lower()
+                        if cleaned_tag:
+                            tags.add(cleaned_tag)
+            elif isinstance(raw_tags, str):
+                cleaned_tag = raw_tags.strip().lower()
+                if cleaned_tag:
+                    tags.add(cleaned_tag)
 
-        # Limit to reasonable number of questions
-        return remedial_questions[: min(len(remedial_questions), 5)]
+            matched = bool(normalized_targets and tags.intersection(normalized_targets))
+            (prioritized if matched else fallback).append(question)
+
+        random.shuffle(prioritized)
+        random.shuffle(fallback)
+
+        ordered_questions = prioritized + fallback
+        if not ordered_questions:
+            return []
+
+        total_available = len(ordered_questions)
+        upper_bound = min(max_questions, total_available)
+        lower_bound = min(min_questions, upper_bound) if upper_bound else 0
+
+        if lower_bound == 0:
+            # Not enough questions to meet the minimum requirement, return what we have.
+            return ordered_questions
+
+        if lower_bound == upper_bound:
+            target_count = upper_bound
+        else:
+            target_count = random.randint(lower_bound, upper_bound)
+
+        return ordered_questions[:target_count]
 
     # ============================================================================
     # CONTENT GENERATION HELPERS
