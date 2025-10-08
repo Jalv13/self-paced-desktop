@@ -72,9 +72,7 @@
           "text": "Just like your HP bar in a video game - it updates as you take damage or heal."
         }
       ],
-      "tags": [
-        "Variable"
-      ],
+      "tags": ["Variable"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 2,
@@ -108,10 +106,7 @@
           ]
         }
       ],
-      "tags": [
-        "Variable",
-        "Print"
-      ],
+      "tags": ["Variable", "Print"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 3,
@@ -138,9 +133,7 @@
           "text": "hero_level = 3        # int\nhero_attack = 12.5    # float\nhero_name = \"Kai\"     # str\nhero_alive = True     # bool"
         }
       ],
-      "tags": [
-        "DataType"
-      ],
+      "tags": ["DataType"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 4,
@@ -163,9 +156,7 @@
           "text": "This is like asking the guild scribe: \"What kind of stat is written here?\""
         }
       ],
-      "tags": [
-        "DataType"
-      ],
+      "tags": ["DataType"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 5,
@@ -199,11 +190,7 @@
           ]
         }
       ],
-      "tags": [
-        "Variable",
-        "DataType",
-        "Print"
-      ],
+      "tags": ["Variable", "DataType", "Print"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 6,
@@ -237,11 +224,7 @@
           ]
         }
       ],
-      "tags": [
-        "Variable",
-        "DataType",
-        "Print"
-      ],
+      "tags": ["Variable", "DataType", "Print"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 7,
@@ -288,10 +271,7 @@
           "text": "Hero alive? True | HP: 100"
         }
       ],
-      "tags": [
-        "Print",
-        "DataType"
-      ],
+      "tags": ["Print", "DataType"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 8,
@@ -325,11 +305,7 @@
           ]
         }
       ],
-      "tags": [
-        "Variable",
-        "DataType",
-        "Print"
-      ],
+      "tags": ["Variable", "DataType", "Print"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 9,
@@ -363,11 +339,7 @@
           ]
         }
       ],
-      "tags": [
-        "Variable",
-        "DataType",
-        "Print"
-      ],
+      "tags": ["Variable", "DataType", "Print"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 10,
@@ -390,11 +362,7 @@
           "text": "Next week: the villagers want to talk to your hero directly. We'll use input() and friendly output to let the player choose names, coins, and powers."
         }
       ],
-      "tags": [
-        "Variable",
-        "DataType",
-        "Print"
-      ],
+      "tags": ["Variable", "DataType", "Print"],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 11,
@@ -737,11 +705,7 @@
           ]
         }
       ],
-      "tags": [
-        "Variable",
-        "DataType",
-        "Print"
-      ],
+      "tags": ["Variable", "DataType", "Print"],
       "type": "remedial",
       "updated_date": "2025-10-08",
       "order": 12,
