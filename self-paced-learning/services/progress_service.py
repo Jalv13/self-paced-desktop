@@ -6,7 +6,6 @@ Extracts progress logic from the main application routes.
 
 from flask import session, has_request_context
 from typing import Dict, List, Optional, Any, Tuple
-from datetime import datetime
 
 
 class ProgressService:
@@ -201,12 +200,13 @@ class ProgressService:
         self, subject: str, subtopic: str, quiz_type: str, questions: List[Dict]
     ) -> None:
         """Set quiz session data for analysis."""
+        sanitized_questions = self._sanitize_questions_for_session(questions, max_questions=10)
         session[self.get_session_key(subject, subtopic, "current_quiz_type")] = (
             quiz_type
         )
         session[
             self.get_session_key(subject, subtopic, "questions_served_for_analysis")
-        ] = questions
+        ] = sanitized_questions
         session["current_subject"] = subject
         session["current_subtopic"] = subtopic
 
@@ -310,12 +310,82 @@ class ProgressService:
         self, subject: str, subtopic: str, questions: List[Dict[str, Any]], topics: Optional[List[str]] = None
     ) -> None:
         """Persist remedial quiz questions and related topics."""
+        sanitized_questions = self._sanitize_questions_for_session(
+            questions, max_questions=3
+        )
         questions_key = self.get_session_key(subject, subtopic, "remedial_questions")
-        session[questions_key] = questions
+        session[questions_key] = sanitized_questions
+        if not sanitized_questions:
+            print(
+                f"[ProgressService] No remedial questions stored for {subject}/{subtopic}",
+                flush=True,
+            )
+        else:
+            print(
+                f"[ProgressService] Stored {len(sanitized_questions)} remedial questions for {subject}/{subtopic}",
+                flush=True,
+            )
+        stored_count = len(sanitized_questions)
         if topics is not None:
             topics_key = self.get_session_key(subject, subtopic, "remedial_topics")
             session[topics_key] = topics
         session.permanent = True
+        return stored_count
+
+    def _sanitize_questions_for_session(
+        self, questions: Optional[List[Dict[str, Any]]], max_questions: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
+        allowed_keys = {
+            "id",
+            "question",
+            "options",
+            "type",
+            "answer_index",
+            "correct_answer",
+            "expected_answer",
+            "expected_output",
+            "starter_code",
+            "sample_solution",
+            "placeholder",
+            "tags",
+        }
+
+        sanitized_questions: List[Dict[str, Any]] = []
+        if not questions:
+            return sanitized_questions
+
+        for question in questions:
+            if not isinstance(question, dict):
+                continue
+
+            sanitized: Dict[str, Any] = {}
+            for key in allowed_keys:
+                if key not in question:
+                    continue
+                value = question.get(key)
+                if value is None:
+                    continue
+
+                if key == "options" and isinstance(value, list):
+                    sanitized[key] = [str(option)[:300] for option in value[:8]]
+                elif isinstance(value, str):
+                    sanitized[key] = value[:1000]
+                else:
+                    sanitized[key] = value
+
+            if "question" not in sanitized:
+                continue
+
+            identifier = question.get("id") or question.get("question")
+            if identifier is not None:
+                sanitized.setdefault("id", identifier)
+
+            sanitized_questions.append(sanitized)
+
+            if max_questions is not None and len(sanitized_questions) >= max_questions:
+                break
+
+        return sanitized_questions
 
     def get_remedial_quiz_questions(self, subject: str, subtopic: str) -> List[Dict[str, Any]]:
         """Get stored remedial quiz questions."""
