@@ -358,9 +358,10 @@
 
                 if (weakTopics.length > 0) {
                   welcomeMessageContainer.classList.remove("hidden");
-                  feedbackContentDiv.innerHTML = renderBlockMarkdown(
+                  const feedbackHtml = renderBlockMarkdown(
                     analysisData.feedback || ""
                   );
+                  feedbackContentDiv.innerHTML = feedbackHtml;
 
                   buildCompletionState(weakTopics);
                   displayWeakTopics(weakTopics);
@@ -684,14 +685,84 @@
                 // Hide the welcome message and show lesson content
                 welcomeMessageContainer.classList.add("hidden");
 
-                let lessonHTML = "";
-                if (Array.isArray(lesson.content)) {
-                  lessonHTML = formatLessonContent(lesson.content);
-                } else if (typeof lesson.content === "string") {
-                  lessonHTML = renderBlockMarkdown(lesson.content);
-                } else {
-                  lessonHTML = "<p>Lesson content not available.</p>";
-                }
+                const lessonTitle = renderInlineMarkdown(lesson.title || "Lesson");
+                let contentHtml = `<h2>${lessonTitle}</h2>`;
+                (lesson.content || []).forEach((item) => {
+                  if (item.type === "header") {
+                    const headerHtml = renderInlineMarkdown(item.text || "");
+                    if (headerHtml) {
+                      contentHtml += `<h5>${headerHtml}</h5>`;
+                    }
+                  } else if (item.type === "paragraph") {
+                    const paragraphHtml = renderBlockMarkdown(item.text || "");
+                    if (paragraphHtml) {
+                      contentHtml += paragraphHtml;
+                    }
+                  } else if (item.type === "list") {
+                    const listItems = (item.items || [])
+                      .map((li_text) => {
+                        const liHtml = renderInlineMarkdown(li_text || "");
+                        return liHtml ? `<li>${liHtml}</li>` : "";
+                      })
+                      .join("");
+                    if (listItems) {
+                      contentHtml += `<ul>${listItems}</ul>`;
+                    }
+                  } else if (item.type === "code") {
+                    const escapedCode = escapeHtml(item.text || "");
+                    contentHtml += `<pre><code>${escapedCode}</code></pre>`;
+                  } else if (item.type === "code_runner") {
+                    const blockId = Math.random().toString(36).substr(2, 9);
+                    const starterCode = escapeHtml(
+                      item.starter_code || '# Write your Python code here\nprint("Hello, World!")'
+                    );
+                    const expectedOutput = escapeHtml(item.expected_output || "");
+                    const hintsHtml = (item.hints || [])
+                      .map((hint) => {
+                        const hintHtml = renderInlineMarkdown(hint || "");
+                        return hintHtml ? `<li>${hintHtml}</li>` : "";
+                      })
+                      .join("");
+                    const solutionHtml = escapeHtml(item.solution || "");
+                    contentHtml += `
+                      <div class="code-runner-block" id="code-runner-${blockId}">
+                        <div class="code-runner-header">
+                          <h4><i class="fas fa-play-circle"></i> Interactive Python Code</h4>
+                          <button class="code-runner-toggle" type="button" onclick="toggleCodeRunner('${blockId}')" aria-expanded="false" aria-label="Expand code runner">
+                            <i class="fas fa-expand-alt"></i>
+                          </button>
+                        </div>
+                        <div class="code-runner-content">
+                          <div class="code-editor">
+                            <textarea id="code-editor-${blockId}" class="python-editor" placeholder="Write your Python code here...">${starterCode}</textarea>
+                          </div>
+                          <div class="code-controls">
+                            <button class="run-code-btn" onclick="runPythonCode('${blockId}')">
+                              <i class="fas fa-play"></i> Run Code
+                            </button>
+                            <button class="clear-output-btn" onclick="clearOutput('${blockId}')">
+                              <i class="fas fa-trash"></i> Clear Output
+                            </button>
+                            ${solutionHtml ? `<button class="show-solution-btn" onclick="showSolution('${blockId}')"><i class="fas fa-lightbulb"></i> Show Solution</button>` : ''}
+                            ${hintsHtml ? `<button class="show-hints-btn" onclick="showHints('${blockId}')"><i class="fas fa-question-circle"></i> Show Hints</button>` : ''}
+                          </div>
+                          <div class="code-output">
+                            <div class="output-header">Output:</div>
+                            <pre id="code-output-${blockId}" class="output-content"></pre>
+                          </div>
+                          ${expectedOutput ? `<div class="expected-output"><strong>Expected Output:</strong><pre>${expectedOutput}</pre></div>` : ''}
+                          ${hintsHtml ? `<div class="hints-content" id="hints-${blockId}" style="display: none;"><strong>Hints:</strong><ul>${hintsHtml}</ul></div>` : ''}
+                          ${solutionHtml ? `<div class="solution-content" id="solution-${blockId}" style="display: none;"><strong>Solution:</strong><pre><code>${solutionHtml}</code></pre></div>` : ''}
+                        </div>
+                      </div>
+                    `;
+                  } else if (item.type === "summary") {
+                    const summaryHtml = renderBlockMarkdown(item.text || "");
+                    if (summaryHtml) {
+                      contentHtml += `<div class="lesson-summary">${summaryHtml}</div>`;
+                    }
+                  }
+                });
 
                 const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
                 const lessonTitle = renderInlineMarkdown(lesson.title || "Lesson");

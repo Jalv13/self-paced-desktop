@@ -2498,6 +2498,14 @@ body.quiz-page {
   color: #b45309;
 }
 
+.lesson-summary {
+  margin-top: 1rem;
+}
+
+.lesson-summary p {
+  font-weight: 600;
+}
+
 .lesson-main-content {
   flex: 1;
   display: flex;
