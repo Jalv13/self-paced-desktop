@@ -1,0 +1,99 @@
+{
+  "questions": [
+    {
+      "question": "What happens when Python runs this line?\n\nprint(\"The hero awakens!\")",
+      "type": "multiple_choice",
+      "options": [
+        "Draws a picture of the hero",
+        "Shows the text `The hero awakens!`",
+        "Saves the text in a file",
+        "Asks the hero for input"
+      ],
+      "answer_index": 1,
+      "tags": ["Print"]
+    },
+    {
+      "question": "Which is the correct way to make the computer speak?",
+      "type": "multiple_choice",
+      "options": [
+        "say(\"Hello\")",
+        "print(\"Hello\")",
+        "echo(\"Hello\")",
+        "speak(\"Hello\")"
+      ],
+      "answer_index": 1,
+      "tags": ["Print"]
+    },
+    {
+      "question": "What will this code display?\n\nprint(\"The hero has\", 50, \"coins.\")",
+      "type": "multiple_choice",
+      "options": [
+        "The hero has 50 coins.",
+        "The hero has coins 50.",
+        "The hero has, 50, coins.",
+        "Error"
+      ],
+      "answer_index": 0,
+      "tags": ["Print"]
+    },
+    {
+      "question": "The villagers are waiting to hear your voice.\nWrite Python code that prints these two sentences on separate lines:\n1. The hero awakens!\n2. The adventure begins...",
+      "type": "coding",
+      "starter_code": "# Write your code here\n",
+      "sample_solution": "print(\"The hero awakens!\")\nprint(\"The adventure begins...\")",
+      "tags": ["Print"]
+    },
+    {
+      "question": "The guild scroll shows the hero's stats.\nWrite one line of code that prints:\nThe hero has 100 HP.\nHint: Use both text and numbers together with commas.",
+      "type": "coding",
+      "starter_code": "# Write your code here\n",
+      "sample_solution": "print(\"The hero has\", 100, \"HP.\")",
+      "tags": ["Print"]
+    },
+    {
+      "question": "Write a 3-line prologue that tells the story of your hero waking up.\nBe creative! Describe the village, the villagers, or the hero's first action.",
+      "type": "coding",
+      "starter_code": "# Write your code here\n",
+      "sample_solution": "print(\"The hero awakens in a small village.\")\nprint(\"The villagers gather around.\")\nprint(\"The journey begins!\")",
+      "tags": ["Print"]
+    },
+    {
+      "question": "Which symbol starts a comment in Python?",
+      "type": "multiple_choice",
+      "options": [
+        "//",
+        "#",
+        "/* */",
+        "--"
+      ],
+      "answer_index": 1,
+      "tags": ["Comment"]
+    },
+    {
+      "question": "Why do we use comments in Python programs?",
+      "type": "multiple_choice",
+      "options": [
+        "To speed up the program",
+        "To explain the code to humans",
+        "To add more lines",
+        "To make the computer talk louder"
+      ],
+      "answer_index": 1,
+      "tags": ["Comment"]
+    },
+    {
+      "question": "The guild master asks you to add a note before your code.\nAt the top, write a comment: # This is my first Python program\nThen print: The guild welcomes the hero!",
+      "type": "coding",
+      "starter_code": "# Write your code here\n",
+      "sample_solution": "# This is my first Python program\nprint(\"The guild welcomes the hero!\")",
+      "tags": ["Comment"]
+    },
+    {
+      "question": "Add a helpful note to your quest scroll.\nDo the following:\n1. Write a comment describing what your code does.\n2. Write a print() line that shows: Welcome to Pythonia!",
+      "type": "coding",
+      "starter_code": "# Write your code here\n",
+      "sample_solution": "# Prints a welcome message to the new hero\nprint(\"Welcome to Pythonia!\")",
+      "tags": ["Comment"]
+    }
+  ]
+}

@@ -1,5 +1,16 @@
 {
   "subtopics": {
+    "week_1": {
+      "name": "Week 1 - The Hero Awakens",
+      "description": "Meet Python & Hello World - Learn print() and comments through an RPG adventure",
+      "order": 1,
+      "status": "active",
+      "prerequisites": [],
+      "estimated_time": "1 hour",
+      "video_count": 0,
+      "lesson_count": 10,
+      "question_count": 10
+    },
     "functions": {
       "name": "Python Functions",
       "description": "Master function concepts, arguments, return values, and advanced techniques",
@@ -79,6 +90,7 @@
   },
   "allowed_tags": [
     "*args and **kwargs",
+    "Comment",
     "default parameter values",
     "error handling",
     "function definition",
@@ -86,6 +98,7 @@
     "keyword arguments",
     "passing function arguments",
     "positional-only and keyword-only arguments",
+    "Print",
     "python function basics",
     "python syntax",
     "recursive functions",
