@@ -2461,22 +2461,38 @@
         updateQuizButtonStatus();
       }
 
-      async function persistLessonCompletion({
+      async function persistLearningItemOpen({
         subject,
         subtopic,
-        lessonId,
+        itemId,
+        itemType,
         silent = true,
+        successMessage,
+        failureMessage,
+        onSuccess,
       }) {
-        if (!subject || !subtopic || !lessonId) return false;
+        if (!subject || !subtopic || !itemId || !itemType) return false;
 
-        const cacheKey = `${subject}::${subtopic}::${lessonId}`;
-        if (lessonCompletionCache.has(cacheKey)) {
-          return lessonCompletionCache.get(cacheKey);
+        const cacheMap =
+          itemType === "video" ? videoCompletionCache : lessonCompletionCache;
+        const cacheKey = `${itemType}::${subject}::${subtopic}::${itemId}`;
+        const cachedValue = cacheMap.get(cacheKey);
+
+        if (cachedValue === true) {
+          return true;
+        }
+
+        if (
+          cachedValue &&
+          typeof cachedValue === "object" &&
+          typeof cachedValue.then === "function"
+        ) {
+          return cachedValue;
         }
 
         const request = (async () => {
           try {
-            const response = await fetch("/api/lesson-progress/mark-complete", {
+            const response = await fetch("/api/progress/update", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -2484,76 +2500,82 @@
               body: JSON.stringify({
                 subject,
                 subtopic,
-                lesson_id: lessonId,
+                item_id: itemId,
+                item_type: itemType,
               }),
             });
 
             const result = await response.json().catch(() => ({}));
 
             if (response.ok && result.success) {
-              applyLessonCompletionEffects(lessonId);
-              if (!silent) {
-                showNotification("Lesson marked as complete!", "success");
+              if (typeof onSuccess === "function") {
+                onSuccess();
               }
+              if (!silent && successMessage) {
+                showNotification(successMessage, "success");
+              }
+              cacheMap.set(cacheKey, true);
               return true;
-            } else {
-              if (!silent) {
-                showNotification(result.error || "Failed to mark lesson as complete", "error");
-              }
-              return false;
             }
+
+            if (!silent && failureMessage) {
+              showNotification(result.error || failureMessage, "error");
+            }
+            return false;
           } catch (error) {
-            console.error("Error marking lesson complete:", error);
-            if (!silent) {
-              showNotification("Error marking lesson as complete", "error");
+            console.error("Error updating progress:", error);
+            if (!silent && failureMessage) {
+              showNotification(failureMessage, "error");
             }
             return false;
           } finally {
-            lessonCompletionCache.delete(cacheKey);
+            if (cacheMap.get(cacheKey) === request) {
+              cacheMap.delete(cacheKey);
+            }
           }
         })();
 
-        lessonCompletionCache.set(cacheKey, request);
+        cacheMap.set(cacheKey, request);
         return request;
       }
 
-      async function persistVideoCompletion({ subject, subtopic, videoId }) {
-        if (!subject || !subtopic || !videoId) return false;
+      async function persistLessonCompletion({
+        subject,
+        subtopic,
+        lessonId,
+        silent = true,
+      }) {
+        return persistLearningItemOpen({
+          subject,
+          subtopic,
+          itemId: lessonId,
+          itemType: "lesson",
+          silent,
+          successMessage: "Lesson marked as complete!",
+          failureMessage: "Failed to mark lesson as complete",
+          onSuccess: () => applyLessonCompletionEffects(lessonId),
+        });
+      }
 
-        const cacheKey = `${subject}::${subtopic}::${videoId}`;
-        if (videoCompletionCache.has(cacheKey)) {
-          return videoCompletionCache.get(cacheKey);
-        }
-
-        const request = (async () => {
-          try {
-            const response = await fetch("/api/video-progress/mark-complete", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ subject, subtopic, video_id: videoId }),
-            });
-
-            await response.json().catch(() => ({}));
-
-            if (response.ok) {
-              markVideoNavAsCompleted(videoId);
-              updateQuizButtonStatus();
-              updateSubtopicProgressAfterCompletion();
-              return true;
-            }
-            return false;
-          } catch (error) {
-            console.error("Error marking video complete:", error);
-            return false;
-          } finally {
-            videoCompletionCache.delete(cacheKey);
-          }
-        })();
-
-        videoCompletionCache.set(cacheKey, request);
-        return request;
+      async function persistVideoCompletion({
+        subject,
+        subtopic,
+        videoId,
+        silent = true,
+      }) {
+        return persistLearningItemOpen({
+          subject,
+          subtopic,
+          itemId: videoId,
+          itemType: "video",
+          silent,
+          failureMessage: "Failed to record video progress",
+          onSuccess: () => {
+            markVideoNavAsCompleted(videoId);
+            updateQuizButtonStatus();
+            updateSubtopicProgressAfterCompletion();
+          },
+        });
       }
 
       function initializeLessonQuizButton(subject, subtopic) {
