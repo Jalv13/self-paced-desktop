@@ -341,12 +341,12 @@ def show_results_page():
         current_subject = session.get("current_subject")
         current_subtopic = session.get("current_subtopic")
 
-        if not analysis and current_subject and current_subtopic:
+        if analysis is None and current_subject and current_subtopic:
             analysis = progress_service.get_quiz_analysis(current_subject, current_subtopic)
             if analysis:
                 session["quiz_analysis"] = analysis
 
-        if not analysis or not current_subject or not current_subtopic:
+        if analysis is None or not current_subject or not current_subtopic:
             return redirect(url_for("main.subject_selection"))
 
         answers = answers or []
