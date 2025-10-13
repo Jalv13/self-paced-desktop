@@ -343,7 +343,7 @@ def show_results_page():
 
         if analysis is None and current_subject and current_subtopic:
             analysis = progress_service.get_quiz_analysis(current_subject, current_subtopic)
-            if analysis:
+            if analysis is not None:
                 session["quiz_analysis"] = analysis
 
         if analysis is None or not current_subject or not current_subtopic:
