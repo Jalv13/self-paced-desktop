@@ -181,6 +181,26 @@ class TestTaggingAndResults(unittest.TestCase):
         analysis_context = context["ANALYSIS_RESULTS"]
         self.assertEqual(analysis_context.get("weak_topics"), ["unknown-topic-1"])
 
+    def test_results_page_allows_empty_analysis_payload(self):
+        """An empty stored analysis should still allow rendering results."""
+
+        client = self.app.test_client()
+        with client.session_transaction() as session:
+            session["quiz_analysis"] = {}
+            session["quiz_answers"] = []
+            session["current_subject"] = "python"
+            session["current_subtopic"] = "functions"
+
+        with capture_templates(self.app) as templates:
+            response = client.get("/results")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertGreater(len(templates), 0)
+
+        template, context = templates[0]
+        self.assertEqual(template.name, "results.html")
+        self.assertIsInstance(context["ANALYSIS_RESULTS"], dict)
+
     def test_full_quiz_flow_zero_score_triggers_remedial_once(self):
         """Simulate a full quiz submission with zero correct answers."""
 
