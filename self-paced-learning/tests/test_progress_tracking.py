@@ -79,6 +79,42 @@ class TestProgressTracking(unittest.TestCase):
 
         return lesson_ids, video_ids
 
+    def _split_lessons_by_type(self, subject: str, subtopic: str):
+        """Return lesson identifiers grouped by declared type."""
+
+        lesson_payload_path = (
+            DATA_SUBJECTS_ROOT / subject / subtopic / "lesson_plans.json"
+        )
+        with lesson_payload_path.open("r", encoding="utf-8") as handle:
+            lesson_payload = json.load(handle)
+
+        raw_lessons = lesson_payload.get("lessons", [])
+        items = []
+        if isinstance(raw_lessons, dict):
+            items = [(lesson_id, lesson or {}) for lesson_id, lesson in raw_lessons.items()]
+        elif isinstance(raw_lessons, list):
+            for index, lesson in enumerate(raw_lessons):
+                lesson = lesson or {}
+                lesson_id = lesson.get("id") or f"lesson_{index + 1}"
+                items.append((lesson_id, lesson))
+
+        initial_like: list[str] = []
+        remedial_like: list[str] = []
+        other: list[str] = []
+
+        for lesson_id, lesson in items:
+            raw_type = lesson.get("type")
+            normalized = "" if raw_type is None else str(raw_type).strip().lower()
+
+            if normalized in {"", "initial", "all"}:
+                initial_like.append(lesson_id)
+            elif normalized == "remedial":
+                remedial_like.append(lesson_id)
+            else:
+                other.append(lesson_id)
+
+        return initial_like, remedial_like, other
+
     def test_opening_lesson_and_video_unlocks_quiz(self):
         """Posting progress for a lesson and video should satisfy prerequisites."""
 
@@ -243,6 +279,63 @@ class TestProgressTracking(unittest.TestCase):
             self.assertTrue(quiz_state.get("lessons_complete"))
             self.assertTrue(quiz_state.get("videos_complete"))
             self.assertTrue(quiz_state.get("all_met"))
+
+    def test_only_initial_lessons_required_when_no_videos_present(self):
+        """Ensure remedial lessons do not gate the initial quiz."""
+
+        subject = "python"
+        subtopic = "week_1"
+        initial_lessons, remedial_lessons, other_lessons = self._split_lessons_by_type(
+            subject, subtopic
+        )
+
+        # Sanity checks to ensure the fixture exercises the right scenario
+        self.assertGreater(len(initial_lessons), 0)
+        self.assertGreater(len(remedial_lessons), 0)
+        self.assertEqual(other_lessons, [])
+
+        with self.client as client:
+            baseline_response = client.get(
+                f"/api/quiz-prerequisites/{subject}/{subtopic}"
+            )
+            self.assertEqual(baseline_response.status_code, 200)
+            baseline = baseline_response.get_json()
+
+            self.assertEqual(baseline["lesson_total"], len(initial_lessons))
+            self.assertFalse(baseline["lessons_complete"])
+            self.assertEqual(baseline["videos_total"], 0)
+            self.assertTrue(baseline["videos_complete"])
+
+            for lesson_id in initial_lessons:
+                update = client.post(
+                    "/api/progress/update",
+                    json={
+                        "subject": subject,
+                        "subtopic": subtopic,
+                        "item_id": lesson_id,
+                        "item_type": "lesson",
+                    },
+                )
+                self.assertEqual(update.status_code, 200)
+                self.assertTrue(update.get_json().get("success"))
+
+            follow_up_response = client.get(
+                f"/api/quiz-prerequisites/{subject}/{subtopic}"
+            )
+            self.assertEqual(follow_up_response.status_code, 200)
+            follow_up = follow_up_response.get_json()
+
+            self.assertEqual(follow_up["lesson_total"], len(initial_lessons))
+            self.assertEqual(
+                follow_up["lessons_completed"], len(initial_lessons)
+            )
+            self.assertTrue(follow_up["lessons_complete"])
+            self.assertEqual(follow_up["videos_total"], 0)
+            self.assertTrue(follow_up["videos_complete"])
+            self.assertTrue(follow_up["all_met"])
+            self.assertTrue(follow_up["can_take_quiz"])
+            self.assertEqual(follow_up.get("missing_lessons"), [])
+            self.assertEqual(follow_up.get("missing_items"), [])
 
 
 if __name__ == "__main__":
