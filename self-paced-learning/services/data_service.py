@@ -169,16 +169,20 @@ class DataService:
                     existing_data = json.load(f)
                     lessons = existing_data.get("lessons", [])
 
+            # Always include the lesson identifier in the payload we persist.
+            serialised_lesson = dict(lesson_data)
+            serialised_lesson["id"] = lesson_id
+
             # Find and update existing lesson or add new one
             lesson_found = False
-            for i, lesson in enumerate(lessons):
-                if lesson.get("id") == lesson_id:
-                    lessons[i] = lesson_data
+            for index, lesson in enumerate(lessons):
+                if isinstance(lesson, dict) and lesson.get("id") == lesson_id:
+                    lessons[index] = serialised_lesson
                     lesson_found = True
                     break
 
             if not lesson_found:
-                lessons.append(lesson_data)
+                lessons.append(serialised_lesson)
 
             # Create the complete lesson plans structure
             lesson_plans_data = {"lessons": lessons, "updated_date": "2025-10-02"}
@@ -188,6 +192,13 @@ class DataService:
 
             with open(lesson_file_path, "w", encoding="utf-8") as f:
                 json.dump(lesson_plans_data, f, indent=2, ensure_ascii=False)
+
+            # Clear cached lesson data so future reads pick up the updates.
+            try:
+                self.data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
+            except AttributeError:
+                # Older DataLoader implementations may not provide cache clearing.
+                pass
 
             return True
         except Exception as e:
@@ -225,10 +236,33 @@ class DataService:
             with open(lesson_file_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
 
+            try:
+                self.data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
+            except AttributeError:
+                pass
+
             return True
         except Exception as e:
             print(f"Error deleting lesson: {e}")
             return False
+
+    def get_lesson_map(self, subject: str, subtopic: str) -> Dict[str, Dict[str, Any]]:
+        """Return lessons indexed by their identifier for quick lookup."""
+
+        lesson_map: Dict[str, Dict[str, Any]] = {}
+        lessons = self.get_lesson_plans(subject, subtopic) or []
+
+        for lesson in lessons:
+            if not isinstance(lesson, dict):
+                continue
+
+            lesson_id = lesson.get("id")
+            if not lesson_id:
+                continue
+
+            lesson_map[lesson_id] = lesson
+
+        return lesson_map
 
     # ============================================================================
     # VIDEO DATA OPERATIONS
