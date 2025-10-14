@@ -16,6 +16,8 @@ class ProgressService:
         self._test_completed_lessons = {}
         self._test_watched_videos = {}
         self._test_admin_override = False
+        self._server_state_store: Dict[str, Dict[str, Dict[str, Any]]] = {}
+        self._test_server_state_store: Dict[str, Dict[str, Dict[str, Any]]] = {}
 
     # ============================================================================
     # SESSION KEY MANAGEMENT
@@ -27,6 +29,104 @@ class ProgressService:
         import secrets
 
         return secrets.token_hex(32)
+
+    def _get_state_store(self) -> Dict[str, Dict[str, Dict[str, Any]]]:
+        """Return the appropriate in-memory store for the current context."""
+
+        if has_request_context():
+            return self._server_state_store
+        return self._test_server_state_store
+
+    def _get_server_session_id(self) -> str:
+        """Return a stable identifier for server-side state."""
+
+        if not has_request_context():
+            return "_test_session"
+
+        server_id = session.get("_server_state_id")
+        if not server_id:
+            server_id = self.generate_session_key()
+            session["_server_state_id"] = server_id
+            session.permanent = True
+        return server_id
+
+    def _get_user_state(self, create: bool = False) -> Optional[Dict[str, Dict[str, Any]]]:
+        """Fetch the server-side bucket for the active user session."""
+
+        store = self._get_state_store()
+        session_id = self._get_server_session_id()
+        state = store.get(session_id)
+
+        if state is None and has_request_context():
+            fallback = self._test_server_state_store.pop(session_id, None)
+            if fallback is not None:
+                store[session_id] = fallback
+                state = fallback
+
+        if state is None and create:
+            state = store.setdefault(session_id, {})
+
+        return state
+
+    def _set_user_state_value(self, category: str, key: str, value: Any) -> None:
+        """Store or delete a value in the server-side state bucket."""
+
+        if value is None:
+            state = self._get_user_state(create=False)
+            if not state:
+                return
+            category_store = state.get(category)
+            if not category_store:
+                return
+            category_store.pop(key, None)
+            if not category_store:
+                state.pop(category, None)
+            if not state:
+                store = self._get_state_store()
+                store.pop(self._get_server_session_id(), None)
+            return
+
+        state = self._get_user_state(create=True)
+        category_store = state.setdefault(category, {})
+        category_store[key] = value
+
+    def _get_user_state_value(self, category: str, key: str, default: Any = None) -> Any:
+        """Retrieve a stored value for the current user session."""
+
+        state = self._get_user_state()
+        if not state:
+            return default
+        return state.get(category, {}).get(key, default)
+
+    def _clear_user_state_for_subject(self, subject: str, subtopic: str) -> None:
+        """Remove all server-side data for a specific subject/subtopic."""
+
+        state = self._get_user_state()
+        if not state:
+            return
+
+        prefix = f"{subject}_{subtopic}_"
+        categories = (
+            "quiz_questions",
+            "quiz_answers",
+            "quiz_analysis",
+            "remedial_questions",
+            "remedial_topics",
+        )
+
+        for category in categories:
+            category_store = state.get(category)
+            if not category_store:
+                continue
+            keys_to_remove = [key for key in category_store if key.startswith(prefix)]
+            for key in keys_to_remove:
+                category_store.pop(key, None)
+            if not category_store:
+                state.pop(category, None)
+
+        if not state:
+            store = self._get_state_store()
+            store.pop(self._get_server_session_id(), None)
 
     def get_session_key(self, subject: str, subtopic: str, key_type: str) -> str:
         """Generate a prefixed session key for a specific subject/subtopic."""
@@ -46,6 +146,7 @@ class ProgressService:
         self._test_completed_lessons.pop(completed_key, None)
         watched_key = self.get_session_key(subject, subtopic, "watched_videos")
         self._test_watched_videos.pop(watched_key, None)
+        self._clear_user_state_for_subject(subject, subtopic)
 
     def reset_quiz_context(self) -> None:
         """Clear cross-subject quiz context stored in the session."""
@@ -59,16 +160,28 @@ class ProgressService:
         for key in global_keys:
             session.pop(key, None)
 
+        current_subject = session.get("current_subject")
+        current_subtopic = session.get("current_subtopic")
+        if current_subject and current_subtopic:
+            self.clear_quiz_session_data(current_subject, current_subtopic)
+
         # Remove the active quiz pointers – they will be re-populated for the next quiz
         session.pop("current_subject", None)
         session.pop("current_subtopic", None)
 
     def clear_all_session_data(self) -> None:
         """Clear all session data."""
+        if has_request_context():
+            session_id = session.get("_server_state_id")
+        else:
+            session_id = "_test_session"
         session.clear()
         self._test_completed_lessons.clear()
         self._test_watched_videos.clear()
         self._test_admin_override = False
+        store = self._get_state_store()
+        if session_id in store:
+            store.pop(session_id, None)
 
     # ============================================================================
     # LESSON PROGRESS TRACKING
@@ -200,24 +313,28 @@ class ProgressService:
         self, subject: str, subtopic: str, quiz_type: str, questions: List[Dict]
     ) -> None:
         """Set quiz session data for analysis."""
-        sanitized_questions = self._sanitize_questions_for_session(questions, max_questions=10)
+        sanitized_questions = self._sanitize_questions_for_session(questions)
         session[self.get_session_key(subject, subtopic, "current_quiz_type")] = (
             quiz_type
         )
-        session[
-            self.get_session_key(subject, subtopic, "questions_served_for_analysis")
-        ] = sanitized_questions
+        questions_key = self.get_session_key(
+            subject, subtopic, "questions_served_for_analysis"
+        )
+        self._set_user_state_value("quiz_questions", questions_key, sanitized_questions)
         session["current_subject"] = subject
         session["current_subtopic"] = subtopic
 
     def get_quiz_session_data(self, subject: str, subtopic: str) -> Dict[str, Any]:
         """Get current quiz session data."""
+        questions_key = self.get_session_key(
+            subject, subtopic, "questions_served_for_analysis"
+        )
         return {
             "quiz_type": session.get(
                 self.get_session_key(subject, subtopic, "current_quiz_type")
             ),
-            "questions": session.get(
-                self.get_session_key(subject, subtopic, "questions_served_for_analysis")
+            "questions": self._get_user_state_value(
+                "quiz_questions", questions_key, []
             ),
             "current_subject": session.get("current_subject"),
             "current_subtopic": session.get("current_subtopic"),
@@ -227,11 +344,19 @@ class ProgressService:
         """Clear quiz-specific session data."""
         quiz_keys = [
             self.get_session_key(subject, subtopic, "current_quiz_type"),
-            self.get_session_key(subject, subtopic, "questions_served_for_analysis"),
         ]
 
         for key in quiz_keys:
             session.pop(key, None)
+
+        questions_key = self.get_session_key(
+            subject, subtopic, "questions_served_for_analysis"
+        )
+        answers_key = self.get_session_key(subject, subtopic, "quiz_answers")
+        analysis_key = self.get_session_key(subject, subtopic, "analysis_results")
+        self._set_user_state_value("quiz_questions", questions_key, None)
+        self._set_user_state_value("quiz_answers", answers_key, None)
+        self._set_user_state_value("quiz_analysis", analysis_key, None)
 
 
     def prepare_analysis_for_session(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
@@ -273,14 +398,35 @@ class ProgressService:
         """Persist quiz analysis results for later use and return sanitized copy."""
         sanitized = self.prepare_analysis_for_session(analysis)
         key = self.get_session_key(subject, subtopic, "analysis_results")
-        session[key] = sanitized
-        session.permanent = True
+        self._set_user_state_value("quiz_analysis", key, sanitized)
         return sanitized
 
     def get_quiz_analysis(self, subject: str, subtopic: str) -> Optional[Dict[str, Any]]:
         """Retrieve stored quiz analysis if available."""
         key = self.get_session_key(subject, subtopic, "analysis_results")
-        return session.get(key)
+        stored = self._get_user_state_value("quiz_analysis", key)
+        if stored is None:
+            return None
+        return stored
+
+    def store_quiz_answers(
+        self, subject: str, subtopic: str, answers: List[str]
+    ) -> List[str]:
+        """Persist quiz answers server-side for later reference."""
+
+        sanitized_answers = [str(answer)[:300] for answer in answers or []]
+        key = self.get_session_key(subject, subtopic, "quiz_answers")
+        self._set_user_state_value("quiz_answers", key, sanitized_answers)
+        return sanitized_answers
+
+    def get_quiz_answers(self, subject: str, subtopic: str) -> List[str]:
+        """Fetch stored quiz answers."""
+
+        key = self.get_session_key(subject, subtopic, "quiz_answers")
+        stored = self._get_user_state_value("quiz_answers", key, [])
+        if not stored:
+            return []
+        return list(stored)
 
     def set_weak_topics(self, subject: str, subtopic: str, topics: List[str]) -> None:
         """Store normalized weak topics for remedial guidance."""
@@ -314,7 +460,9 @@ class ProgressService:
             questions, max_questions=10
         )
         questions_key = self.get_session_key(subject, subtopic, "remedial_questions")
-        session[questions_key] = sanitized_questions
+        self._set_user_state_value(
+            "remedial_questions", questions_key, sanitized_questions
+        )
         if not sanitized_questions:
             print(
                 f"[ProgressService] No remedial questions stored for {subject}/{subtopic}",
@@ -327,9 +475,11 @@ class ProgressService:
             )
         stored_count = len(sanitized_questions)
         if topics is not None:
+            normalized_topics = [
+                str(topic)[:300] for topic in topics if isinstance(topic, str) and topic.strip()
+            ]
             topics_key = self.get_session_key(subject, subtopic, "remedial_topics")
-            session[topics_key] = topics
-        session.permanent = True
+            self._set_user_state_value("remedial_topics", topics_key, normalized_topics)
         return stored_count
 
     def _sanitize_questions_for_session(
@@ -390,17 +540,28 @@ class ProgressService:
     def get_remedial_quiz_questions(self, subject: str, subtopic: str) -> List[Dict[str, Any]]:
         """Get stored remedial quiz questions."""
         questions_key = self.get_session_key(subject, subtopic, "remedial_questions")
-        return session.get(questions_key, [])
+        stored = self._get_user_state_value("remedial_questions", questions_key, [])
+        if not stored:
+            return []
+        return list(stored)
 
     def get_remedial_topics(self, subject: str, subtopic: str) -> List[str]:
         """Get topics associated with the remedial quiz."""
         topics_key = self.get_session_key(subject, subtopic, "remedial_topics")
-        return session.get(topics_key, [])
+        stored = self._get_user_state_value("remedial_topics", topics_key, [])
+        if not stored:
+            return []
+        return list(stored)
 
     def clear_remedial_quiz_data(self, subject: str, subtopic: str) -> None:
         """Remove remedial quiz data from the session."""
-        for suffix in ("remedial_questions", "remedial_topics"):
+        for suffix, category in (
+            ("remedial_questions", "remedial_questions"),
+            ("remedial_topics", "remedial_topics"),
+        ):
             session.pop(self.get_session_key(subject, subtopic, suffix), None)
+            key = self.get_session_key(subject, subtopic, suffix)
+            self._set_user_state_value(category, key, None)
 
     # ============================================================================
     # OVERALL PROGRESS TRACKING

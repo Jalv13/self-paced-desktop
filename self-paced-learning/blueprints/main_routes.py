@@ -319,8 +319,9 @@ def analyze_quiz():
             current_subject, current_subtopic, weak_topic_candidates
         )
 
-        session["quiz_analysis"] = stored_analysis
-        session["quiz_answers"] = answers
+        progress_service.store_quiz_answers(
+            current_subject, current_subtopic, answers
+        )
 
         return jsonify({"success": True, "analysis": stored_analysis})
 
@@ -335,16 +336,18 @@ def show_results_page():
         progress_service = get_progress_service()
         ai_service = get_ai_service()
 
-        # Get analysis from session
-        analysis = session.get("quiz_analysis")
-        answers = session.get("quiz_answers")
         current_subject = session.get("current_subject")
         current_subtopic = session.get("current_subtopic")
 
-        if analysis is None and current_subject and current_subtopic:
-            analysis = progress_service.get_quiz_analysis(current_subject, current_subtopic)
-            if analysis is not None:
-                session["quiz_analysis"] = analysis
+        analysis = None
+        answers: List[str] = []
+        if current_subject and current_subtopic:
+            analysis = progress_service.get_quiz_analysis(
+                current_subject, current_subtopic
+            )
+            answers = progress_service.get_quiz_answers(
+                current_subject, current_subtopic
+            )
 
         if analysis is None or not current_subject or not current_subtopic:
             return redirect(url_for("main.subject_selection"))
@@ -429,7 +432,9 @@ def show_results_page():
         if deduped_topics:
             normalized_topics = deduped_topics
             analysis["weak_topics"] = deduped_topics
-            session["quiz_analysis"] = analysis
+            progress_service.store_quiz_analysis(
+                current_subject, current_subtopic, analysis
+            )
 
         # Get video data for mapping
         video_data = get_video_data(current_subject, current_subtopic)
@@ -489,7 +494,9 @@ def generate_remedial_quiz():
         weak_topics = progress_service.get_weak_topics(current_subject, current_subtopic)
 
         if not weak_topics:
-            analysis = progress_service.get_quiz_analysis(current_subject, current_subtopic) or session.get("quiz_analysis", {}) or {}
+            analysis = progress_service.get_quiz_analysis(
+                current_subject, current_subtopic
+            ) or {}
             fallback_topics = (
                 analysis.get("weak_tags")
                 or analysis.get("weak_topics")
