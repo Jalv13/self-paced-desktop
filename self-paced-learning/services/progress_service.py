@@ -732,17 +732,28 @@ class ProgressService:
         lesson_data = loader.load_lesson_plans(subject, subtopic) or {}
         raw_lessons = lesson_data.get("lessons", {}) or {}
 
-        lesson_items: List[Tuple[str, Dict[str, Any]]] = []
+        normalised_lessons: List[Tuple[str, Dict[str, Any]]] = []
         if isinstance(raw_lessons, dict):
-            lesson_items = list(raw_lessons.items())
+            normalised_lessons = list(raw_lessons.items())
         elif isinstance(raw_lessons, list):
             for index, lesson in enumerate(raw_lessons):
                 lesson_id = lesson.get("id") or f"lesson_{index + 1}"
-                lesson_items.append((lesson_id, lesson))
+                normalised_lessons.append((lesson_id, lesson))
+
+        initial_lesson_items: List[Tuple[str, Dict[str, Any]]] = []
+        for lesson_id, lesson in normalised_lessons:
+            lesson_payload = lesson or {}
+            lesson_type = str(lesson_payload.get("type", "initial") or "initial").strip().lower()
+
+            if lesson_type == "remedial":
+                # Remedial lessons should not block initial quiz access
+                continue
+
+            initial_lesson_items.append((lesson_id, lesson_payload))
 
         lesson_titles = {
             lesson_id: lesson.get("title", lesson_id)
-            for lesson_id, lesson in lesson_items
+            for lesson_id, lesson in initial_lesson_items
         }
         lesson_ids = list(lesson_titles.keys())
 
@@ -752,6 +763,10 @@ class ProgressService:
             for lesson_id in lesson_ids
             if lesson_id not in completed_lessons
         ]
+        completed_initial_lessons = [
+            lesson_id for lesson_id in lesson_ids if lesson_id in completed_lessons
+        ]
+        total_initial_lessons = len(lesson_ids)
 
         videos_data = data_service.get_video_data(subject, subtopic) or {}
         raw_videos = videos_data.get("videos", []) or []
@@ -785,15 +800,18 @@ class ProgressService:
 
         return {
             "lesson_ids": lesson_ids,
+            "initial_lesson_ids": lesson_ids,
             "video_ids": video_ids,
             "missing_lessons": missing_lessons,
             "missing_videos": missing_videos,
             "lessons_complete": lessons_complete,
             "videos_complete": videos_complete,
             "missing_items": missing_items,
-            "lessons_completed": len(lesson_ids) - len(missing_lessons),
+            "lessons_completed": len(completed_initial_lessons),
+            "completed_initial_lessons": len(completed_initial_lessons),
             "videos_watched": len(video_ids) - len(missing_videos),
-            "total_lessons": len(lesson_ids),
+            "total_lessons": total_initial_lessons,
+            "total_initial_lessons": total_initial_lessons,
             "total_videos": len(video_ids),
             "all_content_complete": all_content_complete,
         }
@@ -815,6 +833,10 @@ class ProgressService:
             "lessons_complete": status["lessons_complete"],
             "lesson_total": status["total_lessons"],
             "lessons_completed": status["lessons_completed"],
+            "total_initial_lessons": status.get("total_initial_lessons", status["total_lessons"]),
+            "completed_initial_lessons": status.get(
+                "completed_initial_lessons", status["lessons_completed"]
+            ),
             "videos_complete": status["videos_complete"],
             "videos_total": status["total_videos"],
             "videos_watched": status["videos_watched"],

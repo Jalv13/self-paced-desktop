@@ -79,6 +79,34 @@ class TestProgressTracking(unittest.TestCase):
 
         return lesson_ids, video_ids
 
+    def _load_lesson_types(self, subject: str, subtopic: str):
+        """Return separate lists of initial and remedial lesson identifiers."""
+
+        lesson_payload_path = (
+            DATA_SUBJECTS_ROOT / subject / subtopic / "lesson_plans.json"
+        )
+        with lesson_payload_path.open("r", encoding="utf-8") as handle:
+            lesson_payload = json.load(handle)
+
+        initial_ids = []
+        remedial_ids = []
+
+        for lesson in lesson_payload.get("lessons", []):
+            if not isinstance(lesson, dict):
+                continue
+
+            lesson_id = lesson.get("id")
+            if not lesson_id:
+                continue
+
+            lesson_type = str(lesson.get("type", "initial") or "initial").lower()
+            if lesson_type == "remedial":
+                remedial_ids.append(lesson_id)
+            else:
+                initial_ids.append(lesson_id)
+
+        return initial_ids, remedial_ids
+
     def test_opening_lesson_and_video_unlocks_quiz(self):
         """Posting progress for a lesson and video should satisfy prerequisites."""
 
@@ -243,6 +271,67 @@ class TestProgressTracking(unittest.TestCase):
             self.assertTrue(quiz_state.get("lessons_complete"))
             self.assertTrue(quiz_state.get("videos_complete"))
             self.assertTrue(quiz_state.get("all_met"))
+
+    def test_quiz_requires_only_initial_lessons_when_no_videos_present(self):
+        """Only initial lessons should gate the quiz if a subtopic has no videos."""
+
+        subject = "python"
+        subtopic = "week_1"
+
+        initial_ids, remedial_ids = self._load_lesson_types(subject, subtopic)
+
+        # Sanity check that the fixture contains both lesson types
+        self.assertGreater(len(initial_ids), 0, "Expected initial lessons in fixture")
+        self.assertGreater(len(remedial_ids), 0, "Expected remedial lessons in fixture")
+
+        videos_path = DATA_SUBJECTS_ROOT / subject / subtopic / "videos.json"
+        with videos_path.open("r", encoding="utf-8") as handle:
+            videos_payload = json.load(handle)
+
+        videos_node = videos_payload.get("videos", [])
+        if isinstance(videos_node, dict):
+            videos_total = len(videos_node)
+        else:
+            videos_total = len([video for video in videos_node if isinstance(video, dict)])
+
+        self.assertEqual(videos_total, 0, "Fixture should not contain initial videos")
+
+        with self.client as client:
+            baseline_response = client.get(
+                f"/api/quiz-prerequisites/{subject}/{subtopic}"
+            )
+            self.assertEqual(baseline_response.status_code, 200)
+            baseline = baseline_response.get_json()
+
+            self.assertEqual(baseline["lesson_total"], len(initial_ids))
+            self.assertEqual(baseline["total_initial_lessons"], len(initial_ids))
+            self.assertEqual(baseline["videos_total"], 0)
+            self.assertTrue(baseline["videos_complete"])
+
+            for lesson_id in initial_ids:
+                update = client.post(
+                    "/api/progress/update",
+                    json={
+                        "subject": subject,
+                        "subtopic": subtopic,
+                        "item_id": lesson_id,
+                        "item_type": "lesson",
+                    },
+                )
+                self.assertEqual(update.status_code, 200)
+                self.assertTrue(update.get_json().get("success"))
+
+            follow_up_response = client.get(
+                f"/api/quiz-prerequisites/{subject}/{subtopic}"
+            )
+            self.assertEqual(follow_up_response.status_code, 200)
+            follow_up = follow_up_response.get_json()
+
+            self.assertTrue(follow_up["lessons_complete"])
+            self.assertEqual(follow_up["lessons_completed"], len(initial_ids))
+            self.assertEqual(follow_up["missing_lessons"], [])
+            self.assertTrue(follow_up["videos_complete"])
+            self.assertTrue(follow_up["all_met"])
 
 
 if __name__ == "__main__":
