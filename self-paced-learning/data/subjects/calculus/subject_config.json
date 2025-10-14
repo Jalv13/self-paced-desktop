@@ -10,6 +10,18 @@
       "question_count": 0,
       "status": "active",
       "video_count": 0
+    },
+    "derivatives": {
+      "order": 2,
+      "name": "Derivatives Overview",
+      "description": "Explore derivative rules, applications, and problem-solving strategies.",
+      "estimated_time": "90 minutes",
+      "status": "active",
+      "tags": [
+        "derivatives",
+        "calculus",
+        "rate of change"
+      ]
     }
   },
   "allowed_tags": [

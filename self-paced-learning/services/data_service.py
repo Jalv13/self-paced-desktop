@@ -383,6 +383,89 @@ class DataService:
             print(f"Error deleting subject: {e}")
             return False
 
+    def update_subject(self, subject_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Update the subject's info and configuration files safely."""
+
+        if not isinstance(payload, dict):
+            return {
+                "success": False,
+                "error": "Invalid payload: expected a JSON object.",
+            }
+
+        subject_dir = os.path.join(self.data_root_path, "subjects", subject_id)
+        if not os.path.isdir(subject_dir):
+            return {
+                "success": False,
+                "error": f"Subject '{subject_id}' not found.",
+            }
+
+        os.makedirs(subject_dir, exist_ok=True)
+
+        errors: List[str] = []
+        updated_files: List[str] = []
+
+        if "subject_info" in payload:
+            subject_info = payload["subject_info"]
+            if not isinstance(subject_info, dict):
+                errors.append("subject_info must be an object")
+            else:
+                subject_info_path = os.path.join(subject_dir, "subject_info.json")
+                try:
+                    with open(subject_info_path, "w", encoding="utf-8") as info_file:
+                        json.dump(subject_info, info_file, indent=2, ensure_ascii=False)
+                    updated_files.append(subject_info_path)
+                except Exception as exc:
+                    errors.append(f"subject_info.json: {exc}")
+
+        config_updates: Dict[str, Any] = {}
+        for key in ("subtopics", "allowed_tags"):
+            if key in payload:
+                config_updates[key] = payload[key]
+
+        if config_updates:
+            subject_config_path = os.path.join(subject_dir, "subject_config.json")
+            try:
+                existing_config: Dict[str, Any] = {}
+                if os.path.exists(subject_config_path):
+                    with open(subject_config_path, "r", encoding="utf-8") as config_file:
+                        existing_config = json.load(config_file) or {}
+
+                existing_config.update(config_updates)
+
+                with open(subject_config_path, "w", encoding="utf-8") as config_file:
+                    json.dump(existing_config, config_file, indent=2, ensure_ascii=False)
+                updated_files.append(subject_config_path)
+            except Exception as exc:
+                errors.append(f"subject_config.json: {exc}")
+
+        if errors:
+            return {
+                "success": False,
+                "error": "Failed to update subject files.",
+                "details": errors,
+            }
+
+        if not updated_files:
+            return {
+                "success": False,
+                "error": "No recognised fields provided for update.",
+            }
+
+        # Clear cached data for this subject so subsequent reads pick up changes.
+        try:
+            self.clear_cache_for_subject(subject_id)
+        except Exception:
+            # Cache clearing failures should not prevent the update from succeeding.
+            self.clear_cache()
+
+        return {
+            "success": True,
+            "message": "Subject updated successfully.",
+            "updated_files": [
+                os.path.relpath(path, self.data_root_path) for path in updated_files
+            ],
+        }
+
     # ============================================================================
     # UTILITY METHODS
     # ============================================================================

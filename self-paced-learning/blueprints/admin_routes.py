@@ -403,67 +403,15 @@ def admin_edit_subject(subject):
 def admin_update_subject(subject):
     """Update a subject's configuration."""
     try:
-        data = request.get_json()
-        if not data:
+        data_service = get_data_service()
+        payload = request.get_json()
+        if not payload:
             return jsonify({"success": False, "error": "No data provided"}), 400
 
-        # Build paths to the subject files
-        subject_dir = os.path.join("data", "subjects", subject)
-        subject_info_path = os.path.join(subject_dir, "subject_info.json")
-        subject_config_path = os.path.join(subject_dir, "subject_config.json")
+        result = data_service.update_subject(subject, payload)
 
-        # Update subject_info.json
-        if "subject_info" in data:
-            try:
-                with open(subject_info_path, "w", encoding="utf-8") as f:
-                    json.dump(data["subject_info"], f, indent=2, ensure_ascii=False)
-            except Exception as e:
-                return (
-                    jsonify(
-                        {
-                            "success": False,
-                            "error": f"Failed to update subject info: {e}",
-                        }
-                    ),
-                    500,
-                )
-
-        # Update subject_config.json
-        config_data = {}
-        if "subtopics" in data:
-            config_data["subtopics"] = data["subtopics"]
-        if "allowed_tags" in data:
-            config_data["allowed_tags"] = data["allowed_tags"]
-
-        if config_data:
-            try:
-                # Load existing config to preserve other fields
-                existing_config = {}
-                if os.path.exists(subject_config_path):
-                    with open(subject_config_path, "r", encoding="utf-8") as f:
-                        existing_config = json.load(f)
-
-                # Merge with new data
-                existing_config.update(config_data)
-
-                with open(subject_config_path, "w", encoding="utf-8") as f:
-                    json.dump(existing_config, f, indent=2, ensure_ascii=False)
-            except Exception as e:
-                return (
-                    jsonify(
-                        {
-                            "success": False,
-                            "error": f"Failed to update subject config: {e}",
-                        }
-                    ),
-                    500,
-                )
-
-        # Clear cache for this subject
-        data_service = get_data_service()
-        data_service.clear_cache()  # Clear all cache since subject config affects multiple things
-
-        return jsonify({"success": True, "message": "Subject updated successfully"})
+        status_code = 200 if result.get("success") else 400
+        return jsonify(result), status_code
 
     except Exception as e:
         print(f"Error updating subject {subject}: {e}")
