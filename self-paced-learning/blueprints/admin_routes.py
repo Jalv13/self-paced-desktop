@@ -422,12 +422,12 @@ def admin_edit_subtopic(subject, subtopic):
     try:
         data_service = get_data_service()
 
-        # Validate subject and subtopic exist
-        if not data_service.validate_subject_subtopic(subject, subtopic):
+        # Load subject config to validate subtopic exists in configuration
+        subject_config = data_service.load_subject_config(subject)
+        if not subject_config or subtopic not in subject_config.get("subtopics", {}):
             return f"Subject '{subject}' with subtopic '{subtopic}' not found", 404
 
         # Load subtopic data
-        subject_config = data_service.load_subject_config(subject)
         subtopic_data = subject_config["subtopics"].get(subtopic, {})
 
         return render_template(
@@ -486,8 +486,9 @@ def admin_lessons():
         if subject_filter not in subjects:
             return f"Subject '{subject_filter}' not found", 404
 
-        # Validate subject and subtopic exist
-        if not data_service.validate_subject_subtopic(subject_filter, subtopic_filter):
+        # Get subject config to validate subtopic exists in configuration
+        subject_config = data_service.load_subject_config(subject_filter)
+        if not subject_config or subtopic_filter not in subject_config.get("subtopics", {}):
             return (
                 f"Subject '{subject_filter}' with subtopic '{subtopic_filter}' not found",
                 404,
