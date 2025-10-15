@@ -188,6 +188,74 @@ class AdminService:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+
+    def update_subject(
+        self, subject_id: str, update_payload: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Update subject information and configuration data."""
+
+        if not subject_id:
+            return {"success": False, "error": "Subject identifier is required"}
+
+        normalised_subject = subject_id.strip().lower().replace(" ", "_")
+        if not normalised_subject:
+            return {"success": False, "error": "Subject identifier is invalid"}
+
+        try:
+            subjects = self.data_service.discover_subjects()
+            if normalised_subject not in subjects:
+                return {"success": False, "error": "Subject not found", "status": 404}
+
+            subject_info = update_payload.get("subject_info")
+            subtopics = update_payload.get("subtopics")
+            allowed_tags = update_payload.get("allowed_tags")
+
+            if (
+                subject_info is None
+                and subtopics is None
+                and allowed_tags is None
+            ):
+                return {
+                    "success": False,
+                    "error": "No updatable fields provided",
+                    "status": 400,
+                }
+
+            updated = self.data_service.update_subject(
+                normalised_subject,
+                subject_info=subject_info,
+                subtopics=subtopics,
+                allowed_tags=allowed_tags,
+            )
+
+            if not updated:
+                return {
+                    "success": False,
+                    "error": "Subject update did not modify any data",
+                    "status": 400,
+                }
+
+            return {
+                "success": True,
+                "message": "Subject updated successfully",
+                "subject_id": normalised_subject,
+            }
+
+        except (TypeError, ValueError) as validation_error:
+            return {
+                "success": False,
+                "error": str(validation_error),
+                "status": 400,
+            }
+        except FileNotFoundError as missing_error:
+            return {
+                "success": False,
+                "error": str(missing_error),
+                "status": 404,
+            }
+        except Exception as exc:  # pragma: no cover - defensive logging path
+            return {"success": False, "error": str(exc), "status": 500}
+
     # ============================================================================
     # LESSON MANAGEMENT
     # ============================================================================
