@@ -720,9 +720,25 @@ class ProgressService:
     # ============================================================================
 
     def _collect_subtopic_content_status(
-        self, subject: str, subtopic: str
+        self,
+        subject: str,
+        subtopic: str,
+        lesson_type: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Gather lesson/video completion state for a subtopic."""
+        """Gather lesson/video completion state for a subtopic.
+
+        Args:
+            subject: The subject slug.
+            subtopic: The subtopic slug.
+            lesson_type: Optional lesson type filter ("initial", "remedial",
+                or None for all lessons). When provided the returned lesson
+                statistics will only include lessons matching the requested
+                type ("all" lessons are always included).
+
+        Returns:
+            A dictionary describing lesson/video completion state constrained
+            to the requested lesson type (if any).
+        """
 
         from services import get_data_service  # Lazy import to avoid circular deps
 
@@ -733,10 +749,34 @@ class ProgressService:
         raw_lessons = lesson_data.get("lessons", {}) or {}
 
         lesson_items: List[Tuple[str, Dict[str, Any]]] = []
+        normalized_lesson_type = (lesson_type or "").strip().lower()
+
+        def include_lesson(entry: Dict[str, Any]) -> bool:
+            if not normalized_lesson_type:
+                return True
+
+            raw_value = entry.get("type")
+            raw_type = "" if raw_value is None else str(raw_value).strip().lower()
+
+            if normalized_lesson_type == "initial":
+                # Treat unspecified or "all" lessons as initial friendly
+                return raw_type in {"", "initial", "all"}
+            if normalized_lesson_type == "remedial":
+                return raw_type in {"remedial", "all"}
+
+            return raw_type == normalized_lesson_type
+
         if isinstance(raw_lessons, dict):
-            lesson_items = list(raw_lessons.items())
+            lesson_items = [
+                (lesson_id, lesson)
+                for lesson_id, lesson in raw_lessons.items()
+                if include_lesson(lesson or {})
+            ]
         elif isinstance(raw_lessons, list):
             for index, lesson in enumerate(raw_lessons):
+                lesson = lesson or {}
+                if not include_lesson(lesson):
+                    continue
                 lesson_id = lesson.get("id") or f"lesson_{index + 1}"
                 lesson_items.append((lesson_id, lesson))
 
@@ -801,7 +841,9 @@ class ProgressService:
     def check_quiz_prerequisites(self, subject: str, subtopic: str) -> Dict[str, Any]:
         """Evaluate whether the learner can take the quiz for a subject/subtopic."""
 
-        status = self._collect_subtopic_content_status(subject, subtopic)
+        status = self._collect_subtopic_content_status(
+            subject, subtopic, lesson_type="initial"
+        )
 
         admin_override = self.get_admin_override_status()
         all_met = admin_override or status["all_content_complete"]
@@ -873,7 +915,9 @@ class ProgressService:
                 missing_names.append(display_name)
                 continue
 
-            progress = self._collect_subtopic_content_status(subject, prereq_id)
+            progress = self._collect_subtopic_content_status(
+                subject, prereq_id, lesson_type="initial"
+            )
             is_complete = progress["all_content_complete"]
 
             prerequisite_details.append(
