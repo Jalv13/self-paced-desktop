@@ -8,6 +8,12 @@ body {
   background-color: #f5f9fc; /* Light blue-gray background */
 }
 
+/* Hide remote environment attached browser banner if injected */
+#attached-browser-warning,
+.attached-browser-warning {
+  display: none !important;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
