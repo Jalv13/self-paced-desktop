@@ -122,15 +122,23 @@ class TestTaggingAndResults(unittest.TestCase):
 
         client = self.app.test_client()
         with client.session_transaction() as session:
-            session["quiz_analysis"] = {
-                "score": {"correct": 2, "total": 5, "percentage": 40},
-                "weak_tags": ["functions"],
-                "feedback": "Focus on reviewing function fundamentals.",
-                "recommendations": ["Review the remedial lesson."]
-            }
-            session["quiz_answers"] = ["A", "B", "C"]
+            session.clear()
+            session["_server_state_id"] = "_test_session"
             session["current_subject"] = "python"
             session["current_subtopic"] = "functions"
+            self.progress_service.store_quiz_analysis(
+                "python",
+                "functions",
+                {
+                    "score": {"correct": 2, "total": 5, "percentage": 40},
+                    "weak_tags": ["functions"],
+                    "feedback": "Focus on reviewing function fundamentals.",
+                    "recommendations": ["Review the remedial lesson."],
+                },
+            )
+            self.progress_service.store_quiz_answers(
+                "python", "functions", ["A", "B", "C"]
+            )
 
         with capture_templates(self.app) as templates:
             response = client.get("/results")
@@ -156,14 +164,22 @@ class TestTaggingAndResults(unittest.TestCase):
 
         client = self.app.test_client()
         with client.session_transaction() as session:
-            session["quiz_analysis"] = {
-                "score": {"correct": 1, "total": 5, "percentage": 20},
-                "weak_tags": ["unknown-topic-1", "unknown-topic-2"],
-                "feedback": "Multiple areas need review.",
-            }
-            session["quiz_answers"] = ["A", "B", "C"]
+            session.clear()
+            session["_server_state_id"] = "_test_session"
             session["current_subject"] = "python"
             session["current_subtopic"] = "functions"
+            self.progress_service.store_quiz_analysis(
+                "python",
+                "functions",
+                {
+                    "score": {"correct": 1, "total": 5, "percentage": 20},
+                    "weak_tags": ["unknown-topic-1", "unknown-topic-2"],
+                    "feedback": "Multiple areas need review.",
+                },
+            )
+            self.progress_service.store_quiz_answers(
+                "python", "functions", ["A", "B", "C"]
+            )
 
         with capture_templates(self.app) as templates:
             response = client.get("/results")
@@ -180,6 +196,28 @@ class TestTaggingAndResults(unittest.TestCase):
 
         analysis_context = context["ANALYSIS_RESULTS"]
         self.assertEqual(analysis_context.get("weak_topics"), ["unknown-topic-1"])
+
+    def test_results_page_allows_empty_analysis_payload(self):
+        """An empty stored analysis should still allow rendering results."""
+
+        client = self.app.test_client()
+        with client.session_transaction() as session:
+            session.clear()
+            session["_server_state_id"] = "_test_session"
+            session["current_subject"] = "python"
+            session["current_subtopic"] = "functions"
+            self.progress_service.store_quiz_analysis("python", "functions", {})
+            self.progress_service.store_quiz_answers("python", "functions", [])
+
+        with capture_templates(self.app) as templates:
+            response = client.get("/results")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertGreater(len(templates), 0)
+
+        template, context = templates[0]
+        self.assertEqual(template.name, "results.html")
+        self.assertIsInstance(context["ANALYSIS_RESULTS"], dict)
 
     def test_full_quiz_flow_zero_score_triggers_remedial_once(self):
         """Simulate a full quiz submission with zero correct answers."""
@@ -311,19 +349,14 @@ class TestTaggingAndResults(unittest.TestCase):
         self.assertGreaterEqual(stored_count, 7)
         self.assertLessEqual(stored_count, len(custom_pool))
 
-        with client.session_transaction() as session:
-            remedial_key = self.progress_service.get_session_key(
-                "python", "functions", "remedial_questions"
-            )
-            session_remedial = session.get(remedial_key)
-            analysis_key = self.progress_service.get_session_key(
-                "python", "functions", "questions_served_for_analysis"
-            )
-            analysis_questions = session.get(analysis_key)
-            quiz_type_key = self.progress_service.get_session_key(
-                "python", "functions", "current_quiz_type"
-            )
-            active_quiz_type = session.get(quiz_type_key)
+        quiz_session = self.progress_service.get_quiz_session_data(
+            "python", "functions"
+        )
+        session_remedial = self.progress_service.get_remedial_quiz_questions(
+            "python", "functions"
+        )
+        analysis_questions = quiz_session.get("questions")
+        active_quiz_type = quiz_session.get("quiz_type")
 
         self.assertIsInstance(session_remedial, list)
         self.assertEqual(len(session_remedial), stored_count)
@@ -362,11 +395,9 @@ class TestTaggingAndResults(unittest.TestCase):
         self.assertEqual(score_block.get("percentage"), 100)
         self.assertFalse(remedial_analysis.get("wrong_question_indices"))
 
-        with client.session_transaction() as session:
-            analysis_session_key = self.progress_service.get_session_key(
-                "python", "functions", "analysis_results"
-            )
-            stored_analysis = session.get(analysis_session_key)
+        stored_analysis = self.progress_service.get_quiz_analysis(
+            "python", "functions"
+        )
         self.assertIsNotNone(stored_analysis)
         self.assertEqual(
             stored_analysis.get("score", {}).get("percentage"),

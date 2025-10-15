@@ -10,6 +10,28 @@
       "question_count": 0,
       "status": "active",
       "video_count": 0
+    },
+    "series": {
+      "description": "Explore convergence tests and series applications.",
+      "estimated_time": "90 minutes",
+      "name": "Infinite Series",
+      "order": 2,
+      "status": "active",
+      "tags": [
+        "series",
+        "convergence",
+        "sequences"
+      ]
+    },
+    "test": {
+      "order": 3,
+      "name": "test",
+      "description": "test",
+      "estimated_time": "123",
+      "status": "active",
+      "tags": [
+        "rest"
+      ]
     }
   },
   "allowed_tags": [

@@ -167,18 +167,28 @@ class DataService:
             if os.path.exists(lesson_file_path):
                 with open(lesson_file_path, "r", encoding="utf-8") as f:
                     existing_data = json.load(f)
-                    lessons = existing_data.get("lessons", [])
+                    # Handle both old format (array) and new format (dict with lessons key)
+                    if isinstance(existing_data, list):
+                        lessons = existing_data
+                    elif isinstance(existing_data, dict):
+                        lessons = existing_data.get("lessons", [])
+                    else:
+                        lessons = []
+
+            # Always include the lesson identifier in the payload we persist.
+            serialised_lesson = dict(lesson_data)
+            serialised_lesson["id"] = lesson_id
 
             # Find and update existing lesson or add new one
             lesson_found = False
-            for i, lesson in enumerate(lessons):
-                if lesson.get("id") == lesson_id:
-                    lessons[i] = lesson_data
+            for index, lesson in enumerate(lessons):
+                if isinstance(lesson, dict) and lesson.get("id") == lesson_id:
+                    lessons[index] = serialised_lesson
                     lesson_found = True
                     break
 
             if not lesson_found:
-                lessons.append(lesson_data)
+                lessons.append(serialised_lesson)
 
             # Create the complete lesson plans structure
             lesson_plans_data = {"lessons": lessons, "updated_date": "2025-10-02"}
@@ -188,6 +198,13 @@ class DataService:
 
             with open(lesson_file_path, "w", encoding="utf-8") as f:
                 json.dump(lesson_plans_data, f, indent=2, ensure_ascii=False)
+
+            # Clear cached lesson data so future reads pick up the updates.
+            try:
+                self.data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
+            except AttributeError:
+                # Older DataLoader implementations may not provide cache clearing.
+                pass
 
             return True
         except Exception as e:
@@ -225,10 +242,33 @@ class DataService:
             with open(lesson_file_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
 
+            try:
+                self.data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
+            except AttributeError:
+                pass
+
             return True
         except Exception as e:
             print(f"Error deleting lesson: {e}")
             return False
+
+    def get_lesson_map(self, subject: str, subtopic: str) -> Dict[str, Dict[str, Any]]:
+        """Return lessons indexed by their identifier for quick lookup."""
+
+        lesson_map: Dict[str, Dict[str, Any]] = {}
+        lessons = self.get_lesson_plans(subject, subtopic) or []
+
+        for lesson in lessons:
+            if not isinstance(lesson, dict):
+                continue
+
+            lesson_id = lesson.get("id")
+            if not lesson_id:
+                continue
+
+            lesson_map[lesson_id] = lesson
+
+        return lesson_map
 
     # ============================================================================
     # VIDEO DATA OPERATIONS
@@ -332,6 +372,103 @@ class DataService:
         except Exception as e:
             print(f"Error creating subject: {e}")
             return False
+
+    def update_subject(
+        self,
+        subject_id: str,
+        subject_info: Optional[Dict] = None,
+        subtopics: Optional[Dict] = None,
+        allowed_tags: Optional[List[str]] = None,
+    ) -> bool:
+        """Update the configuration files for an existing subject.
+
+        This method persists changes to ``subject_info.json`` and
+        ``subject_config.json`` using the resolved absolute data path so the
+        caller does not need to worry about the current working directory.
+        """
+
+        if not subject_id:
+            raise ValueError("subject_id is required")
+
+        subject_dir = os.path.join(self.data_root_path, "subjects", subject_id)
+        if not os.path.isdir(subject_dir):
+            raise FileNotFoundError(f"Subject directory not found: {subject_dir}")
+
+        updated = False
+
+        try:
+            if subject_info is not None:
+                if not isinstance(subject_info, dict):
+                    raise TypeError("subject_info must be a dictionary when provided")
+
+                subject_info_path = os.path.join(subject_dir, "subject_info.json")
+
+                with open(subject_info_path, "w", encoding="utf-8") as handle:
+                    json.dump(subject_info, handle, indent=2, ensure_ascii=False)
+
+                updated = True
+
+            config_updates: Dict[str, Any] = {}
+
+            if subtopics is not None:
+                if not isinstance(subtopics, dict):
+                    raise TypeError("subtopics must be a dictionary when provided")
+                config_updates["subtopics"] = subtopics
+
+            if allowed_tags is not None:
+                if not isinstance(allowed_tags, list):
+                    raise TypeError("allowed_tags must be a list when provided")
+                config_updates["allowed_tags"] = allowed_tags
+
+            if config_updates:
+                subject_config_path = os.path.join(
+                    subject_dir, "subject_config.json"
+                )
+
+                existing_config: Dict[str, Any] = {}
+                if os.path.exists(subject_config_path):
+                    with open(subject_config_path, "r", encoding="utf-8") as handle:
+                        try:
+                            existing_config = json.load(handle) or {}
+                        except json.JSONDecodeError:
+                            existing_config = {}
+
+                # If subtopics are being updated, create directory structure for new subtopics
+                if subtopics is not None:
+                    existing_subtopics = existing_config.get("subtopics", {})
+                    for subtopic_id in subtopics.keys():
+                        # Check if this is a new subtopic
+                        if subtopic_id not in existing_subtopics:
+                            # Create the subtopic directory
+                            subtopic_dir = os.path.join(subject_dir, subtopic_id)
+                            os.makedirs(subtopic_dir, exist_ok=True)
+                            
+                            # Initialize with proper lesson_plans.json structure to make it valid
+                            lesson_plans_path = os.path.join(subtopic_dir, "lesson_plans.json")
+                            if not os.path.exists(lesson_plans_path):
+                                with open(lesson_plans_path, "w", encoding="utf-8") as f:
+                                    json.dump({"lessons": [], "updated_date": "2025-10-15"}, f, indent=2, ensure_ascii=False)
+
+                existing_config.update(config_updates)
+
+                with open(subject_config_path, "w", encoding="utf-8") as handle:
+                    json.dump(existing_config, handle, indent=2, ensure_ascii=False)
+
+                updated = True
+
+            if updated:
+                try:
+                    self.clear_cache_for_subject(subject_id)
+                except Exception:
+                    # Cache clearing is best-effort; failures should not block the
+                    # update because the persisted files are already written.
+                    pass
+
+            return updated
+        except Exception:
+            # Re-raise so callers can return appropriate error responses while
+            # preserving the underlying exception context.
+            raise
 
     def delete_subject(self, subject_id: str) -> bool:
         """Delete a subject and all its associated data."""

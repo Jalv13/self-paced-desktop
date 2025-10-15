@@ -49,11 +49,11 @@
           </a>
           {% if missing_ids %}
           <a
-            href="/quiz/{{ subject }}/{{ missing_ids[0] }}"
+            href="{{ url_for('main.subject_page', subject=subject, focus=missing_ids[0]) }}"
             class="btn-primary"
           >
             <i class="fas fa-play"></i>
-            Start with {{ missing_prerequisites[0] }}
+            Go to {{ missing_prerequisites[0] }} Lessons
           </a>
           {% endif %}
         </div>

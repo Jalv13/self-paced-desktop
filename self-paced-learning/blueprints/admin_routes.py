@@ -11,195 +11,16 @@ from flask import (
     jsonify,
     redirect,
     url_for,
-    session,
     Response,
 )
-from services import get_admin_service, get_data_service, get_progress_service
-from typing import Any, Dict, List, Optional
+from services import get_admin_service, get_data_service
+from typing import Any, Dict, List
 import os
 import json
 from datetime import datetime
 
 # Create the Blueprint
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
-
-
-# ============================================================================
-# HELPER FUNCTIONS
-# ============================================================================
-
-
-def get_all_lessons():
-    """Get all lessons from all subjects and subtopics"""
-    from utils.data_loader import DataLoader
-
-    lessons_data = []
-    data_root_path = os.path.join(os.path.dirname(__file__), "..", "data")
-    loader = DataLoader(data_root_path)
-    subjects = loader.discover_subjects()
-
-    for subject_name in subjects:
-        subject_config = loader.load_subject_config(subject_name)
-        if subject_config and "subtopics" in subject_config:
-            subtopics = subject_config["subtopics"]
-            for subtopic in subtopics:
-                lesson_plans_path = (
-                    f"data/subjects/{subject_name}/{subtopic}/lesson_plans.json"
-                )
-                try:
-                    full_path = os.path.join(
-                        os.path.dirname(__file__), "..", lesson_plans_path
-                    )
-                    if os.path.exists(full_path):
-                        with open(full_path, "r", encoding="utf-8") as f:
-                            lesson_plans = json.load(f)
-
-                        lessons = lesson_plans.get("lessons", [])
-                        if isinstance(lessons, list):
-                            for lesson in lessons:
-                                lesson["subject_name"] = subject_name
-                                lesson["subtopic"] = subtopic
-                                lesson["content_count"] = len(lesson.get("content", []))
-                                lessons_data.append(lesson)
-                except Exception as e:
-                    print(f"Error loading lessons from {lesson_plans_path}: {e}")
-                    continue
-
-    return lessons_data
-
-
-def get_lesson_plans(subject, subtopic):
-    """Get lesson plans for a subject/subtopic."""
-    from utils.data_loader import DataLoader
-
-    data_root_path = os.path.join(os.path.dirname(__file__), "..", "data")
-    data_loader = DataLoader(data_root_path)
-    lessons_data = data_loader.load_lesson_plans(subject, subtopic)
-
-    if not lessons_data:
-        return {}
-
-    lessons = lessons_data.get("lessons", [])
-
-    # Convert array format to dictionary format (lesson_id -> lesson_data)
-    if isinstance(lessons, list):
-        lesson_dict = {}
-        for lesson in lessons:
-            lesson_id = lesson.get("id")
-            if lesson_id:
-                lesson_dict[lesson_id] = lesson
-        return lesson_dict
-    elif isinstance(lessons, dict):
-        # Already in dictionary format
-        return lessons
-    else:
-        return {}
-
-
-def save_lesson_to_file(subject, subtopic, lesson_id, lesson_data):
-    """Save a lesson to the lesson_plans.json file."""
-    lesson_plans_path = os.path.join(
-        "data", "subjects", subject, subtopic, "lesson_plans.json"
-    )
-
-    try:
-        # Load existing lesson plans
-        if os.path.exists(lesson_plans_path):
-            with open(lesson_plans_path, "r", encoding="utf-8") as f:
-                lesson_plans = json.load(f)
-        else:
-            lesson_plans = {"lessons": []}
-
-        # Ensure lessons is a list
-        if "lessons" not in lesson_plans:
-            lesson_plans["lessons"] = []
-
-        lessons = lesson_plans["lessons"]
-        if not isinstance(lessons, list):
-            # Convert dict format to list format if needed
-            lessons = []
-            lesson_plans["lessons"] = lessons
-
-        # Add lesson_id to lesson_data if not present
-        lesson_data["id"] = lesson_id
-
-        # Find and update existing lesson or add new one
-        updated = False
-        for i, lesson in enumerate(lessons):
-            if lesson.get("id") == lesson_id:
-                lessons[i] = lesson_data
-                updated = True
-                break
-
-        if not updated:
-            lessons.append(lesson_data)
-
-        # Save back to file
-        with open(lesson_plans_path, "w", encoding="utf-8") as f:
-            json.dump(lesson_plans, f, indent=2, ensure_ascii=False)
-
-        # Clear cache for this subject/subtopic to ensure fresh data is loaded
-        from utils.data_loader import DataLoader
-
-        data_loader = DataLoader("data")
-        data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
-
-        return True
-    except Exception as e:
-        print(f"Error saving lesson {lesson_id}: {e}")
-        return False
-
-
-def delete_lesson_from_file(subject, subtopic, lesson_id):
-    """Delete a lesson from the lesson_plans.json file."""
-    lesson_plans_path = os.path.join(
-        "data", "subjects", subject, subtopic, "lesson_plans.json"
-    )
-
-    try:
-        if not os.path.exists(lesson_plans_path):
-            return False
-
-        with open(lesson_plans_path, "r", encoding="utf-8") as f:
-            lesson_plans = json.load(f)
-
-        lessons = lesson_plans.get("lessons", [])
-        if isinstance(lessons, list):
-            # Array format - find and remove by id
-            for i, lesson in enumerate(lessons):
-                if lesson.get("id") == lesson_id:
-                    lessons.pop(i)
-
-                    with open(lesson_plans_path, "w", encoding="utf-8") as f:
-                        json.dump(lesson_plans, f, indent=2, ensure_ascii=False)
-
-                    # Clear cache for this subject/subtopic to ensure fresh data is loaded
-                    from utils.data_loader import DataLoader
-
-                    data_loader = DataLoader("data")
-                    data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
-
-                    return True
-        elif isinstance(lessons, dict):
-            # Dictionary format
-            if lesson_id in lessons:
-                del lessons[lesson_id]
-
-                with open(lesson_plans_path, "w", encoding="utf-8") as f:
-                    json.dump(lesson_plans, f, indent=2, ensure_ascii=False)
-
-                # Clear cache for this subject/subtopic to ensure fresh data is loaded
-                from utils.data_loader import DataLoader
-
-                data_loader = DataLoader("data")
-                data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
-
-                return True
-
-        return False
-    except Exception as e:
-        print(f"Error deleting lesson {lesson_id}: {e}")
-        return False
 
 
 # ============================================================================
@@ -582,67 +403,13 @@ def admin_edit_subject(subject):
 def admin_update_subject(subject):
     """Update a subject's configuration."""
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"success": False, "error": "No data provided"}), 400
+        data = request.get_json() or {}
 
-        # Build paths to the subject files
-        subject_dir = os.path.join("data", "subjects", subject)
-        subject_info_path = os.path.join(subject_dir, "subject_info.json")
-        subject_config_path = os.path.join(subject_dir, "subject_config.json")
+        admin_service = get_admin_service()
+        result = admin_service.update_subject(subject, data)
+        status_code = result.pop("status", 200 if result.get("success") else 400)
 
-        # Update subject_info.json
-        if "subject_info" in data:
-            try:
-                with open(subject_info_path, "w", encoding="utf-8") as f:
-                    json.dump(data["subject_info"], f, indent=2, ensure_ascii=False)
-            except Exception as e:
-                return (
-                    jsonify(
-                        {
-                            "success": False,
-                            "error": f"Failed to update subject info: {e}",
-                        }
-                    ),
-                    500,
-                )
-
-        # Update subject_config.json
-        config_data = {}
-        if "subtopics" in data:
-            config_data["subtopics"] = data["subtopics"]
-        if "allowed_tags" in data:
-            config_data["allowed_tags"] = data["allowed_tags"]
-
-        if config_data:
-            try:
-                # Load existing config to preserve other fields
-                existing_config = {}
-                if os.path.exists(subject_config_path):
-                    with open(subject_config_path, "r", encoding="utf-8") as f:
-                        existing_config = json.load(f)
-
-                # Merge with new data
-                existing_config.update(config_data)
-
-                with open(subject_config_path, "w", encoding="utf-8") as f:
-                    json.dump(existing_config, f, indent=2, ensure_ascii=False)
-            except Exception as e:
-                return (
-                    jsonify(
-                        {
-                            "success": False,
-                            "error": f"Failed to update subject config: {e}",
-                        }
-                    ),
-                    500,
-                )
-
-        # Clear cache for this subject
-        data_service = get_data_service()
-        data_service.clear_cache()  # Clear all cache since subject config affects multiple things
-
-        return jsonify({"success": True, "message": "Subject updated successfully"})
+        return jsonify(result), status_code
 
     except Exception as e:
         print(f"Error updating subject {subject}: {e}")
@@ -655,12 +422,12 @@ def admin_edit_subtopic(subject, subtopic):
     try:
         data_service = get_data_service()
 
-        # Validate subject and subtopic exist
-        if not data_service.validate_subject_subtopic(subject, subtopic):
+        # Load subject config to validate subtopic exists in configuration
+        subject_config = data_service.load_subject_config(subject)
+        if not subject_config or subtopic not in subject_config.get("subtopics", {}):
             return f"Subject '{subject}' with subtopic '{subtopic}' not found", 404
 
         # Load subtopic data
-        subject_config = data_service.load_subject_config(subject)
         subtopic_data = subject_config["subtopics"].get(subtopic, {})
 
         return render_template(
@@ -701,9 +468,7 @@ def admin_delete_subject(subject):
 def admin_lessons():
     """List lessons for a specific subject/subtopic with drag-to-reorder functionality."""
     try:
-        from utils.data_loader import DataLoader
-
-        data_loader = DataLoader("data")
+        data_service = get_data_service()
 
         # Get URL parameters for filtering
         subject_filter = request.args.get("subject")
@@ -715,28 +480,29 @@ def admin_lessons():
             return redirect(url_for("admin.admin_select_subject_for_lessons"))
 
         # Use auto-discovery for subjects dropdown
-        subjects = data_loader.discover_subjects()
+        subjects = data_service.discover_subjects()
 
         # Validate subject exists
         if subject_filter not in subjects:
             return f"Subject '{subject_filter}' not found", 404
 
-        # Validate subject and subtopic exist
-        if not data_loader.validate_subject_subtopic(subject_filter, subtopic_filter):
+        # Get subject config to validate subtopic exists in configuration
+        subject_config = data_service.load_subject_config(subject_filter)
+        if not subject_config or subtopic_filter not in subject_config.get("subtopics", {}):
             return (
                 f"Subject '{subject_filter}' with subtopic '{subtopic_filter}' not found",
                 404,
             )
 
         # Load lessons for this specific subject/subtopic
-        lessons = get_lesson_plans(subject_filter, subtopic_filter)
+        lessons = data_service.get_lesson_map(subject_filter, subtopic_filter)
 
         # Get subject info
         subject_info = subjects[subject_filter]
         subject_name = subject_info.get("name", subject_filter.title())
 
         # Get subtopic info
-        subject_config = data_loader.load_subject_config(subject_filter)
+        subject_config = data_service.load_subject_config(subject_filter)
         subtopic_name = None
         if subject_config and "subtopics" in subject_config:
             subtopics = subject_config["subtopics"]
@@ -812,28 +578,32 @@ def admin_edit_lesson(subject, subtopic, lesson_id):
             if not lesson_title:
                 return jsonify({"error": "Lesson title is required"}), 400
 
-            # Update lesson data
+            data_service = get_data_service()
+            admin_service = get_admin_service()
+
             # Load existing to preserve fields not provided
-            existing = get_lesson_plans(subject, subtopic).get(lesson_id, {})
+            existing_lessons = data_service.get_lesson_map(subject, subtopic)
+            existing = existing_lessons.get(lesson_id, {})
             if lesson_type is None:
                 lesson_type = existing.get("type", "remedial")
 
             lesson_data = {
+                **existing,
                 "title": lesson_title,
                 "videoId": video_id,
                 "content": content,
                 "tags": tags,
                 "type": lesson_type,
-                "updated_date": "2025-01-01",
             }
 
-            # Save lesson
-            if save_lesson_to_file(subject, subtopic, lesson_id, lesson_data):
-                return jsonify(
-                    {"success": True, "message": "Lesson updated successfully"}
-                )
-            else:
-                return jsonify({"error": "Failed to update lesson"}), 500
+            result = admin_service.update_lesson(
+                subject, subtopic, lesson_id, lesson_data
+            )
+
+            if result.get("success"):
+                return jsonify(result)
+
+            return jsonify(result), 400
 
         except Exception as e:
             print(f"Error updating lesson: {e}")
@@ -842,13 +612,13 @@ def admin_edit_lesson(subject, subtopic, lesson_id):
     # GET request - show edit form
     try:
         data_service = get_data_service()
+        lesson_map = data_service.get_lesson_map(subject, subtopic)
 
         # Load existing lesson
-        lessons = get_lesson_plans(subject, subtopic)
-        if lesson_id not in lessons:
+        if lesson_id not in lesson_map:
             return f"Lesson '{lesson_id}' not found", 404
 
-        lesson_data = lessons[lesson_id]
+        lesson_data = lesson_map[lesson_id]
 
         # Get subjects for context
         subjects = data_service.discover_subjects()
@@ -878,10 +648,15 @@ def admin_edit_lesson(subject, subtopic, lesson_id):
 def admin_delete_lesson(subject, subtopic, lesson_id):
     """Delete a lesson."""
     try:
-        if delete_lesson_from_file(subject, subtopic, lesson_id):
-            return jsonify({"success": True, "message": "Lesson deleted successfully"})
-        else:
-            return jsonify({"error": "Lesson not found or could not be deleted"}), 404
+        admin_service = get_admin_service()
+        result = admin_service.delete_lesson(subject, subtopic, lesson_id)
+
+        if result.get("success"):
+            return jsonify(result)
+
+        error_message = result.get("error", "Lesson not found or could not be deleted")
+        status_code = 404 if "not found" in error_message.lower() else 400
+        return jsonify(result), status_code
 
     except Exception as e:
         print(f"Error deleting lesson: {e}")

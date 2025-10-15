@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let ytPlayer = null;
   let isAdminOverride = false;
   let currentVideoId = null;
+  let currentVideoKey = null;
   let currentTopic = null;
 
   // Load progress from server when page loads
@@ -176,39 +177,81 @@ document.addEventListener("DOMContentLoaded", function () {
     videoModal.dataset.trackingInterval = trackingInterval;
   }
 
+  function getCurrentVideoContext() {
+    const currentPath = window.location.pathname;
+    if (!currentPath.startsWith("/subjects/")) {
+      return null;
+    }
+
+    const pathParts = currentPath.split("/");
+    const subject = pathParts[2];
+    const subtopic = currentTopic;
+    const videoId = currentVideoKey || currentTopic || currentVideoId;
+
+    if (!subject || !subtopic || !videoId) {
+      return null;
+    }
+
+    return { subject, subtopic, videoId };
+  }
+
+  function recordVideoOpened(context) {
+    const details = context || getCurrentVideoContext();
+    if (!details) {
+      return;
+    }
+
+    const cacheKey = `${details.subject}::${details.subtopic}::${details.videoId}`;
+    if (!recordVideoOpened.cache) {
+      recordVideoOpened.cache = new Set();
+    }
+
+    if (recordVideoOpened.cache.has(cacheKey)) {
+      return;
+    }
+
+    recordVideoOpened.cache.add(cacheKey);
+
+    fetch("/api/progress/update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        subject: details.subject,
+        subtopic: details.subtopic,
+        item_id: details.videoId,
+        item_type: "video",
+      }),
+    })
+      .then((response) => response.json().catch(() => ({})))
+      .then((data) => {
+        if (!data || !data.success) {
+          recordVideoOpened.cache.delete(cacheKey);
+        }
+      })
+      .catch(() => {
+        recordVideoOpened.cache.delete(cacheKey);
+      });
+  }
+
   // Mark video as watched for quiz prerequisites
   function markVideoAsWatched() {
-    const currentPath = window.location.pathname;
-    if (currentPath.startsWith("/subjects/")) {
-      const pathParts = currentPath.split("/");
-      const subject = pathParts[2];
-      const subtopic = currentTopic;
+    const context = getCurrentVideoContext();
+    if (!context) {
+      return;
+    }
 
-      fetch("/api/video-progress/mark-watched", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          subject: subject,
-          subtopic: subtopic,
-        }),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            if (typeof showNotification === "function") {
-              showNotification(
-                "Video progress recorded! This counts toward quiz prerequisites.",
-                "success"
-              );
-            }
-            if (typeof updateSubtopicProgressAfterCompletion === "function") {
-              updateSubtopicProgressAfterCompletion();
-            }
-          }
-        })
-        .catch((error) => console.error("Error marking video watched:", error));
+    recordVideoOpened(context);
+
+    if (typeof showNotification === "function") {
+      showNotification(
+        "Video progress recorded! This counts toward quiz prerequisites.",
+        "success"
+      );
+    }
+    if (typeof updateSubtopicProgressAfterCompletion === "function") {
+      updateSubtopicProgressAfterCompletion();
     }
   }
 
@@ -216,36 +259,11 @@ document.addEventListener("DOMContentLoaded", function () {
     if (currentTopic) {
       saveProgress(currentTopic, 100);
 
-      // Mark video as watched for quiz prerequisites
-      const currentPath = window.location.pathname;
-      if (currentPath.startsWith("/subjects/")) {
-        const pathParts = currentPath.split("/");
-        const subject = pathParts[2];
-        const subtopic = currentTopic;
+      recordVideoOpened();
 
-        // Mark video as watched via API
-        fetch("/api/video-progress/mark-watched", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            subject: subject,
-            subtopic: subtopic,
-          }),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.success) {
-              showVideoCompletionNotification();
-              if (typeof updateSubtopicProgressAfterCompletion === "function") {
-                updateSubtopicProgressAfterCompletion();
-              }
-            }
-          })
-          .catch((error) =>
-            console.error("Error marking video watched:", error)
-          );
+      showVideoCompletionNotification();
+      if (typeof updateSubtopicProgressAfterCompletion === "function") {
+        updateSubtopicProgressAfterCompletion();
       }
 
       // Redirect to quiz for functions topic
@@ -310,12 +328,16 @@ document.addEventListener("DOMContentLoaded", function () {
     // Determine the correct API endpoint based on page context
     let apiUrl;
     const currentPath = window.location.pathname;
+    let subjectForProgress = null;
+    let subtopicForProgress = topic;
 
     if (currentPath.startsWith("/subjects/")) {
       // We're on a subject page, extract subject from URL
       const pathParts = currentPath.split("/");
       const subject = pathParts[2]; // /subjects/{subject}
       const subtopic = topic; // The topic is actually the subtopic ID
+      subjectForProgress = subject;
+      subtopicForProgress = subtopic;
 
       // For subject pages, we need to get the first video from the subtopic
       // The API expects /api/video/{subject}/{subtopic}/{videoKey}
@@ -336,6 +358,16 @@ document.addEventListener("DOMContentLoaded", function () {
         // Extract video ID from YouTube URL
         const videoId = extractVideoId(data.url);
         currentVideoId = videoId;
+        currentVideoKey =
+          data.id || data.video_id || data.topic_key || topic || videoId;
+
+        if (subjectForProgress) {
+          recordVideoOpened({
+            subject: subjectForProgress,
+            subtopic: subtopicForProgress,
+            videoId: currentVideoKey,
+          });
+        }
 
         if (videoId) {
           // Create YouTube player container if it doesn't exist
