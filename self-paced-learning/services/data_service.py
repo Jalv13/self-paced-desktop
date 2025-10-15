@@ -167,7 +167,13 @@ class DataService:
             if os.path.exists(lesson_file_path):
                 with open(lesson_file_path, "r", encoding="utf-8") as f:
                     existing_data = json.load(f)
-                    lessons = existing_data.get("lessons", [])
+                    # Handle both old format (array) and new format (dict with lessons key)
+                    if isinstance(existing_data, list):
+                        lessons = existing_data
+                    elif isinstance(existing_data, dict):
+                        lessons = existing_data.get("lessons", [])
+                    else:
+                        lessons = []
 
             # Always include the lesson identifier in the payload we persist.
             serialised_lesson = dict(lesson_data)
@@ -426,6 +432,22 @@ class DataService:
                             existing_config = json.load(handle) or {}
                         except json.JSONDecodeError:
                             existing_config = {}
+
+                # If subtopics are being updated, create directory structure for new subtopics
+                if subtopics is not None:
+                    existing_subtopics = existing_config.get("subtopics", {})
+                    for subtopic_id in subtopics.keys():
+                        # Check if this is a new subtopic
+                        if subtopic_id not in existing_subtopics:
+                            # Create the subtopic directory
+                            subtopic_dir = os.path.join(subject_dir, subtopic_id)
+                            os.makedirs(subtopic_dir, exist_ok=True)
+                            
+                            # Initialize with proper lesson_plans.json structure to make it valid
+                            lesson_plans_path = os.path.join(subtopic_dir, "lesson_plans.json")
+                            if not os.path.exists(lesson_plans_path):
+                                with open(lesson_plans_path, "w", encoding="utf-8") as f:
+                                    json.dump({"lessons": [], "updated_date": "2025-10-15"}, f, indent=2, ensure_ascii=False)
 
                 existing_config.update(config_updates)
 
