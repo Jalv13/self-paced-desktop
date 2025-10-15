@@ -367,6 +367,87 @@ class DataService:
             print(f"Error creating subject: {e}")
             return False
 
+    def update_subject(
+        self,
+        subject_id: str,
+        subject_info: Optional[Dict] = None,
+        subtopics: Optional[Dict] = None,
+        allowed_tags: Optional[List[str]] = None,
+    ) -> bool:
+        """Update the configuration files for an existing subject.
+
+        This method persists changes to ``subject_info.json`` and
+        ``subject_config.json`` using the resolved absolute data path so the
+        caller does not need to worry about the current working directory.
+        """
+
+        if not subject_id:
+            raise ValueError("subject_id is required")
+
+        subject_dir = os.path.join(self.data_root_path, "subjects", subject_id)
+        if not os.path.isdir(subject_dir):
+            raise FileNotFoundError(f"Subject directory not found: {subject_dir}")
+
+        updated = False
+
+        try:
+            if subject_info is not None:
+                if not isinstance(subject_info, dict):
+                    raise TypeError("subject_info must be a dictionary when provided")
+
+                subject_info_path = os.path.join(subject_dir, "subject_info.json")
+
+                with open(subject_info_path, "w", encoding="utf-8") as handle:
+                    json.dump(subject_info, handle, indent=2, ensure_ascii=False)
+
+                updated = True
+
+            config_updates: Dict[str, Any] = {}
+
+            if subtopics is not None:
+                if not isinstance(subtopics, dict):
+                    raise TypeError("subtopics must be a dictionary when provided")
+                config_updates["subtopics"] = subtopics
+
+            if allowed_tags is not None:
+                if not isinstance(allowed_tags, list):
+                    raise TypeError("allowed_tags must be a list when provided")
+                config_updates["allowed_tags"] = allowed_tags
+
+            if config_updates:
+                subject_config_path = os.path.join(
+                    subject_dir, "subject_config.json"
+                )
+
+                existing_config: Dict[str, Any] = {}
+                if os.path.exists(subject_config_path):
+                    with open(subject_config_path, "r", encoding="utf-8") as handle:
+                        try:
+                            existing_config = json.load(handle) or {}
+                        except json.JSONDecodeError:
+                            existing_config = {}
+
+                existing_config.update(config_updates)
+
+                with open(subject_config_path, "w", encoding="utf-8") as handle:
+                    json.dump(existing_config, handle, indent=2, ensure_ascii=False)
+
+                updated = True
+
+            if updated:
+                try:
+                    self.clear_cache_for_subject(subject_id)
+                except Exception:
+                    # Cache clearing is best-effort; failures should not block the
+                    # update because the persisted files are already written.
+                    pass
+
+            return updated
+        except Exception:
+            # Re-raise so callers can return appropriate error responses while
+            # preserving the underlying exception context.
+            raise
+
     def delete_subject(self, subject_id: str) -> bool:
         """Delete a subject and all its associated data."""
         try:
