@@ -2780,6 +2780,35 @@
       document.addEventListener("DOMContentLoaded", function () {
         loadLessonProgress();
 
+        const params = new URLSearchParams(window.location.search);
+        const focusSubtopicRaw = params.get("focus");
+        if (focusSubtopicRaw) {
+          const focusSubtopic = focusSubtopicRaw.trim();
+          if (focusSubtopic) {
+            const subject = "{{ subject }}";
+            const lessonButton = Array.from(
+              document.querySelectorAll(".lesson-btn[data-subtopic]")
+            ).find((btn) => btn.dataset.subtopic === focusSubtopic);
+
+            if (lessonButton) {
+              handleSubtopicAccess(subject, focusSubtopic);
+              if (typeof lessonButton.focus === "function") {
+                lessonButton.focus();
+              }
+
+              params.delete("focus");
+              const newQuery = params.toString();
+              const newUrl =
+                window.location.pathname +
+                (newQuery ? `?${newQuery}` : "") +
+                window.location.hash;
+              if (window.history && window.history.replaceState) {
+                window.history.replaceState({}, "", newUrl);
+              }
+            }
+          }
+        }
+
         // Add event listener for back to topics button
         document
           .getElementById("backToTopicsFromInitial")
