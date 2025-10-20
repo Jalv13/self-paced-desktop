@@ -913,7 +913,9 @@
                 }
                 
                 try {
-                    const response = await fetch(`/api/subjects/${currentSubject}/tags`);
+                    const response = await fetch(`/api/subjects/${currentSubject}/tags`, {
+                        cache: 'no-store'
+                    });
                     if (response.ok) {
                         const data = await response.json();
                         availableTags = data.tags || [];
@@ -1144,7 +1146,7 @@
                     loadAvailableTags();
                     
                     // Fetch subtopics for the selected subject
-                    fetch(`/api/subjects/${selectedSubject}/subtopics`)
+                    fetch(`/api/subjects/${selectedSubject}/subtopics`, { cache: 'no-store' })
                         .then(response => response.json())
                         .then(data => {
                             if (data.subtopics) {
