@@ -427,14 +427,13 @@ def admin_edit_subtopic(subject, subtopic):
         if not subject_config or subtopic not in subject_config.get("subtopics", {}):
             return f"Subject '{subject}' with subtopic '{subtopic}' not found", 404
 
-        # Load subtopic data
-        subtopic_data = subject_config["subtopics"].get(subtopic, {})
-
-        return render_template(
-            "admin/edit_subtopic.html",
-            subject=subject,
-            subtopic=subtopic,
-            subtopic_data=subtopic_data,
+        return redirect(
+            url_for(
+                "admin.admin_subtopics",
+                subject=subject,
+                subtopic=subtopic,
+                action="edit",
+            )
         )
 
     except Exception as e:

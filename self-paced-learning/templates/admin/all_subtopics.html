@@ -272,7 +272,7 @@
                   <td>
                     <div class="admin-actions">
                       <a
-                        href="{{ url_for('admin.admin_edit_subtopic', subject=subject.id, subtopic=subtopic.id) }}"
+                        href="{{ url_for('admin.admin_subtopics', subject=subject.id, subtopic=subtopic.id, action='edit') }}"
                         class="btn-small"
                       >
                         <i class="fas fa-pen"></i>
