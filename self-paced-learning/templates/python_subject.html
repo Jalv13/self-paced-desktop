@@ -2041,6 +2041,7 @@
                     title: lesson.title,
                     type: lessonTypeValue,
                     tags: lesson.tags || [],
+                    order: lesson.order !== undefined ? lesson.order : 999,
                     subtopic: subtopic,
                     subject: subject,
                     content: lesson.content,
@@ -2048,6 +2049,15 @@
                     completed: lesson.completed || false, // Include completion status
                   });
                 }
+              });
+
+              // Sort lessons by order field (lower numbers first)
+              filteredLessons.sort((a, b) => {
+                if (a.order !== b.order) {
+                  return a.order - b.order;
+                }
+                // If orders are equal, sort by title as secondary
+                return (a.title || '').localeCompare(b.title || '');
               });
 
               if (filteredLessons.length > 0) {

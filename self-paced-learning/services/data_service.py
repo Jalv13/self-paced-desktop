@@ -421,9 +421,7 @@ class DataService:
                 config_updates["allowed_tags"] = allowed_tags
 
             if config_updates:
-                subject_config_path = os.path.join(
-                    subject_dir, "subject_config.json"
-                )
+                subject_config_path = os.path.join(subject_dir, "subject_config.json")
 
                 existing_config: Dict[str, Any] = {}
                 if os.path.exists(subject_config_path):
@@ -442,12 +440,21 @@ class DataService:
                             # Create the subtopic directory
                             subtopic_dir = os.path.join(subject_dir, subtopic_id)
                             os.makedirs(subtopic_dir, exist_ok=True)
-                            
+
                             # Initialize with proper lesson_plans.json structure to make it valid
-                            lesson_plans_path = os.path.join(subtopic_dir, "lesson_plans.json")
+                            lesson_plans_path = os.path.join(
+                                subtopic_dir, "lesson_plans.json"
+                            )
                             if not os.path.exists(lesson_plans_path):
-                                with open(lesson_plans_path, "w", encoding="utf-8") as f:
-                                    json.dump({"lessons": [], "updated_date": "2025-10-15"}, f, indent=2, ensure_ascii=False)
+                                with open(
+                                    lesson_plans_path, "w", encoding="utf-8"
+                                ) as f:
+                                    json.dump(
+                                        {"lessons": [], "updated_date": "2025-10-15"},
+                                        f,
+                                        indent=2,
+                                        ensure_ascii=False,
+                                    )
 
                 existing_config.update(config_updates)
 
@@ -496,7 +503,7 @@ class DataService:
             tags = self.data_loader.get_subject_keywords(subject)
             return [tag for tag in tags if isinstance(tag, str)]
         except Exception as exc:
-            print(f'Error retrieving allowed tags for subject {subject}: {exc}')
+            print(f"Error retrieving allowed tags for subject {subject}: {exc}")
             return []
 
     def get_subject_tags(self, subject: str) -> List[str]:

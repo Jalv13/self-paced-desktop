@@ -14,11 +14,11 @@
         }
       ],
       "tags": [
-        "python",
-        "functions",
-        "introduction"
+        "function_basics",
+        "function_definition",
+        "terminology"
       ],
-      "type": "initial",
+      "type": "remedial",
       "updated_date": "2025-09-25",
       "order": 1,
       "id": "python-functions-intro"
@@ -87,12 +87,11 @@
         }
       ],
       "tags": [
-        "python",
-        "functions",
-        "def",
+        "function_definition",
+        "function_basics",
         "syntax"
       ],
-      "type": "initial",
+      "type": "remedial",
       "updated_date": "2025-09-25",
       "order": 2,
       "id": "def-keyword"
@@ -217,14 +216,12 @@
         }
       ],
       "tags": [
-        "python",
-        "functions",
-        "parameters",
-        "arguments",
-        "default",
-        "keyword"
+        "function_arguments",
+        "keyword_arguments",
+        "function_definition",
+        "terminology"
       ],
-      "type": "initial",
+      "type": "remedial",
       "updated_date": "2025-09-25",
       "order": 3,
       "id": "function-parameters"
@@ -325,13 +322,11 @@
         }
       ],
       "tags": [
-        "python",
-        "functions",
-        "args",
-        "kwargs",
-        "arguments"
+        "args_kwargs",
+        "function_arguments",
+        "terminology"
       ],
-      "type": "initial",
+      "type": "remedial",
       "updated_date": "2025-09-25",
       "order": 4,
       "id": "arbitrary-arguments"
@@ -377,11 +372,11 @@
         }
       ],
       "tags": [
-        "python",
-        "functions",
-        "return"
+        "return_values",
+        "function_basics",
+        "syntax"
       ],
-      "type": "initial",
+      "type": "remedial",
       "updated_date": "2025-09-25",
       "order": 5,
       "id": "return-values"
@@ -485,11 +480,11 @@
         }
       ],
       "tags": [
-        "python",
-        "functions",
-        "recursion"
+        "recursion",
+        "function_basics",
+        "error_handling"
       ],
-      "type": "initial",
+      "type": "remedial",
       "updated_date": "2025-01-01",
       "order": 8,
       "id": "recursion"

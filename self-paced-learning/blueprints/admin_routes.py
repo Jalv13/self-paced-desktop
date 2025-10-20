@@ -496,6 +496,12 @@ def admin_lessons():
 
         # Load lessons for this specific subject/subtopic
         lessons = data_service.get_lesson_map(subject_filter, subtopic_filter)
+        
+        # Sort lessons by order field for display
+        sorted_lessons = dict(sorted(
+            lessons.items(),
+            key=lambda x: (x[1].get('order', 999), x[0])  # Sort by order, then by lesson_id
+        ))
 
         # Get subject info
         subject_info = subjects[subject_filter]
@@ -516,7 +522,7 @@ def admin_lessons():
 
         return render_template(
             "admin/lessons.html",
-            lessons=lessons,
+            lessons=sorted_lessons,
             subjects=subjects,
             subject_filter=subject_filter,
             subtopic_filter=subtopic_filter,

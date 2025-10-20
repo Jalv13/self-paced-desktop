@@ -112,10 +112,10 @@
                             
                             <div class="form-group">
                                 <label for="order">Lesson Order</label>
-                                <input type="number" id="order" name="order" min="1" max="100"
+                                <input type="number" id="order" name="order" min="1" max="999"
                                        placeholder="e.g., 1, 2, 3..."
                                        {% if edit_mode and lesson_data.order %}value="{{ lesson_data.order }}"{% endif %}>
-                                <small>Optional: Display order for initial lessons (1 = first, 2 = second, etc.)</small>
+                                <small>Display order within subtopic (lower numbers appear first). Leave blank to add at end.</small>
                             </div>
                         </div>
 

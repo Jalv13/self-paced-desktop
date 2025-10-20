@@ -391,43 +391,58 @@ def show_results_page():
         elif isinstance(raw_lessons, list):
             lesson_list = raw_lessons
 
+        # Sort lessons by order field to ensure predictable, pedagogical ordering
+        lesson_list.sort(key=lambda x: (x.get("order", 999), x.get("id", "")))
+
+        # Separate ONLY remedial lessons (results page is exclusively for remediation)
+        remedial_lessons = [l for l in lesson_list if l.get("type", "").lower() == "remedial"]
+
+        # Warning A: Alert if no remedial content available for this subtopic
+        if not remedial_lessons:
+            print(f"[WARNING] No remedial lessons found for {current_subject}/{current_subtopic}. Results page will be empty.")
+
         deduped_topics: List[str] = []
         seen_lessons: Set[str] = set()
 
         for topic in normalized_topics:
             match = None
             topic_lower = topic.lower()
-            for lesson in lesson_list:
+            
+            # Search ONLY remedial lessons with strict tag matching
+            # Results page is exclusively for remediation after quiz identifies weak topics
+            for lesson in remedial_lessons:
                 lesson_tags = [tag.lower() for tag in lesson.get("tags", [])]
                 if topic_lower in lesson_tags:
                     match = lesson
                     break
+            
+            # Warning B: Alert if no remedial lesson matches this weak topic
+            if not match:
+                print(f"[WARNING] No remedial lesson found for weak topic '{topic}' in {current_subject}/{current_subtopic}")
+                continue  # Skip this topic entirely - no fallback
 
-            if not match and lesson_list:
-                # Fallback to the first lesson if no specific tag match
-                match = lesson_list[0]
+            # Process the matched lesson - deduplication logic
+            lesson_identifier = match.get("id") or match.get("title")
+            if not lesson_identifier:
+                tags_identifier = ",".join(
+                    sorted(tag.lower() for tag in match.get("tags", []) if isinstance(tag, str))
+                )
+                lesson_identifier = tags_identifier or json.dumps(match, sort_keys=True)
+            lesson_identifier = str(lesson_identifier).strip()
+            lesson_key = f"{current_subject}:{current_subtopic}:{lesson_identifier.lower()}"
+            if lesson_key in seen_lessons:
+                print(f"[INFO] Lesson '{lesson_identifier}' already shown for another weak topic. Skipping duplicate.")
+                continue
 
-            if match:
-                lesson_identifier = match.get("id") or match.get("title")
-                if not lesson_identifier:
-                    tags_identifier = ",".join(
-                        sorted(tag.lower() for tag in match.get("tags", []) if isinstance(tag, str))
-                    )
-                    lesson_identifier = tags_identifier or json.dumps(match, sort_keys=True)
-                lesson_identifier = str(lesson_identifier).strip()
-                lesson_key = f"{current_subject}:{current_subtopic}:{lesson_identifier.lower()}"
-                if lesson_key in seen_lessons:
-                    continue
+            seen_lessons.add(lesson_key)
+            deduped_topics.append(topic)
 
-                seen_lessons.add(lesson_key)
-                deduped_topics.append(topic)
-
-                # Include a shallow copy to avoid mutating original data
-                lesson_plan_map[topic] = {
-                    **match,
-                    "subject": current_subject,
-                    "subtopic": current_subtopic,
-                }
+            # Include a shallow copy to avoid mutating original data
+            lesson_plan_map[topic] = {
+                **match,
+                "subject": current_subject,
+                "subtopic": current_subtopic,
+            }
 
         if deduped_topics:
             normalized_topics = deduped_topics

@@ -90,23 +90,21 @@
     }
   },
   "allowed_tags": [
-    "*args and **kwargs",
-    "Comment",
-    "DataType",
-    "default parameter values",
-    "error handling",
-    "function definition",
-    "function return values",
-    "keyword arguments",
-    "passing function arguments",
-    "positional-only and keyword-only arguments",
-    "Print",
-    "python function basics",
-    "python syntax",
-    "recursive functions",
-    "return values",
+    "args_kwargs",
+    "comment",
+    "data_type",
+    "error_handling",
+    "function_arguments",
+    "function_basics",
+    "function_definition",
+    "keyword_arguments",
+    "positional_keyword_arguments",
+    "print",
+    "python_syntax",
+    "recursion",
+    "return_values",
     "syntax",
     "terminology",
-    "Variable"
+    "variable"
   ]
 }

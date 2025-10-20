@@ -498,6 +498,22 @@ class AdminService:
             lesson_data.setdefault("type", "initial")
             lesson_data.setdefault("tags", [])
             lesson_data.setdefault("updated_date", "2025-10-02")
+            
+            # Auto-assign order if not provided
+            if "order" not in lesson_data or lesson_data.get("order") is None or lesson_data.get("order") == "":
+                # Get existing lessons to determine next order
+                existing_lessons = self.data_service.get_lesson_plans(subject, subtopic)
+                if existing_lessons and "lessons" in existing_lessons:
+                    # Find max order value
+                    max_order = 0
+                    for lesson in existing_lessons["lessons"].values():
+                        if isinstance(lesson, dict):
+                            lesson_order = lesson.get("order", 0)
+                            if lesson_order and isinstance(lesson_order, (int, float)):
+                                max_order = max(max_order, int(lesson_order))
+                    lesson_data["order"] = max_order + 1
+                else:
+                    lesson_data["order"] = 1
 
             # Save the lesson
             success = self.data_service.save_lesson_to_file(
