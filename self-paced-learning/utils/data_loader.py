@@ -476,7 +476,9 @@ class DataLoader:
                 current_app.logger.error(f"Error finding lessons by tags: {e}")
 
         # Sort lessons by order field (lower numbers first), then by lesson_id for stability
-        matching_lessons.sort(key=lambda x: (x.get("order", 999), x.get("lesson_id", "")))
+        matching_lessons.sort(
+            key=lambda x: (x.get("order", 999), x.get("lesson_id", ""))
+        )
 
         return matching_lessons
 

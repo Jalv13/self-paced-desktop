@@ -277,9 +277,9 @@ def admin_overview_subtopics():
 
             for subtopic in subject_data.get("subtopics", []):
                 lesson_count = subtopic.get("lesson_count", 0) or 0
-                total_questions = (
-                    subtopic.get("quiz_questions_count", 0) or 0
-                ) + (subtopic.get("pool_questions_count", 0) or 0)
+                total_questions = (subtopic.get("quiz_questions_count", 0) or 0) + (
+                    subtopic.get("pool_questions_count", 0) or 0
+                )
 
                 if lesson_count > 0:
                     lesson_ready += 1
@@ -488,7 +488,9 @@ def admin_lessons():
 
         # Get subject config to validate subtopic exists in configuration
         subject_config = data_service.load_subject_config(subject_filter)
-        if not subject_config or subtopic_filter not in subject_config.get("subtopics", {}):
+        if not subject_config or subtopic_filter not in subject_config.get(
+            "subtopics", {}
+        ):
             return (
                 f"Subject '{subject_filter}' with subtopic '{subtopic_filter}' not found",
                 404,
@@ -496,12 +498,17 @@ def admin_lessons():
 
         # Load lessons for this specific subject/subtopic
         lessons = data_service.get_lesson_map(subject_filter, subtopic_filter)
-        
+
         # Sort lessons by order field for display
-        sorted_lessons = dict(sorted(
-            lessons.items(),
-            key=lambda x: (x[1].get('order', 999), x[0])  # Sort by order, then by lesson_id
-        ))
+        sorted_lessons = dict(
+            sorted(
+                lessons.items(),
+                key=lambda x: (
+                    x[1].get("order", 999),
+                    x[0],
+                ),  # Sort by order, then by lesson_id
+            )
+        )
 
         # Get subject info
         subject_info = subjects[subject_filter]

@@ -188,7 +188,6 @@ class AdminService:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-
     def update_subject(
         self, subject_id: str, update_payload: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -210,11 +209,7 @@ class AdminService:
             subtopics = update_payload.get("subtopics")
             allowed_tags = update_payload.get("allowed_tags")
 
-            if (
-                subject_info is None
-                and subtopics is None
-                and allowed_tags is None
-            ):
+            if subject_info is None and subtopics is None and allowed_tags is None:
                 return {
                     "success": False,
                     "error": "No updatable fields provided",
@@ -301,9 +296,7 @@ class AdminService:
                 )
 
                 lesson_count = len(lessons) if lessons else 0
-                initial_count = (
-                    len(quiz_data.get("questions", [])) if quiz_data else 0
-                )
+                initial_count = len(quiz_data.get("questions", [])) if quiz_data else 0
                 pool_count = len(pool_data) if pool_data else 0
 
                 subtopics_data.append(
@@ -498,9 +491,13 @@ class AdminService:
             lesson_data.setdefault("type", "initial")
             lesson_data.setdefault("tags", [])
             lesson_data.setdefault("updated_date", "2025-10-02")
-            
+
             # Auto-assign order if not provided
-            if "order" not in lesson_data or lesson_data.get("order") is None or lesson_data.get("order") == "":
+            if (
+                "order" not in lesson_data
+                or lesson_data.get("order") is None
+                or lesson_data.get("order") == ""
+            ):
                 # Get existing lessons to determine next order
                 existing_lessons = self.data_service.get_lesson_plans(subject, subtopic)
                 if existing_lessons and "lessons" in existing_lessons:
@@ -830,7 +827,10 @@ class AdminService:
         try:
             subjects = payload.get("subjects")
             if not isinstance(subjects, dict) or not subjects:
-                return {"success": False, "error": "No subjects provided in import data."}
+                return {
+                    "success": False,
+                    "error": "No subjects provided in import data.",
+                }
 
             data_root = self.data_service.data_root_path
 
@@ -854,7 +854,9 @@ class AdminService:
                         "w",
                         encoding="utf-8",
                     ) as config_file:
-                        json.dump(subject_config, config_file, indent=2, ensure_ascii=False)
+                        json.dump(
+                            subject_config, config_file, indent=2, ensure_ascii=False
+                        )
 
                 subtopics = subject_payload.get("subtopics", {})
                 if isinstance(subtopics, dict):

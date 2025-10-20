@@ -13,11 +13,7 @@
           "text": "Functions help you avoid repetition, make code more organized, and allow easier debugging."
         }
       ],
-      "tags": [
-        "function_basics",
-        "function_definition",
-        "terminology"
-      ],
+      "tags": ["function_basics", "function_definition", "terminology"],
       "type": "remedial",
       "updated_date": "2025-09-25",
       "order": 1,
@@ -86,11 +82,7 @@
           ]
         }
       ],
-      "tags": [
-        "function_definition",
-        "function_basics",
-        "syntax"
-      ],
+      "tags": ["function_definition", "function_basics", "syntax"],
       "type": "remedial",
       "updated_date": "2025-09-25",
       "order": 2,
@@ -321,11 +313,7 @@
           ]
         }
       ],
-      "tags": [
-        "args_kwargs",
-        "function_arguments",
-        "terminology"
-      ],
+      "tags": ["args_kwargs", "function_arguments", "terminology"],
       "type": "remedial",
       "updated_date": "2025-09-25",
       "order": 4,
@@ -371,11 +359,7 @@
           ]
         }
       ],
-      "tags": [
-        "return_values",
-        "function_basics",
-        "syntax"
-      ],
+      "tags": ["return_values", "function_basics", "syntax"],
       "type": "remedial",
       "updated_date": "2025-09-25",
       "order": 5,
@@ -432,12 +416,7 @@
           ]
         }
       ],
-      "tags": [
-        "python",
-        "functions",
-        "summary",
-        "best practices"
-      ],
+      "tags": ["python", "functions", "summary", "best practices"],
       "type": "initial",
       "updated_date": "2025-09-25",
       "order": 7,
@@ -479,11 +458,7 @@
           ]
         }
       ],
-      "tags": [
-        "recursion",
-        "function_basics",
-        "error_handling"
-      ],
+      "tags": ["recursion", "function_basics", "error_handling"],
       "type": "remedial",
       "updated_date": "2025-01-01",
       "order": 8,

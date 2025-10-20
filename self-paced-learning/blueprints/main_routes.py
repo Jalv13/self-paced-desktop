@@ -134,9 +134,7 @@ def subject_page(subject):
 
                 # Count videos
                 video_data = get_video_data(subject, subtopic_id)
-                video_count = (
-                    len(video_data.get("videos", [])) if video_data else 0
-                )
+                video_count = len(video_data.get("videos", [])) if video_data else 0
 
                 # Update subtopic data with actual counts
                 subtopic_data["question_count"] = question_count
@@ -207,9 +205,7 @@ def subtopic_prerequisites(subject, subtopic):
             subject=subject,
             subtopic=subtopic_name,
             subtopic_id=subtopic,
-            missing_prerequisites=prerequisite_status.get(
-                "missing_prerequisites", []
-            ),
+            missing_prerequisites=prerequisite_status.get("missing_prerequisites", []),
             missing_ids=prerequisite_status.get("missing_prerequisite_ids", []),
             prerequisites=prerequisite_status,
         )
@@ -319,15 +315,15 @@ def analyze_quiz():
             current_subject, current_subtopic, weak_topic_candidates
         )
 
-        progress_service.store_quiz_answers(
-            current_subject, current_subtopic, answers
-        )
+        progress_service.store_quiz_answers(current_subject, current_subtopic, answers)
 
         return jsonify({"success": True, "analysis": stored_analysis})
 
     except Exception as e:
         print(f"Error analyzing quiz: {e}")
         return f"Error analyzing quiz: {e}", 500
+
+
 @main_bp.route("/results")
 def show_results_page():
     """Display quiz results page with personalized learning recommendations."""
@@ -380,7 +376,9 @@ def show_results_page():
 
         # Gather lessons for the current subject/subtopic
         lessons_payload = (
-            data_service.data_loader.load_lesson_plans(current_subject, current_subtopic)
+            data_service.data_loader.load_lesson_plans(
+                current_subject, current_subtopic
+            )
             or {}
         )
         raw_lessons = lessons_payload.get("lessons", {})
@@ -395,11 +393,15 @@ def show_results_page():
         lesson_list.sort(key=lambda x: (x.get("order", 999), x.get("id", "")))
 
         # Separate ONLY remedial lessons (results page is exclusively for remediation)
-        remedial_lessons = [l for l in lesson_list if l.get("type", "").lower() == "remedial"]
+        remedial_lessons = [
+            l for l in lesson_list if l.get("type", "").lower() == "remedial"
+        ]
 
         # Warning A: Alert if no remedial content available for this subtopic
         if not remedial_lessons:
-            print(f"[WARNING] No remedial lessons found for {current_subject}/{current_subtopic}. Results page will be empty.")
+            print(
+                f"[WARNING] No remedial lessons found for {current_subject}/{current_subtopic}. Results page will be empty."
+            )
 
         deduped_topics: List[str] = []
         seen_lessons: Set[str] = set()
@@ -407,7 +409,7 @@ def show_results_page():
         for topic in normalized_topics:
             match = None
             topic_lower = topic.lower()
-            
+
             # Search ONLY remedial lessons with strict tag matching
             # Results page is exclusively for remediation after quiz identifies weak topics
             for lesson in remedial_lessons:
@@ -415,23 +417,33 @@ def show_results_page():
                 if topic_lower in lesson_tags:
                     match = lesson
                     break
-            
+
             # Warning B: Alert if no remedial lesson matches this weak topic
             if not match:
-                print(f"[WARNING] No remedial lesson found for weak topic '{topic}' in {current_subject}/{current_subtopic}")
+                print(
+                    f"[WARNING] No remedial lesson found for weak topic '{topic}' in {current_subject}/{current_subtopic}"
+                )
                 continue  # Skip this topic entirely - no fallback
 
             # Process the matched lesson - deduplication logic
             lesson_identifier = match.get("id") or match.get("title")
             if not lesson_identifier:
                 tags_identifier = ",".join(
-                    sorted(tag.lower() for tag in match.get("tags", []) if isinstance(tag, str))
+                    sorted(
+                        tag.lower()
+                        for tag in match.get("tags", [])
+                        if isinstance(tag, str)
+                    )
                 )
                 lesson_identifier = tags_identifier or json.dumps(match, sort_keys=True)
             lesson_identifier = str(lesson_identifier).strip()
-            lesson_key = f"{current_subject}:{current_subtopic}:{lesson_identifier.lower()}"
+            lesson_key = (
+                f"{current_subject}:{current_subtopic}:{lesson_identifier.lower()}"
+            )
             if lesson_key in seen_lessons:
-                print(f"[INFO] Lesson '{lesson_identifier}' already shown for another weak topic. Skipping duplicate.")
+                print(
+                    f"[INFO] Lesson '{lesson_identifier}' already shown for another weak topic. Skipping duplicate."
+                )
                 continue
 
             seen_lessons.add(lesson_key)
@@ -504,14 +516,20 @@ def generate_remedial_quiz():
         current_subtopic = session.get("current_subtopic")
 
         if not current_subject or not current_subtopic:
-            return jsonify({"success": False, "error": "Error: No active quiz session."}), 400
+            return (
+                jsonify({"success": False, "error": "Error: No active quiz session."}),
+                400,
+            )
 
-        weak_topics = progress_service.get_weak_topics(current_subject, current_subtopic)
+        weak_topics = progress_service.get_weak_topics(
+            current_subject, current_subtopic
+        )
 
         if not weak_topics:
-            analysis = progress_service.get_quiz_analysis(
-                current_subject, current_subtopic
-            ) or {}
+            analysis = (
+                progress_service.get_quiz_analysis(current_subject, current_subtopic)
+                or {}
+            )
             fallback_topics = (
                 analysis.get("weak_tags")
                 or analysis.get("weak_topics")
@@ -520,25 +538,42 @@ def generate_remedial_quiz():
                 or []
             )
             if isinstance(fallback_topics, list):
-                weak_topics = [str(topic) for topic in fallback_topics if isinstance(topic, str)]
+                weak_topics = [
+                    str(topic) for topic in fallback_topics if isinstance(topic, str)
+                ]
             elif isinstance(fallback_topics, str):
                 weak_topics = [fallback_topics]
 
-        weak_topics = [topic for topic in weak_topics if isinstance(topic, str) and topic.strip()]
+        weak_topics = [
+            topic for topic in weak_topics if isinstance(topic, str) and topic.strip()
+        ]
 
         if not weak_topics:
-            return jsonify({
-                "success": False,
-                "error": "No weak topics identified; remedial quiz not required.",
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "No weak topics identified; remedial quiz not required.",
+                    }
+                ),
+                400,
+            )
 
-        question_pool = data_service.get_question_pool_questions(current_subject, current_subtopic) or []
+        question_pool = (
+            data_service.get_question_pool_questions(current_subject, current_subtopic)
+            or []
+        )
 
         if not question_pool:
-            return jsonify({
-                "success": False,
-                "error": "No question pool available for remedial quiz.",
-            }), 404
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "No question pool available for remedial quiz.",
+                    }
+                ),
+                404,
+            )
 
         ai_service = get_ai_service()
         remedial_questions = ai_service.select_remedial_questions(
@@ -547,10 +582,15 @@ def generate_remedial_quiz():
         )
 
         if not remedial_questions:
-            return jsonify({
-                "success": False,
-                "error": "We couldn't find follow-up questions for your weak topics. Please review the materials and try again.",
-            }), 404
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "We couldn't find follow-up questions for your weak topics. Please review the materials and try again.",
+                    }
+                ),
+                404,
+            )
 
         stored_count = progress_service.set_remedial_quiz_data(
             current_subject, current_subtopic, remedial_questions, weak_topics
@@ -572,6 +612,8 @@ def generate_remedial_quiz():
     except Exception as e:
         print(f"Error generating remedial quiz: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
+
 @main_bp.route("/take_remedial_quiz")
 def take_remedial_quiz_page():
     """Page for taking the remedial quiz."""
