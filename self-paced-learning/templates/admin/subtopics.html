@@ -1087,6 +1087,7 @@
 
     <script>
       let draggedSubtopic = null;
+      const isFilteredView = {{ filtered_view|tojson }};
       {% if filtered_view %}
       const subjectId = {{ subject|tojson }};
       let subtopicState = {{ subtopics|tojson|safe }};
@@ -1121,6 +1122,42 @@
               closeSubtopicModal();
             }
           });
+        }
+
+        if (isFilteredView) {
+          try {
+            const params = new URLSearchParams(window.location.search);
+            const requestedAction = (params.get('action') || '').toLowerCase();
+            const requestedSubtopic = params.get('subtopic');
+
+            if (requestedAction === 'edit' && requestedSubtopic) {
+              const subtopicExists =
+                subtopicState &&
+                Object.prototype.hasOwnProperty.call(subtopicState, requestedSubtopic);
+
+              if (subtopicExists) {
+                window.setTimeout(() => {
+                  openSubtopicModal('edit', requestedSubtopic);
+                }, 150);
+              } else if (typeof showNotification === 'function') {
+                showNotification('The requested subtopic could not be found.', 'error');
+              }
+
+              params.delete('action');
+              params.delete('subtopic');
+
+              const cleanedQuery = params.toString();
+              const newUrl = cleanedQuery
+                ? `${window.location.pathname}?${cleanedQuery}`
+                : window.location.pathname;
+
+              if (window.history && window.history.replaceState) {
+                window.history.replaceState({}, document.title, newUrl);
+              }
+            }
+          } catch (error) {
+            console.error('Unable to process subtopic edit parameters:', error);
+          }
         }
       });
 
