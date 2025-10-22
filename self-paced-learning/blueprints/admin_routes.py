@@ -735,9 +735,8 @@ def admin_select_subtopic_for_lessons():
 def admin_questions():
     """Questions management page."""
     try:
-        from utils.data_loader import DataLoader
-
-        data_loader = DataLoader("data")
+        data_service = get_data_service()
+        data_loader = data_service.data_loader
 
         # Get URL parameters for filtering
         subject_filter = request.args.get("subject")
@@ -918,11 +917,8 @@ def admin_quiz_editor(subject, subtopic):
 @admin_bp.route("/quiz/<subject>/<subtopic>/initial", methods=["GET", "POST"])
 def admin_quiz_initial(subject, subtopic):
     """Manage initial quiz questions."""
-    from utils.data_loader import DataLoader
-    import os
-    import json
-
-    data_loader = DataLoader("data")
+    data_service = get_data_service()
+    data_loader = data_service.data_loader
 
     if request.method == "GET":
         try:
@@ -946,7 +942,11 @@ def admin_quiz_initial(subject, subtopic):
 
             # Save to file
             quiz_file_path = os.path.join(
-                "data", "subjects", subject, subtopic, "quiz_data.json"
+                data_service.data_root_path,
+                "subjects",
+                subject,
+                subtopic,
+                "quiz_data.json",
             )
 
             # Ensure directory exists
@@ -956,7 +956,7 @@ def admin_quiz_initial(subject, subtopic):
                 json.dump(quiz_data, f, indent=2)
 
             # Clear cache for this subject/subtopic to ensure fresh data is loaded
-            data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
+            data_service.clear_cache_for_subject_subtopic(subject, subtopic)
             print(f"Cleared cache for {subject}/{subtopic} after updating quiz data")
 
             return jsonify(
@@ -971,11 +971,8 @@ def admin_quiz_initial(subject, subtopic):
 @admin_bp.route("/quiz/<subject>/<subtopic>/pool", methods=["GET", "POST"])
 def admin_quiz_pool(subject, subtopic):
     """Manage question pool for remedial quizzes."""
-    from utils.data_loader import DataLoader
-    import os
-    import json
-
-    data_loader = DataLoader("data")
+    data_service = get_data_service()
+    data_loader = data_service.data_loader
 
     if request.method == "GET":
         try:
@@ -999,7 +996,11 @@ def admin_quiz_pool(subject, subtopic):
 
             # Save to file
             pool_file_path = os.path.join(
-                "data", "subjects", subject, subtopic, "question_pool.json"
+                data_service.data_root_path,
+                "subjects",
+                subject,
+                subtopic,
+                "question_pool.json",
             )
 
             # Ensure directory exists
@@ -1009,7 +1010,7 @@ def admin_quiz_pool(subject, subtopic):
                 json.dump(pool_data, f, indent=2)
 
             # Clear cache for this subject/subtopic to ensure fresh data is loaded
-            data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
+            data_service.clear_cache_for_subject_subtopic(subject, subtopic)
             print(
                 f"Cleared cache for {subject}/{subtopic} after updating question pool"
             )
@@ -1044,9 +1045,8 @@ def admin_select_subject_for_subtopics():
 def admin_subtopics():
     """Manage subtopics for a specific subject with drag-to-reorder functionality."""
     try:
-        from utils.data_loader import DataLoader
-
-        data_loader = DataLoader("data")
+        data_service = get_data_service()
+        data_loader = data_service.data_loader
 
         # Get URL parameters for filtering
         subject_filter = request.args.get("subject")
