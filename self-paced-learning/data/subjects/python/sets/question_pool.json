@@ -1,0 +1,41 @@
+{
+  "questions": [
+    {
+      "id": "sets-membership-basic",
+      "question": "Which expression correctly checks whether the value 'python' exists in the set skills?",
+      "question_type": "multiple_choice",
+      "difficulty": "easy",
+      "options": [
+        "skills.has('python')",
+        "'python' in skills",
+        "skills.includes('python')",
+        "skills.contains('python')"
+      ],
+      "answer": "'python' in skills",
+      "explanation": "Membership testing uses the `in` keyword. Set objects do not provide has/includes/contains helper methods.",
+      "tags": [
+        "sets",
+        "membership"
+      ]
+    },
+    {
+      "id": "sets-convert-list",
+      "question": "Given a list with duplicates, which option produces a set of the unique values?",
+      "question_type": "multiple_choice",
+      "difficulty": "medium",
+      "options": [
+        "unique_items = list(items)",
+        "unique_items = set(items)",
+        "unique_items = items.unique()",
+        "unique_items = items.remove_duplicates()"
+      ],
+      "answer": "unique_items = set(items)",
+      "explanation": "Passing the list into the set constructor removes duplicates automatically.",
+      "tags": [
+        "sets",
+        "deduplication"
+      ]
+    }
+  ],
+  "updated_date": "2025-10-06"
+}
