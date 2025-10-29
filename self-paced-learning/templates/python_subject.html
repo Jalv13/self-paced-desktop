@@ -1649,10 +1649,14 @@
         }
 
         if (!hasMarkdownSupport()) {
-          return `<p>${escapeHtml(rawText)}</p>`;
+          // Convert newlines to <br> tags for fallback rendering
+          const escaped = escapeHtml(rawText).replace(/\n/g, '<br>');
+          return `<p>${escaped}</p>`;
         }
 
-        const rendered = window.marked.parse(rawText, MARKDOWN_OPTIONS);
+        // Convert single newlines to double newlines for proper Markdown paragraph breaks
+        const markdownText = rawText.replace(/\n/g, '  \n');
+        const rendered = window.marked.parse(markdownText, MARKDOWN_OPTIONS);
         return window.DOMPurify.sanitize(rendered);
       }
 
