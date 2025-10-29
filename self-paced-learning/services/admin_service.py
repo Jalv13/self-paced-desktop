@@ -200,7 +200,7 @@ class AdminService:
             subject_config = self.data_service.load_subject_config(subject)
             if not subject_config:
                 return {"success": False, "error": "Subject configuration not found"}
-            
+
             subtopics = subject_config.get("subtopics", {})
             if subtopic_id not in subtopics:
                 return {"success": False, "error": "Subtopic not found"}

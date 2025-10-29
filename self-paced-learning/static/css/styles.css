@@ -467,10 +467,30 @@ h2 {
   right: 10px;
   background-color: #4caf50;
   color: white;
-  padding: 5px 10px;
+  padding: 5px 12px;
   border-radius: 15px;
   font-size: 0.8rem;
-  display: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.completion-badge i {
+  font-size: 0.9rem;
+}
+
+.completion-badge.badge-available {
+  background-color: #4caf50;
+}
+
+.completion-badge.badge-unavailable {
+  background-color: #e53e3e;
+}
+
+.completion-badge.badge-locked {
+  background-color: #f59e0b;
 }
 
 /* Utility class */

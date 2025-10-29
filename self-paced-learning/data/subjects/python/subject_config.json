@@ -9,18 +9,60 @@
       "estimated_time": "1 hour",
       "video_count": 0,
       "lesson_count": 10,
-      "question_count": 10
+      "question_count": 10,
+      "progress": {
+        "lessons": {
+          "completed_count": 0,
+          "total_count": 10,
+          "completion_percentage": 0.0,
+          "completed_lessons": []
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "watched_videos": []
+        },
+        "overall": {
+          "completed_items": 0,
+          "total_items": 10,
+          "completion_percentage": 0.0,
+          "is_complete": false
+        }
+      }
     },
     "week_2": {
       "name": "Week 2 - Hero Stats Training",
       "description": "Variables & Data Types - Create and manage hero stats using variables",
       "order": 2,
       "status": "active",
-      "prerequisites": ["week_1"],
+      "prerequisites": [
+        "week_1"
+      ],
       "estimated_time": "1.5 hours",
       "video_count": 0,
       "lesson_count": 12,
-      "question_count": 11
+      "question_count": 11,
+      "progress": {
+        "lessons": {
+          "completed_count": 0,
+          "total_count": 12,
+          "completion_percentage": 0.0,
+          "completed_lessons": []
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "watched_videos": []
+        },
+        "overall": {
+          "completed_items": 0,
+          "total_items": 12,
+          "completion_percentage": 0.0,
+          "is_complete": false
+        }
+      }
     },
     "functions": {
       "name": "Python Functions",
@@ -29,9 +71,33 @@
       "status": "active",
       "prerequisites": [],
       "estimated_time": "2 hours",
-      "video_count": 1,
-      "lesson_count": 14,
-      "question_count": 44
+      "video_count": 0,
+      "lesson_count": 7,
+      "question_count": 0,
+      "progress": {
+        "lessons": {
+          "completed_count": 1,
+          "total_count": 7,
+          "completion_percentage": 14.285714285714285,
+          "completed_lessons": [
+            "python-functions-summary"
+          ]
+        },
+        "videos": {
+          "watched_count": 1,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "watched_videos": [
+            "functions"
+          ]
+        },
+        "overall": {
+          "completed_items": 2,
+          "total_items": 7,
+          "completion_percentage": 28.57142857142857,
+          "is_complete": false
+        }
+      }
     },
     "loops": {
       "name": "Python Loops",
@@ -40,20 +106,74 @@
       "status": "active",
       "prerequisites": [],
       "estimated_time": "1.5 hours",
-      "video_count": 1,
-      "lesson_count": 0,
-      "question_count": 0
+      "video_count": 0,
+      "lesson_count": 7,
+      "question_count": 0,
+      "progress": {
+        "lessons": {
+          "completed_count": 7,
+          "total_count": 7,
+          "completion_percentage": 100.0,
+          "completed_lessons": [
+            "while-loop-syntax",
+            "while-loop-practice",
+            "infinite-while-loop",
+            "break-statement",
+            "continue-statement",
+            "for-loop-syntax",
+            "range-function"
+          ]
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "watched_videos": []
+        },
+        "overall": {
+          "completed_items": 7,
+          "total_items": 7,
+          "completion_percentage": 100.0,
+          "is_complete": true
+        }
+      }
     },
     "arrays": {
       "name": "NumPy Arrays",
       "description": "Discover efficient numerical computations and data processing with NumPy arrays",
       "order": 3,
       "status": "active",
-      "prerequisites": ["dictionaries", "functions", "lists", "loops", "sets"],
+      "prerequisites": [
+        "dictionaries",
+        "functions",
+        "lists",
+        "loops",
+        "sets"
+      ],
       "estimated_time": "2 hours",
       "video_count": 0,
       "lesson_count": 0,
-      "question_count": 0
+      "question_count": 0,
+      "progress": {
+        "lessons": {
+          "completed_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "completed_lessons": []
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "watched_videos": []
+        },
+        "overall": {
+          "completed_items": 0,
+          "total_items": 0,
+          "completion_percentage": 0,
+          "is_complete": false
+        }
+      }
     },
     "lists": {
       "name": "Python Lists",
@@ -63,30 +183,77 @@
       "prerequisites": [],
       "estimated_time": "1.5 hours",
       "video_count": 0,
-      "lesson_count": 0,
-      "question_count": 0
+      "lesson_count": 10,
+      "question_count": 1,
+      "progress": {
+        "lessons": {
+          "completed_count": 10,
+          "total_count": 10,
+          "completion_percentage": 100.0,
+          "completed_lessons": [
+            "list-functions-methods",
+            "list-comprehension",
+            "looping-through-lists",
+            "removing-items",
+            "adding-items",
+            "list-slicing",
+            "list-modification",
+            "list-access",
+            "list-creation",
+            "what-is-a-list"
+          ]
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "watched_videos": []
+        },
+        "overall": {
+          "completed_items": 10,
+          "total_items": 10,
+          "completion_percentage": 100.0,
+          "is_complete": true
+        }
+      }
     },
     "sets": {
       "name": "Python Sets",
       "description": "Learn about unordered collections and set operations like union and intersection",
       "order": 5,
       "status": "active",
-      "prerequisites": ["lists"],
+      "prerequisites": [
+        "lists"
+      ],
       "estimated_time": "1 hour",
       "video_count": 0,
       "lesson_count": 0,
-      "question_count": 0
+      "question_count": 0,
+      "progress": {
+        "overall": {
+          "completion_percentage": 0,
+          "is_complete": false
+        }
+      }
     },
     "dictionaries": {
       "name": "Python Dictionaries",
       "description": "Explore key-value mappings and dictionary comprehensions",
       "order": 6,
       "status": "active",
-      "prerequisites": ["lists"],
+      "prerequisites": [
+        "lists"
+      ],
       "estimated_time": "1.5 hours",
       "video_count": 0,
       "lesson_count": 0,
-      "question_count": 0
+      "question_count": 0,
+      "progress": {
+        "overall": {
+          "completion_percentage": 0,
+          "is_complete": false
+        }
+      }
     }
   },
   "allowed_tags": [

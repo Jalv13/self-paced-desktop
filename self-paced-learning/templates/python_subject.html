@@ -78,12 +78,23 @@
           style="background: linear-gradient(135deg, {{ subject_info.color }} 0%, {{ subject_info.color }}cc 50%, {{ subject_info.color }}ee 100%); box-shadow: 0 4px 8px {{ subject_info.color }}33;"
         >
           <h3>{{ subtopic_data.name }}</h3>
-          <span class="completion-badge" id="{{ subtopic_id }}-badge">
-            {% if subtopic_data.status == 'active' %} Available {% else %}
-            Locked {% endif %}
+          <span class="completion-badge{% if subtopic_data.status == 'inactive' %} badge-unavailable{% elif subtopic_data.status == 'active' %} badge-available{% else %} badge-locked{% endif %}" id="{{ subtopic_id }}-badge">
+            {% if subtopic_data.status == 'inactive' %}
+            <i class="fas fa-ban"></i> Unavailable
+            {% elif subtopic_data.status == 'active' %}
+            <i class="fas fa-check-circle"></i> Available
+            {% else %}
+            <i class="fas fa-lock"></i> Locked
+            {% endif %}
           </span>
         </div>
         <div class="topic-content">
+          {% if subtopic_data.status == 'inactive' %}
+          <div class="inactive-notice">
+            <i class="fas fa-info-circle"></i>
+            <p>This topic is currently unavailable. Please check back later or contact your instructor.</p>
+          </div>
+          {% else %}
           <p class="topic-description">{{ subtopic_data.description }}</p>
 
           {% if subtopic_data.prerequisites %}
@@ -156,12 +167,21 @@
               class="button lesson-btn"
               data-subtopic="{{ subtopic_id }}"
               onclick="handleSubtopicAccess('{{ subject }}', '{{ subtopic_id }}')"
+              {% if subtopic_data.status == 'inactive' %}
+              disabled
+              style="opacity: 0.5; cursor: not-allowed;"
+              {% endif %}
             >
               <i class="fas fa-book-open"></i>
+              {% if subtopic_data.status == 'inactive' %}
+              Unavailable
+              {% else %}
               View Lessons
+              {% endif %}
             </button>
             {% endif %}
           </div>
+        {% endif %}
         </div>
       </div>
       {% endfor %}
@@ -401,6 +421,31 @@
         font-size: 0.9rem;
         color: #856404;
         text-align: center;
+      }
+
+      .inactive-notice {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        margin: 1.5rem 0;
+        padding: 1rem 1.25rem;
+        background: #fee;
+        border: 2px solid #fcc;
+        border-radius: 8px;
+        font-size: 1rem;
+        color: #c53030;
+        text-align: center;
+      }
+
+      .inactive-notice i {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+      }
+
+      .inactive-notice p {
+        margin: 0;
+        line-height: 1.5;
       }
 
       .prereq-text {
@@ -1623,6 +1668,14 @@
           }
 
           const data = await response.json();
+
+          // Check if subtopic is inactive
+          if (data.subtopic_inactive || data.is_active === false) {
+            alert(
+              "This topic is currently unavailable.\n\nPlease check back later or contact your instructor for more information."
+            );
+            return;
+          }
 
           if (
             data.admin_override ||

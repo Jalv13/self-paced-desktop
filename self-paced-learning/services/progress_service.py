@@ -879,6 +879,27 @@ class ProgressService:
         subtopics_config = subject_config.get("subtopics", {})
         target_config = subtopics_config.get(subtopic, {})
 
+        # Check if subtopic is inactive (takes priority over prerequisites)
+        subtopic_status = target_config.get("status", "active")
+        if subtopic_status == "inactive":
+            return {
+                "subject": subject,
+                "subtopic": subtopic,
+                "is_active": False,
+                "subtopic_inactive": True,
+                "can_access_subtopic": False,
+                "has_prerequisites": False,
+                "admin_override": False,
+                "prerequisite_ids": [],
+                "prerequisite_details": [],
+                "missing_prerequisite_ids": [],
+                "missing_prerequisites": [],
+                "completed_prerequisites": 0,
+                "total_prerequisites": 0,
+                "prerequisites_met": False,
+                "redirect_url": f"/subjects/{subject}",
+            }
+
         configured_prereqs = target_config.get("prerequisites", []) or []
         prerequisite_ids = [
             prereq
@@ -941,6 +962,8 @@ class ProgressService:
         return {
             "subject": subject,
             "subtopic": subtopic,
+            "is_active": True,
+            "subtopic_inactive": False,
             "has_prerequisites": bool(prerequisite_ids),
             "admin_override": admin_override,
             "prerequisite_ids": prerequisite_ids,

@@ -1200,6 +1200,55 @@ def admin_delete_subtopic(subject, subtopic_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@admin_bp.route("/subtopics/<subject>/<subtopic_id>/toggle-status", methods=["POST"])
+def admin_toggle_subtopic_status(subject, subtopic_id):
+    """Toggle subtopic status between active and inactive."""
+    try:
+        data_service = get_data_service()
+        
+        # Load subject config
+        subject_config = data_service.load_subject_config(subject)
+        if not subject_config:
+            return jsonify({"success": False, "error": "Subject config not found"}), 404
+        
+        subtopics = subject_config.get("subtopics", {})
+        if subtopic_id not in subtopics:
+            return jsonify({"success": False, "error": "Subtopic not found"}), 404
+        
+        # Get current status and toggle
+        subtopic_data = subtopics[subtopic_id]
+        current_status = subtopic_data.get("status", "active")
+        new_status = "inactive" if current_status == "active" else "active"
+        
+        # Update status
+        subtopic_data["status"] = new_status
+        subtopics[subtopic_id] = subtopic_data
+        
+        # Save to file
+        config_path = os.path.join(
+            data_service.data_root_path,
+            "subjects",
+            subject,
+            "subject_config.json"
+        )
+        
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(subject_config, f, indent=2, ensure_ascii=False)
+        
+        # Clear cache
+        data_service.clear_cache_for_subject(subject)
+        
+        return jsonify({
+            "success": True,
+            "status": new_status,
+            "message": f"Subtopic status changed to {new_status}"
+        })
+        
+    except Exception as e:
+        print(f"Error toggling subtopic status: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # ============================================================================
 # EXPORT / IMPORT MANAGEMENT
 # ============================================================================
