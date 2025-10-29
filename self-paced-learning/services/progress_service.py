@@ -255,23 +255,23 @@ class ProgressService:
         self, subject: str, subtopic: str, old_id: str, new_id: str
     ) -> Dict[str, Any]:
         """Migrate a lesson ID in all student progress records.
-        
+
         This updates all instances of old_id to new_id in completed lessons
         for the given subject/subtopic.
-        
+
         Args:
             subject: The subject identifier
             subtopic: The subtopic identifier
             old_id: The old lesson ID to replace
             new_id: The new lesson ID to use
-            
+
         Returns:
             Dictionary with migration results including number of records updated
         """
         try:
             updated_count = 0
             completed_key = self.get_session_key(subject, subtopic, "completed_lessons")
-            
+
             if not has_request_context():
                 # Test mode - update in-memory storage
                 if completed_key in self._test_completed_lessons:
@@ -292,18 +292,18 @@ class ProgressService:
                     session[completed_key] = completed_lessons
                     session.permanent = True
                     updated_count = 1
-            
+
             return {
                 "success": True,
                 "updated_count": updated_count,
-                "message": f"Migrated lesson ID from '{old_id}' to '{new_id}'"
+                "message": f"Migrated lesson ID from '{old_id}' to '{new_id}'",
             }
-            
+
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "message": f"Error migrating lesson ID: {e}"
+                "message": f"Error migrating lesson ID: {e}",
             }
 
     # ============================================================================

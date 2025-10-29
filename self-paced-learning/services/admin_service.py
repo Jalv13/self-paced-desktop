@@ -561,7 +561,7 @@ class AdminService:
         self, subject: str, subtopic: str, lesson_id: str, lesson_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Update an existing lesson.
-        
+
         If the lesson ID is changed, this will automatically migrate all student
         progress records from the old ID to the new ID.
         """
@@ -576,16 +576,16 @@ class AdminService:
             # Check if lesson ID is being changed
             new_lesson_id = lesson_data.get("id", lesson_id)
             id_changed = new_lesson_id != lesson_id
-            
+
             if id_changed:
                 # Validate that the new ID doesn't already exist
                 existing_lessons = self.data_service.get_lesson_map(subject, subtopic)
                 if new_lesson_id in existing_lessons:
                     return {
                         "success": False,
-                        "error": f"Lesson ID '{new_lesson_id}' already exists. Please choose a different ID."
+                        "error": f"Lesson ID '{new_lesson_id}' already exists. Please choose a different ID.",
                     }
-                
+
                 # Delete the old lesson entry
                 delete_success = self.data_service.delete_lesson_from_file(
                     subject, subtopic, lesson_id
@@ -593,19 +593,19 @@ class AdminService:
                 if not delete_success:
                     return {
                         "success": False,
-                        "error": "Failed to remove old lesson entry during ID change"
+                        "error": "Failed to remove old lesson entry during ID change",
                     }
-                
+
                 # Migrate student progress from old ID to new ID
                 progress_service = self.progress_service
                 migration_result = progress_service.migrate_lesson_id(
                     subject, subtopic, lesson_id, new_lesson_id
                 )
-                
+
                 if not migration_result.get("success"):
                     return {
                         "success": False,
-                        "error": f"Failed to migrate student progress: {migration_result.get('error')}"
+                        "error": f"Failed to migrate student progress: {migration_result.get('error')}",
                     }
 
             # Ensure the new lesson ID is set
@@ -625,7 +625,7 @@ class AdminService:
                     "success": True,
                     "message": message,
                     "id_changed": id_changed,
-                    "new_lesson_id": new_lesson_id
+                    "new_lesson_id": new_lesson_id,
                 }
             else:
                 return {"success": False, "error": "Failed to update lesson"}
