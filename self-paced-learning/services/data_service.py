@@ -421,9 +421,7 @@ class DataService:
                 config_updates["allowed_tags"] = allowed_tags
 
             if config_updates:
-                subject_config_path = os.path.join(
-                    subject_dir, "subject_config.json"
-                )
+                subject_config_path = os.path.join(subject_dir, "subject_config.json")
 
                 existing_config: Dict[str, Any] = {}
                 if os.path.exists(subject_config_path):
@@ -442,12 +440,21 @@ class DataService:
                             # Create the subtopic directory
                             subtopic_dir = os.path.join(subject_dir, subtopic_id)
                             os.makedirs(subtopic_dir, exist_ok=True)
-                            
+
                             # Initialize with proper lesson_plans.json structure to make it valid
-                            lesson_plans_path = os.path.join(subtopic_dir, "lesson_plans.json")
+                            lesson_plans_path = os.path.join(
+                                subtopic_dir, "lesson_plans.json"
+                            )
                             if not os.path.exists(lesson_plans_path):
-                                with open(lesson_plans_path, "w", encoding="utf-8") as f:
-                                    json.dump({"lessons": [], "updated_date": "2025-10-15"}, f, indent=2, ensure_ascii=False)
+                                with open(
+                                    lesson_plans_path, "w", encoding="utf-8"
+                                ) as f:
+                                    json.dump(
+                                        {"lessons": [], "updated_date": "2025-10-15"},
+                                        f,
+                                        indent=2,
+                                        ensure_ascii=False,
+                                    )
 
                 existing_config.update(config_updates)
 
@@ -486,6 +493,61 @@ class DataService:
             print(f"Error deleting subject: {e}")
             return False
 
+    def delete_subtopic(self, subject: str, subtopic_id: str) -> bool:
+        """Delete a subtopic and all its associated data.
+
+        This removes:
+        1. The subtopic directory and all files within it
+        2. The subtopic entry from subject_config.json
+
+        Args:
+            subject: The subject identifier
+            subtopic_id: The subtopic identifier to delete
+
+        Returns:
+            True if deletion was successful, False otherwise
+        """
+        try:
+            import shutil
+
+            # Remove the subtopic directory
+            subtopic_dir = os.path.join(
+                self.data_root_path, "subjects", subject, subtopic_id
+            )
+            if os.path.exists(subtopic_dir):
+                shutil.rmtree(subtopic_dir)
+
+            # Update subject_config.json to remove the subtopic
+            config_path = os.path.join(
+                self.data_root_path, "subjects", subject, "subject_config.json"
+            )
+
+            if os.path.exists(config_path):
+                with open(config_path, "r", encoding="utf-8") as f:
+                    config = json.load(f)
+
+                # Remove subtopic from config
+                subtopics = config.get("subtopics", {})
+                if subtopic_id in subtopics:
+                    del subtopics[subtopic_id]
+                    config["subtopics"] = subtopics
+
+                    # Save updated config
+                    with open(config_path, "w", encoding="utf-8") as f:
+                        json.dump(config, f, indent=2, ensure_ascii=False)
+
+            # Clear cache for this subject
+            try:
+                self.clear_cache_for_subject(subject)
+            except Exception:
+                pass
+
+            return True
+
+        except Exception as e:
+            print(f"Error deleting subtopic: {e}")
+            return False
+
     # ============================================================================
     # UTILITY METHODS
     # ============================================================================
@@ -496,7 +558,7 @@ class DataService:
             tags = self.data_loader.get_subject_keywords(subject)
             return [tag for tag in tags if isinstance(tag, str)]
         except Exception as exc:
-            print(f'Error retrieving allowed tags for subject {subject}: {exc}')
+            print(f"Error retrieving allowed tags for subject {subject}: {exc}")
             return []
 
     def get_subject_tags(self, subject: str) -> List[str]:

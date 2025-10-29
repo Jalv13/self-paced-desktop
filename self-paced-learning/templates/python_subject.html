@@ -52,7 +52,8 @@
             >
               <i class="fas fa-shield-alt"></i>
               <span id="adminOverrideIndicatorText">
-                {% if admin_override %}Admin Override Active{% else %}Admin Override Off{% endif %}
+                {% if admin_override %}Admin Override Active{% else %}Admin
+                Override Off{% endif %}
               </span>
             </div>
           </div>
@@ -77,12 +78,23 @@
           style="background: linear-gradient(135deg, {{ subject_info.color }} 0%, {{ subject_info.color }}cc 50%, {{ subject_info.color }}ee 100%); box-shadow: 0 4px 8px {{ subject_info.color }}33;"
         >
           <h3>{{ subtopic_data.name }}</h3>
-          <span class="completion-badge" id="{{ subtopic_id }}-badge">
-            {% if subtopic_data.status == 'active' %} Available {% else %}
-            Locked {% endif %}
+          <span class="completion-badge{% if subtopic_data.status == 'inactive' %} badge-unavailable{% elif subtopic_data.status == 'active' %} badge-available{% else %} badge-locked{% endif %}" id="{{ subtopic_id }}-badge">
+            {% if subtopic_data.status == 'inactive' %}
+            <i class="fas fa-ban"></i> Unavailable
+            {% elif subtopic_data.status == 'active' %}
+            <i class="fas fa-check-circle"></i> Available
+            {% else %}
+            <i class="fas fa-lock"></i> Locked
+            {% endif %}
           </span>
         </div>
         <div class="topic-content">
+          {% if subtopic_data.status == 'inactive' %}
+          <div class="inactive-notice">
+            <i class="fas fa-info-circle"></i>
+            <p>This topic is currently unavailable. Please check back later or contact your instructor.</p>
+          </div>
+          {% else %}
           <p class="topic-description">{{ subtopic_data.description }}</p>
 
           {% if subtopic_data.prerequisites %}
@@ -93,65 +105,48 @@
               }}</span
             >
           </div>
-          {% endif %}
-
-          {% set lesson_count = subtopic_data.lesson_count %}
-          {% set video_count = subtopic_data.video_count %}
-          {% set total_items = lesson_count + video_count %}
-          {% set progress_data = subtopic_data.progress or {} %}
-          {% set lesson_stats = progress_data.lessons or {} %}
-          {% set video_stats = progress_data.videos or {} %}
-          {% set overall_stats = progress_data.overall or {} %}
-          {% set completed_lessons = lesson_stats.completed_count
-            if lesson_stats.completed_count is not none
-            else (lesson_stats.completed_lessons | length if lesson_stats.completed_lessons is defined else 0)
-          %}
-          {% set completed_videos = video_stats.watched_count
-            if video_stats.watched_count is not none
-            else (video_stats.watched_videos | length if video_stats.watched_videos is defined else 0)
-          %}
-          {% set descriptor_parts = [] %}
-          {% if lesson_count > 0 %}
-            {% set descriptor_parts = descriptor_parts + ['lessons'] %}
-          {% endif %}
-          {% if video_count > 0 %}
-            {% set descriptor_parts = descriptor_parts + ['videos'] %}
-          {% endif %}
-          {% set descriptor =
-            'lessons and videos' if descriptor_parts | length > 1
-            else (descriptor_parts[0] if descriptor_parts | length == 1 else 'content')
-          %}
-          {% set completion_percentage = overall_stats.completion_percentage or 0 %}
-          {% set completion_percentage = 0 if completion_percentage is none else completion_percentage %}
-          {% if completion_percentage < 0 %}
-            {% set completion_percentage = 0 %}
-          {% elif completion_percentage > 100 %}
-            {% set completion_percentage = 100 %}
-          {% endif %}
-          {% set status_text =
-            'All ' ~ descriptor ~ ' complete'
-            if completion_percentage >= 100
-            else (completion_percentage | round(0, 'floor')) ~ '% of ' ~ descriptor ~ ' complete'
-          %}
-          {% set sr_segments = [] %}
-          {% if lesson_count > 0 %}
-            {% set sr_segments = sr_segments + [(completed_lessons | default(0)) ~ ' of ' ~ lesson_count ~ ' lessons'] %}
-          {% endif %}
-          {% if video_count > 0 %}
-            {% set sr_segments = sr_segments + [(completed_videos | default(0)) ~ ' of ' ~ video_count ~ ' videos'] %}
-          {% endif %}
-          {% set sr_summary = (sr_segments | join(' and ')) ~ ' complete' if sr_segments else 'No learning items completed yet' %}
-
-          {% if total_items > 0 %}
+          {% endif %} {% set lesson_count = subtopic_data.lesson_count %} {% set
+          video_count = subtopic_data.video_count %} {% set total_items =
+          lesson_count + video_count %} {% set progress_data =
+          subtopic_data.progress or {} %} {% set lesson_stats =
+          progress_data.lessons or {} %} {% set video_stats =
+          progress_data.videos or {} %} {% set overall_stats =
+          progress_data.overall or {} %} {% set completed_lessons =
+          lesson_stats.completed_count if lesson_stats.completed_count is not
+          none else (lesson_stats.completed_lessons | length if
+          lesson_stats.completed_lessons is defined else 0) %} {% set
+          completed_videos = video_stats.watched_count if
+          video_stats.watched_count is not none else (video_stats.watched_videos
+          | length if video_stats.watched_videos is defined else 0) %} {% set
+          descriptor_parts = [] %} {% if lesson_count > 0 %} {% set
+          descriptor_parts = descriptor_parts + ['lessons'] %} {% endif %} {% if
+          video_count > 0 %} {% set descriptor_parts = descriptor_parts +
+          ['videos'] %} {% endif %} {% set descriptor = 'lessons and videos' if
+          descriptor_parts | length > 1 else (descriptor_parts[0] if
+          descriptor_parts | length == 1 else 'content') %} {% set
+          completion_percentage = overall_stats.completion_percentage or 0 %} {%
+          set completion_percentage = 0 if completion_percentage is none else
+          completion_percentage %} {% if completion_percentage < 0 %} {% set
+          completion_percentage = 0 %} {% elif completion_percentage > 100 %} {%
+          set completion_percentage = 100 %} {% endif %} {% set status_text =
+          'All ' ~ descriptor ~ ' complete' if completion_percentage >= 100 else
+          (completion_percentage | round(0, 'floor')) ~ '% of ' ~ descriptor ~ '
+          complete' %} {% set sr_segments = [] %} {% if lesson_count > 0 %} {%
+          set sr_segments = sr_segments + [(completed_lessons | default(0)) ~ '
+          of ' ~ lesson_count ~ ' lessons'] %} {% endif %} {% if video_count > 0
+          %} {% set sr_segments = sr_segments + [(completed_videos | default(0))
+          ~ ' of ' ~ video_count ~ ' videos'] %} {% endif %} {% set sr_summary =
+          (sr_segments | join(' and ')) ~ ' complete' if sr_segments else 'No
+          learning items completed yet' %} {% if total_items > 0 %}
           <div
             class="progress-container"
             data-progress="overall"
             aria-hidden="false"
           >
-            <span
-              id="{{ subtopic_id }}-progress-text"
-              class="sr-only"
-            >Progress update: {{ sr_summary }}. Overall status: {{ status_text }}.</span>
+            <span id="{{ subtopic_id }}-progress-text" class="sr-only"
+              >Progress update: {{ sr_summary }}. Overall status: {{ status_text
+              }}.</span
+            >
             <div
               class="progress-bar{% if completion_percentage >= 100 %} is-complete{% endif %}"
               id="{{ subtopic_id }}-progress"
@@ -172,13 +167,21 @@
               class="button lesson-btn"
               data-subtopic="{{ subtopic_id }}"
               onclick="handleSubtopicAccess('{{ subject }}', '{{ subtopic_id }}')"
+              {% if subtopic_data.status == 'inactive' %}
+              disabled
+              style="opacity: 0.5; cursor: not-allowed;"
+              {% endif %}
             >
               <i class="fas fa-book-open"></i>
+              {% if subtopic_data.status == 'inactive' %}
+              Unavailable
+              {% else %}
               View Lessons
+              {% endif %}
             </button>
             {% endif %}
           </div>
-
+        {% endif %}
         </div>
       </div>
       {% endfor %}
@@ -300,17 +303,17 @@
             </button>
           </div>
           <div class="lesson-list" id="lesson-list">
-          <div class="lesson-list-header">
-            <h3 id="lesson-list-title">Available Initial Lessons</h3>
-            <button
-              id="lesson-quiz-btn-list"
-              class="lesson-quiz-btn"
-              style="display: none"
-              onclick="handleQuizAccess(currentSubject, currentSubtopic)"
-            >
-              <i class="fas fa-brain"></i> Take Quiz
-            </button>
-          </div>
+            <div class="lesson-list-header">
+              <h3 id="lesson-list-title">Available Initial Lessons</h3>
+              <button
+                id="lesson-quiz-btn-list"
+                class="lesson-quiz-btn"
+                style="display: none"
+                onclick="handleQuizAccess(currentSubject, currentSubtopic)"
+              >
+                <i class="fas fa-brain"></i> Take Quiz
+              </button>
+            </div>
             <div class="lesson-items" id="lesson-items">
               <!-- Lessons will be loaded here -->
             </div>
@@ -418,6 +421,31 @@
         font-size: 0.9rem;
         color: #856404;
         text-align: center;
+      }
+
+      .inactive-notice {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        margin: 1.5rem 0;
+        padding: 1rem 1.25rem;
+        background: #fee;
+        border: 2px solid #fcc;
+        border-radius: 8px;
+        font-size: 1rem;
+        color: #c53030;
+        text-align: center;
+      }
+
+      .inactive-notice i {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+      }
+
+      .inactive-notice p {
+        margin: 0;
+        line-height: 1.5;
       }
 
       .prereq-text {
@@ -778,7 +806,8 @@
         font-size: 0.9rem;
         font-weight: 600;
         cursor: pointer;
-        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        transition: transform 0.2s ease, box-shadow 0.2s ease,
+          background 0.2s ease;
         color: #fff;
         background: linear-gradient(135deg, #2563eb, #7c3aed);
       }
@@ -840,14 +869,22 @@
       }
 
       .lesson-item.lesson-completed {
-        background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(6, 95, 70, 0.88));
+        background: linear-gradient(
+          135deg,
+          rgba(17, 24, 39, 0.95),
+          rgba(6, 95, 70, 0.88)
+        );
         border-left: 4px solid #10b981;
         box-shadow: 0 16px 36px rgba(6, 95, 70, 0.35);
         color: #f9fafb;
       }
 
       .lesson-item.lesson-completed:hover {
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(5, 150, 105, 0.92));
+        background: linear-gradient(
+          135deg,
+          rgba(30, 41, 59, 0.98),
+          rgba(5, 150, 105, 0.92)
+        );
         border-color: #34d399;
         transform: translateX(5px) translateY(-1px);
       }
@@ -871,14 +908,22 @@
       }
 
       .lesson-item.lesson-opened:not(.lesson-completed) {
-        background: linear-gradient(135deg, #111827 0%, rgba(22, 101, 52, 0.92) 100%);
+        background: linear-gradient(
+          135deg,
+          #111827 0%,
+          rgba(22, 101, 52, 0.92) 100%
+        );
         border-left: 4px solid #16a34a;
         color: #f0fff4;
         box-shadow: 0 16px 32px rgba(15, 118, 110, 0.32);
       }
 
       .lesson-item.lesson-opened:not(.lesson-completed):hover {
-        background: linear-gradient(135deg, #0f172a 0%, rgba(16, 185, 129, 0.95) 100%);
+        background: linear-gradient(
+          135deg,
+          #0f172a 0%,
+          rgba(16, 185, 129, 0.95) 100%
+        );
         border-color: #22c55e;
         transform: translateX(6px) translateY(-1px);
       }
@@ -1604,10 +1649,14 @@
         }
 
         if (!hasMarkdownSupport()) {
-          return `<p>${escapeHtml(rawText)}</p>`;
+          // Convert newlines to <br> tags for fallback rendering
+          const escaped = escapeHtml(rawText).replace(/\n/g, '<br>');
+          return `<p>${escaped}</p>`;
         }
 
-        const rendered = window.marked.parse(rawText, MARKDOWN_OPTIONS);
+        // Convert single newlines to double newlines for proper Markdown paragraph breaks
+        const markdownText = rawText.replace(/\n/g, '  \n');
+        const rendered = window.marked.parse(markdownText, MARKDOWN_OPTIONS);
         return window.DOMPurify.sanitize(rendered);
       }
 
@@ -1623,6 +1672,14 @@
           }
 
           const data = await response.json();
+
+          // Check if subtopic is inactive
+          if (data.subtopic_inactive || data.is_active === false) {
+            alert(
+              "This topic is currently unavailable.\n\nPlease check back later or contact your instructor for more information."
+            );
+            return;
+          }
 
           if (
             data.admin_override ||
@@ -2041,6 +2098,7 @@
                     title: lesson.title,
                     type: lessonTypeValue,
                     tags: lesson.tags || [],
+                    order: lesson.order !== undefined ? lesson.order : 999,
                     subtopic: subtopic,
                     subject: subject,
                     content: lesson.content,
@@ -2048,6 +2106,15 @@
                     completed: lesson.completed || false, // Include completion status
                   });
                 }
+              });
+
+              // Sort lessons by order field (lower numbers first)
+              filteredLessons.sort((a, b) => {
+                if (a.order !== b.order) {
+                  return a.order - b.order;
+                }
+                // If orders are equal, sort by title as secondary
+                return (a.title || "").localeCompare(b.title || "");
               });
 
               if (filteredLessons.length > 0) {
@@ -2179,7 +2246,6 @@
         }
       }
 
-
       function loadLessonContent(lesson) {
         // This function is no longer needed since we pass the full lesson object
         renderLessonContent(lesson);
@@ -2250,13 +2316,12 @@
                   }
                 }
                 break;
-              default:
-                {
-                  const blockHtml = renderBlockMarkdown(block.text || "");
-                  if (blockHtml) {
-                    contentHtml += `<div class="content-block">${blockHtml}</div>`;
-                  }
+              default: {
+                const blockHtml = renderBlockMarkdown(block.text || "");
+                if (blockHtml) {
+                  contentHtml += `<div class="content-block">${blockHtml}</div>`;
                 }
+              }
             }
           });
 
@@ -2383,27 +2448,21 @@
 
       function markLessonNavAsCompleted(lessonId) {
         if (!lessonId) return;
-        document
-          .querySelectorAll("#initial-topics-nav a")
-          .forEach((link) => {
-            if (link.dataset.lessonId === lessonId) {
-              link.classList.add("completed");
-            }
-          });
+        document.querySelectorAll("#initial-topics-nav a").forEach((link) => {
+          if (link.dataset.lessonId === lessonId) {
+            link.classList.add("completed");
+          }
+        });
       }
 
       function markVideoNavAsCompleted(videoId) {
         if (!videoId) return;
-        document
-          .querySelectorAll("#initial-topics-nav a")
-          .forEach((link) => {
-            if (link.dataset.videoId === videoId) {
-              link.classList.add("completed");
-            }
-          });
+        document.querySelectorAll("#initial-topics-nav a").forEach((link) => {
+          if (link.dataset.videoId === videoId) {
+            link.classList.add("completed");
+          }
+        });
       }
-
-      
 
       function getLessonQuizButtons() {
         return Array.from(document.querySelectorAll(".lesson-quiz-btn"));
@@ -2434,7 +2493,7 @@
           .querySelectorAll(`.lesson-item[data-lesson-id=\"${lessonId}\"]`)
           .forEach((item) => {
             item.classList.add("lesson-completed");
-            item.classList.remove('lesson-opened');
+            item.classList.remove("lesson-opened");
             const titleEl = item.querySelector(".lesson-item-title");
             if (titleEl && !titleEl.querySelector(".lesson-completion-icon")) {
               const icon = document.createElement("i");
@@ -2447,10 +2506,7 @@
       function applyLessonCompletionEffects(lessonId) {
         if (!lessonId) return;
 
-        if (
-          currentLesson &&
-          resolveLessonId(currentLesson) === lessonId
-        ) {
+        if (currentLesson && resolveLessonId(currentLesson) === lessonId) {
           currentLesson.completed = true;
           checkLessonCompletion(currentLesson);
         }
@@ -2703,8 +2759,6 @@
         }
       }
 
-
-
       async function markLessonComplete() {
         if (!currentLesson) return;
         const lessonId = resolveLessonId(currentLesson);
@@ -2752,7 +2806,7 @@
           const subtopic = card.getAttribute("data-subtopic");
 
           try {
-          const response = await fetch(
+            const response = await fetch(
               `/api/progress/check/${subject}/${subtopic}`
             );
             if (response.ok) {
@@ -2877,7 +2931,9 @@
                     )}`
                   : "Please review the lesson content before attempting the quiz.";
 
-              alert(message + "\n\nWe'll open the lessons so you can finish up.");
+              alert(
+                message + "\n\nWe'll open the lessons so you can finish up."
+              );
               showInitialLessons(subject, subtopic);
             }
           })
@@ -2891,10 +2947,10 @@
       // Update quiz button status based on prerequisites
       function updateQuizButtonStatus() {
         const subject = "{{ subject }}";
-        const subtopicCards = document.querySelectorAll('[data-subtopic]');
+        const subtopicCards = document.querySelectorAll("[data-subtopic]");
 
         subtopicCards.forEach((card) => {
-          const subtopic = card.getAttribute('data-subtopic');
+          const subtopic = card.getAttribute("data-subtopic");
           if (!subtopic) {
             return;
           }
@@ -2907,7 +2963,10 @@
               updateRequirementsDisplay(subtopic, data, allMet);
             })
             .catch((error) => {
-              console.error(`Error checking prerequisites for ${subtopic}:`, error);
+              console.error(
+                `Error checking prerequisites for ${subtopic}:`,
+                error
+              );
               const fallbackData = {
                 subject,
                 subtopic,
@@ -2934,7 +2993,9 @@
           containers.push(subtopicRequirements);
         }
 
-        const lessonRequirements = document.getElementById("lesson-quiz-requirements");
+        const lessonRequirements = document.getElementById(
+          "lesson-quiz-requirements"
+        );
         if (
           lessonRequirements &&
           lessonRequirements.dataset.hasQuiz !== "false" &&
@@ -3031,7 +3092,6 @@
           }
         });
       }
-
 
       // Update quiz button status on page load and periodically
       updateQuizButtonStatus();
@@ -3283,7 +3343,9 @@ sys.stdout = StringIO()
         collapseBtn.type = "button";
         collapseBtn.className = "code-runner-modal-collapse";
         collapseBtn.innerHTML = '<i class="fas fa-compress-alt"></i> Collapse';
-        collapseBtn.addEventListener("click", () => closeCodeRunnerModal(blockId));
+        collapseBtn.addEventListener("click", () =>
+          closeCodeRunnerModal(blockId)
+        );
 
         const closeBtn = document.createElement("button");
         closeBtn.type = "button";
@@ -3313,9 +3375,8 @@ sys.stdout = StringIO()
           layout.classList.add("no-question");
         }
 
-        const expectedOutput = codeRunnerContent.querySelector(
-          ".expected-output"
-        );
+        const expectedOutput =
+          codeRunnerContent.querySelector(".expected-output");
         const codeOutput = codeRunnerContent.querySelector(".code-output");
         const hintsElement = codeRunnerContent.querySelector(
           `#hints-${blockId}`
@@ -3415,12 +3476,8 @@ sys.stdout = StringIO()
         const extracted = modal ? modal._extractedElements || {} : {};
 
         if (codeRunnerContent) {
-          const {
-            codeOutput,
-            expectedOutput,
-            hintsElement,
-            solutionElement,
-          } = extracted;
+          const { codeOutput, expectedOutput, hintsElement, solutionElement } =
+            extracted;
 
           if (codeOutput && !codeRunnerContent.contains(codeOutput)) {
             codeRunnerContent.appendChild(codeOutput);

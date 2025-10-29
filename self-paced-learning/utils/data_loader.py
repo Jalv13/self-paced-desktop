@@ -464,6 +464,7 @@ class DataLoader:
                                 "title": lesson_data.get("title", ""),
                                 "type": lesson_data.get("type", ""),
                                 "tags": lesson_data.get("tags", []),
+                                "order": lesson_data.get("order", 999),
                                 "matching_tags": list(
                                     lesson_tags.intersection(target_tags_set)
                                 ),
@@ -473,6 +474,11 @@ class DataLoader:
         except Exception as e:
             if current_app:
                 current_app.logger.error(f"Error finding lessons by tags: {e}")
+
+        # Sort lessons by order field (lower numbers first), then by lesson_id for stability
+        matching_lessons.sort(
+            key=lambda x: (x.get("order", 999), x.get("lesson_id", ""))
+        )
 
         return matching_lessons
 

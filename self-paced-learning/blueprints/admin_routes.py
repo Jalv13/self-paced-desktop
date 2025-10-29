@@ -277,9 +277,9 @@ def admin_overview_subtopics():
 
             for subtopic in subject_data.get("subtopics", []):
                 lesson_count = subtopic.get("lesson_count", 0) or 0
-                total_questions = (
-                    subtopic.get("quiz_questions_count", 0) or 0
-                ) + (subtopic.get("pool_questions_count", 0) or 0)
+                total_questions = (subtopic.get("quiz_questions_count", 0) or 0) + (
+                    subtopic.get("pool_questions_count", 0) or 0
+                )
 
                 if lesson_count > 0:
                     lesson_ready += 1
@@ -427,14 +427,13 @@ def admin_edit_subtopic(subject, subtopic):
         if not subject_config or subtopic not in subject_config.get("subtopics", {}):
             return f"Subject '{subject}' with subtopic '{subtopic}' not found", 404
 
-        # Load subtopic data
-        subtopic_data = subject_config["subtopics"].get(subtopic, {})
-
-        return render_template(
-            "admin/edit_subtopic.html",
-            subject=subject,
-            subtopic=subtopic,
-            subtopic_data=subtopic_data,
+        return redirect(
+            url_for(
+                "admin.admin_subtopics",
+                subject=subject,
+                subtopic=subtopic,
+                action="edit",
+            )
         )
 
     except Exception as e:
@@ -488,7 +487,9 @@ def admin_lessons():
 
         # Get subject config to validate subtopic exists in configuration
         subject_config = data_service.load_subject_config(subject_filter)
-        if not subject_config or subtopic_filter not in subject_config.get("subtopics", {}):
+        if not subject_config or subtopic_filter not in subject_config.get(
+            "subtopics", {}
+        ):
             return (
                 f"Subject '{subject_filter}' with subtopic '{subtopic_filter}' not found",
                 404,
@@ -496,6 +497,17 @@ def admin_lessons():
 
         # Load lessons for this specific subject/subtopic
         lessons = data_service.get_lesson_map(subject_filter, subtopic_filter)
+
+        # Sort lessons by order field for display
+        sorted_lessons = dict(
+            sorted(
+                lessons.items(),
+                key=lambda x: (
+                    x[1].get("order", 999),
+                    x[0],
+                ),  # Sort by order, then by lesson_id
+            )
+        )
 
         # Get subject info
         subject_info = subjects[subject_filter]
@@ -516,7 +528,7 @@ def admin_lessons():
 
         return render_template(
             "admin/lessons.html",
-            lessons=lessons,
+            lessons=sorted_lessons,
             subjects=subjects,
             subject_filter=subject_filter,
             subtopic_filter=subtopic_filter,
@@ -574,6 +586,8 @@ def admin_edit_lesson(subject, subtopic, lesson_id):
                 if (data.get("lessonType") or data.get("type"))
                 else None
             )
+            # Get the new lesson ID (may be different from the URL param)
+            new_lesson_id = data.get("id", lesson_id)
 
             if not lesson_title:
                 return jsonify({"error": "Lesson title is required"}), 400
@@ -589,6 +603,7 @@ def admin_edit_lesson(subject, subtopic, lesson_id):
 
             lesson_data = {
                 **existing,
+                "id": new_lesson_id,  # Use the new ID
                 "title": lesson_title,
                 "videoId": video_id,
                 "content": content,
@@ -601,6 +616,9 @@ def admin_edit_lesson(subject, subtopic, lesson_id):
             )
 
             if result.get("success"):
+                # If ID was changed, include the new ID in the response
+                if result.get("id_changed"):
+                    result["new_lesson_id"] = result.get("new_lesson_id")
                 return jsonify(result)
 
             return jsonify(result), 400
@@ -723,9 +741,8 @@ def admin_select_subtopic_for_lessons():
 def admin_questions():
     """Questions management page."""
     try:
-        from utils.data_loader import DataLoader
-
-        data_loader = DataLoader("data")
+        data_service = get_data_service()
+        data_loader = data_service.data_loader
 
         # Get URL parameters for filtering
         subject_filter = request.args.get("subject")
@@ -906,11 +923,8 @@ def admin_quiz_editor(subject, subtopic):
 @admin_bp.route("/quiz/<subject>/<subtopic>/initial", methods=["GET", "POST"])
 def admin_quiz_initial(subject, subtopic):
     """Manage initial quiz questions."""
-    from utils.data_loader import DataLoader
-    import os
-    import json
-
-    data_loader = DataLoader("data")
+    data_service = get_data_service()
+    data_loader = data_service.data_loader
 
     if request.method == "GET":
         try:
@@ -934,7 +948,11 @@ def admin_quiz_initial(subject, subtopic):
 
             # Save to file
             quiz_file_path = os.path.join(
-                "data", "subjects", subject, subtopic, "quiz_data.json"
+                data_service.data_root_path,
+                "subjects",
+                subject,
+                subtopic,
+                "quiz_data.json",
             )
 
             # Ensure directory exists
@@ -944,7 +962,7 @@ def admin_quiz_initial(subject, subtopic):
                 json.dump(quiz_data, f, indent=2)
 
             # Clear cache for this subject/subtopic to ensure fresh data is loaded
-            data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
+            data_service.clear_cache_for_subject_subtopic(subject, subtopic)
             print(f"Cleared cache for {subject}/{subtopic} after updating quiz data")
 
             return jsonify(
@@ -959,11 +977,8 @@ def admin_quiz_initial(subject, subtopic):
 @admin_bp.route("/quiz/<subject>/<subtopic>/pool", methods=["GET", "POST"])
 def admin_quiz_pool(subject, subtopic):
     """Manage question pool for remedial quizzes."""
-    from utils.data_loader import DataLoader
-    import os
-    import json
-
-    data_loader = DataLoader("data")
+    data_service = get_data_service()
+    data_loader = data_service.data_loader
 
     if request.method == "GET":
         try:
@@ -987,7 +1002,11 @@ def admin_quiz_pool(subject, subtopic):
 
             # Save to file
             pool_file_path = os.path.join(
-                "data", "subjects", subject, subtopic, "question_pool.json"
+                data_service.data_root_path,
+                "subjects",
+                subject,
+                subtopic,
+                "question_pool.json",
             )
 
             # Ensure directory exists
@@ -997,7 +1016,7 @@ def admin_quiz_pool(subject, subtopic):
                 json.dump(pool_data, f, indent=2)
 
             # Clear cache for this subject/subtopic to ensure fresh data is loaded
-            data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
+            data_service.clear_cache_for_subject_subtopic(subject, subtopic)
             print(
                 f"Cleared cache for {subject}/{subtopic} after updating question pool"
             )
@@ -1032,9 +1051,8 @@ def admin_select_subject_for_subtopics():
 def admin_subtopics():
     """Manage subtopics for a specific subject with drag-to-reorder functionality."""
     try:
-        from utils.data_loader import DataLoader
-
-        data_loader = DataLoader("data")
+        data_service = get_data_service()
+        data_loader = data_service.data_loader
 
         # Get URL parameters for filtering
         subject_filter = request.args.get("subject")
@@ -1168,6 +1186,71 @@ def admin_reorder_subtopics(subject):
 
     except Exception as e:
         print(f"Error reordering subtopics: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@admin_bp.route("/subtopics/<subject>/<subtopic_id>/delete", methods=["DELETE"])
+def admin_delete_subtopic(subject, subtopic_id):
+    """Delete a subtopic."""
+    try:
+        admin_service = get_admin_service()
+        result = admin_service.delete_subtopic(subject, subtopic_id)
+
+        if result["success"]:
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+
+    except Exception as e:
+        print(f"Error deleting subtopic: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@admin_bp.route("/subtopics/<subject>/<subtopic_id>/toggle-status", methods=["POST"])
+def admin_toggle_subtopic_status(subject, subtopic_id):
+    """Toggle subtopic status between active and inactive."""
+    try:
+        data_service = get_data_service()
+
+        # Load subject config
+        subject_config = data_service.load_subject_config(subject)
+        if not subject_config:
+            return jsonify({"success": False, "error": "Subject config not found"}), 404
+
+        subtopics = subject_config.get("subtopics", {})
+        if subtopic_id not in subtopics:
+            return jsonify({"success": False, "error": "Subtopic not found"}), 404
+
+        # Get current status and toggle
+        subtopic_data = subtopics[subtopic_id]
+        current_status = subtopic_data.get("status", "active")
+        new_status = "inactive" if current_status == "active" else "active"
+
+        # Update status
+        subtopic_data["status"] = new_status
+        subtopics[subtopic_id] = subtopic_data
+
+        # Save to file
+        config_path = os.path.join(
+            data_service.data_root_path, "subjects", subject, "subject_config.json"
+        )
+
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(subject_config, f, indent=2, ensure_ascii=False)
+
+        # Clear cache
+        data_service.clear_cache_for_subject(subject)
+
+        return jsonify(
+            {
+                "success": True,
+                "status": new_status,
+                "message": f"Subtopic status changed to {new_status}",
+            }
+        )
+
+    except Exception as e:
+        print(f"Error toggling subtopic status: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 

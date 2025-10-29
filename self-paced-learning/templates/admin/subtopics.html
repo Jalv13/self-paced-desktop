@@ -221,6 +221,19 @@
               </div>
 
               <div class="subtopic-actions-inline">
+                <button
+                  class="btn-action btn-toggle-status"
+                  type="button"
+                  onclick="toggleSubtopicStatus('{{ subject }}', '{{ subtopic_id }}')"
+                  title="Toggle active/inactive status"
+                  data-status="{{ subtopic_data.status or 'active' }}"
+                >
+                  {% if subtopic_data.status == 'inactive' %}
+                  <i class="fas fa-toggle-off"></i>
+                  {% else %}
+                  <i class="fas fa-toggle-on"></i>
+                  {% endif %}
+                </button>
                 <a
                   href="/admin/lessons?subject={{ subject }}&subtopic={{ subtopic_id }}"
                   class="btn-action btn-view"
@@ -319,17 +332,23 @@
                 placeholder="e.g., functions"
                 required
               />
-              <small>Use lowercase letters, numbers, and hyphens only.</small>
+              <small id="subtopicIdHelp"
+                >Use lowercase letters, numbers, and hyphens only.</small
+              >
             </div>
 
             <div class="form-group">
-              <label for="modalSubtopicName">Display Name</label>
+              <label for="modalSubtopicName">Display Name *</label>
               <input
                 type="text"
                 id="modalSubtopicName"
                 class="form-control"
                 placeholder="Readable name shown in the UI"
               />
+              <small
+                >This is what students will see. You can edit this
+                anytime.</small
+              >
             </div>
 
             <div class="form-group">
@@ -722,6 +741,11 @@
         color: #2f855a;
       }
 
+      .subtopic-status.inactive {
+        background: #fed7d7;
+        color: #c53030;
+      }
+
       .subtopic-status.draft {
         background: #feebc8;
         color: #b7791f;
@@ -816,6 +840,16 @@
       .btn-action:hover {
         transform: translateY(-1px);
         box-shadow: 0 5px 18px rgba(0, 0, 0, 0.18);
+      }
+
+      .btn-toggle-status {
+        background: #805ad5;
+        color: white;
+      }
+
+      .btn-toggle-status[data-status="inactive"] {
+        background: #718096;
+        opacity: 0.7;
       }
 
       .btn-view {
@@ -1087,6 +1121,7 @@
 
     <script>
       let draggedSubtopic = null;
+      const isFilteredView = {{ filtered_view|tojson }};
       {% if filtered_view %}
       const subjectId = {{ subject|tojson }};
       let subtopicState = {{ subtopics|tojson|safe }};
@@ -1121,6 +1156,42 @@
               closeSubtopicModal();
             }
           });
+        }
+
+        if (isFilteredView) {
+          try {
+            const params = new URLSearchParams(window.location.search);
+            const requestedAction = (params.get('action') || '').toLowerCase();
+            const requestedSubtopic = params.get('subtopic');
+
+            if (requestedAction === 'edit' && requestedSubtopic) {
+              const subtopicExists =
+                subtopicState &&
+                Object.prototype.hasOwnProperty.call(subtopicState, requestedSubtopic);
+
+              if (subtopicExists) {
+                window.setTimeout(() => {
+                  openSubtopicModal('edit', requestedSubtopic);
+                }, 150);
+              } else if (typeof showNotification === 'function') {
+                showNotification('The requested subtopic could not be found.', 'error');
+              }
+
+              params.delete('action');
+              params.delete('subtopic');
+
+              const cleanedQuery = params.toString();
+              const newUrl = cleanedQuery
+                ? `${window.location.pathname}?${cleanedQuery}`
+                : window.location.pathname;
+
+              if (window.history && window.history.replaceState) {
+                window.history.replaceState({}, document.title, newUrl);
+              }
+            }
+          } catch (error) {
+            console.error('Unable to process subtopic edit parameters:', error);
+          }
         }
       });
 
@@ -1286,6 +1357,7 @@
         const statusSelect = document.getElementById('modalSubtopicStatus');
         const estimatedInput = document.getElementById('modalSubtopicEstimatedTime');
         const tagsInput = document.getElementById('modalSubtopicTags');
+        const idHelpText = document.getElementById('subtopicIdHelp');
 
         subtopicModeInput.value = mode;
 
@@ -1299,6 +1371,10 @@
           }
           idInput.value = subtopicId;
           idInput.disabled = true;
+          if (idHelpText) {
+            idHelpText.textContent = 'ID cannot be changed after creation (used in URLs and file paths).';
+            idHelpText.style.color = '#718096';
+          }
           nameInput.value = data.name || '';
           descriptionInput.value = data.description || '';
           if (statusSelect) {
@@ -1338,6 +1414,10 @@
           }
           idInput.value = '';
           idInput.disabled = false;
+          if (idHelpText) {
+            idHelpText.textContent = 'Use lowercase letters, numbers, and hyphens only.';
+            idHelpText.style.color = '';
+          }
           nameInput.value = '';
           descriptionInput.value = '';
           if (statusSelect) {
@@ -1533,11 +1613,79 @@
       }
 
       function deleteSubtopic(subject, subtopicId) {
-        if (!confirm('Delete this subtopic? This cannot be undone.')) {
+        if (!subject || !subtopicId) {
+          showNotification('Invalid subject or subtopic', 'error');
           return;
         }
-        console.log('Delete subtopic not implemented yet:', subject, subtopicId);
-        showNotification('Delete subtopic is coming soon.', 'error');
+
+        const subtopicData = subtopicState?.[subtopicId];
+        const subtopicName = subtopicData?.name || subtopicId;
+
+        if (!confirm(`Delete subtopic "${subtopicName}"?\n\nThis will permanently delete:\n- All lessons in this subtopic\n- All questions in this subtopic\n- All associated data\n\nThis action cannot be undone!`)) {
+          return;
+        }
+
+        fetch(`/admin/subtopics/${subject}/${subtopicId}/delete`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showNotification(data.message || 'Subtopic deleted successfully', 'success');
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          } else {
+            showNotification(data.error || 'Failed to delete subtopic', 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Error deleting subtopic:', error);
+          showNotification('An error occurred while deleting the subtopic', 'error');
+        });
+      }
+
+      function toggleSubtopicStatus(subject, subtopicId) {
+        if (!subject || !subtopicId) {
+          showNotification('Invalid subject or subtopic', 'error');
+          return;
+        }
+
+        const subtopicData = subtopicState?.[subtopicId];
+        const currentStatus = subtopicData?.status || 'active';
+        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+
+        fetch(`/admin/subtopics/${subject}/${subtopicId}/toggle-status`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showNotification(`Subtopic is now ${data.status}`, 'success');
+
+            // Update the UI immediately
+            if (subtopicState && subtopicState[subtopicId]) {
+              subtopicState[subtopicId].status = data.status;
+            }
+
+            // Reload to reflect all changes
+            setTimeout(() => {
+              window.location.reload();
+            }, 800);
+          } else {
+            showNotification(data.error || 'Failed to toggle status', 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Error toggling subtopic status:', error);
+          showNotification('An error occurred while toggling status', 'error');
+        });
       }
     </script>
   </body>

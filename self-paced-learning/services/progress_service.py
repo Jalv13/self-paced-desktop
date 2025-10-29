@@ -50,7 +50,9 @@ class ProgressService:
             session.permanent = True
         return server_id
 
-    def _get_user_state(self, create: bool = False) -> Optional[Dict[str, Dict[str, Any]]]:
+    def _get_user_state(
+        self, create: bool = False
+    ) -> Optional[Dict[str, Dict[str, Any]]]:
         """Fetch the server-side bucket for the active user session."""
 
         store = self._get_state_store()
@@ -90,7 +92,9 @@ class ProgressService:
         category_store = state.setdefault(category, {})
         category_store[key] = value
 
-    def _get_user_state_value(self, category: str, key: str, default: Any = None) -> Any:
+    def _get_user_state_value(
+        self, category: str, key: str, default: Any = None
+    ) -> Any:
         """Retrieve a stored value for the current user session."""
 
         state = self._get_user_state()
@@ -247,6 +251,61 @@ class ProgressService:
             "completed_lessons": completed_lessons,
         }
 
+    def migrate_lesson_id(
+        self, subject: str, subtopic: str, old_id: str, new_id: str
+    ) -> Dict[str, Any]:
+        """Migrate a lesson ID in all student progress records.
+
+        This updates all instances of old_id to new_id in completed lessons
+        for the given subject/subtopic.
+
+        Args:
+            subject: The subject identifier
+            subtopic: The subtopic identifier
+            old_id: The old lesson ID to replace
+            new_id: The new lesson ID to use
+
+        Returns:
+            Dictionary with migration results including number of records updated
+        """
+        try:
+            updated_count = 0
+            completed_key = self.get_session_key(subject, subtopic, "completed_lessons")
+
+            if not has_request_context():
+                # Test mode - update in-memory storage
+                if completed_key in self._test_completed_lessons:
+                    completed = self._test_completed_lessons[completed_key]
+                    if old_id in completed:
+                        completed.discard(old_id)
+                        completed.add(new_id)
+                        updated_count = 1
+            else:
+                # Production mode - update session
+                completed_lessons = session.get(completed_key, [])
+                if old_id in completed_lessons:
+                    # Replace old_id with new_id
+                    completed_lessons = [
+                        new_id if lesson_id == old_id else lesson_id
+                        for lesson_id in completed_lessons
+                    ]
+                    session[completed_key] = completed_lessons
+                    session.permanent = True
+                    updated_count = 1
+
+            return {
+                "success": True,
+                "updated_count": updated_count,
+                "message": f"Migrated lesson ID from '{old_id}' to '{new_id}'",
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": f"Error migrating lesson ID: {e}",
+            }
+
     # ============================================================================
     # VIDEO PROGRESS TRACKING
     # ============================================================================
@@ -358,7 +417,6 @@ class ProgressService:
         self._set_user_state_value("quiz_answers", answers_key, None)
         self._set_user_state_value("quiz_analysis", analysis_key, None)
 
-
     def prepare_analysis_for_session(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
         """Return a sanitized copy of analysis data suitable for cookie storage."""
         if not isinstance(analysis, dict):
@@ -394,14 +452,18 @@ class ProgressService:
 
         return sanitized
 
-    def store_quiz_analysis(self, subject: str, subtopic: str, analysis: Dict[str, Any]) -> Dict[str, Any]:
+    def store_quiz_analysis(
+        self, subject: str, subtopic: str, analysis: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Persist quiz analysis results for later use and return sanitized copy."""
         sanitized = self.prepare_analysis_for_session(analysis)
         key = self.get_session_key(subject, subtopic, "analysis_results")
         self._set_user_state_value("quiz_analysis", key, sanitized)
         return sanitized
 
-    def get_quiz_analysis(self, subject: str, subtopic: str) -> Optional[Dict[str, Any]]:
+    def get_quiz_analysis(
+        self, subject: str, subtopic: str
+    ) -> Optional[Dict[str, Any]]:
         """Retrieve stored quiz analysis if available."""
         key = self.get_session_key(subject, subtopic, "analysis_results")
         stored = self._get_user_state_value("quiz_analysis", key)
@@ -453,7 +515,11 @@ class ProgressService:
         return session.get(weak_key, [])
 
     def set_remedial_quiz_data(
-        self, subject: str, subtopic: str, questions: List[Dict[str, Any]], topics: Optional[List[str]] = None
+        self,
+        subject: str,
+        subtopic: str,
+        questions: List[Dict[str, Any]],
+        topics: Optional[List[str]] = None,
     ) -> None:
         """Persist remedial quiz questions and related topics."""
         sanitized_questions = self._sanitize_questions_for_session(
@@ -476,14 +542,18 @@ class ProgressService:
         stored_count = len(sanitized_questions)
         if topics is not None:
             normalized_topics = [
-                str(topic)[:300] for topic in topics if isinstance(topic, str) and topic.strip()
+                str(topic)[:300]
+                for topic in topics
+                if isinstance(topic, str) and topic.strip()
             ]
             topics_key = self.get_session_key(subject, subtopic, "remedial_topics")
             self._set_user_state_value("remedial_topics", topics_key, normalized_topics)
         return stored_count
 
     def _sanitize_questions_for_session(
-        self, questions: Optional[List[Dict[str, Any]]], max_questions: Optional[int] = None
+        self,
+        questions: Optional[List[Dict[str, Any]]],
+        max_questions: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         allowed_keys = {
             "id",
@@ -537,7 +607,9 @@ class ProgressService:
 
         return sanitized_questions
 
-    def get_remedial_quiz_questions(self, subject: str, subtopic: str) -> List[Dict[str, Any]]:
+    def get_remedial_quiz_questions(
+        self, subject: str, subtopic: str
+    ) -> List[Dict[str, Any]]:
         """Get stored remedial quiz questions."""
         questions_key = self.get_session_key(subject, subtopic, "remedial_questions")
         stored = self._get_user_state_value("remedial_questions", questions_key, [])
@@ -869,7 +941,9 @@ class ProgressService:
             "prerequisites_met": all_met,
         }
 
-    def check_subtopic_prerequisites(self, subject: str, subtopic: str) -> Dict[str, Any]:
+    def check_subtopic_prerequisites(
+        self, subject: str, subtopic: str
+    ) -> Dict[str, Any]:
         """Determine if prerequisite subtopics are complete for the target subtopic."""
 
         from services import get_data_service  # Lazy import to avoid circular deps
@@ -878,6 +952,27 @@ class ProgressService:
         subject_config = data_service.load_subject_config(subject) or {}
         subtopics_config = subject_config.get("subtopics", {})
         target_config = subtopics_config.get(subtopic, {})
+
+        # Check if subtopic is inactive (takes priority over prerequisites)
+        subtopic_status = target_config.get("status", "active")
+        if subtopic_status == "inactive":
+            return {
+                "subject": subject,
+                "subtopic": subtopic,
+                "is_active": False,
+                "subtopic_inactive": True,
+                "can_access_subtopic": False,
+                "has_prerequisites": False,
+                "admin_override": False,
+                "prerequisite_ids": [],
+                "prerequisite_details": [],
+                "missing_prerequisite_ids": [],
+                "missing_prerequisites": [],
+                "completed_prerequisites": 0,
+                "total_prerequisites": 0,
+                "prerequisites_met": False,
+                "redirect_url": f"/subjects/{subject}",
+            }
 
         configured_prereqs = target_config.get("prerequisites", []) or []
         prerequisite_ids = [
@@ -941,6 +1036,8 @@ class ProgressService:
         return {
             "subject": subject,
             "subtopic": subtopic,
+            "is_active": True,
+            "subtopic_inactive": False,
             "has_prerequisites": bool(prerequisite_ids),
             "admin_override": admin_override,
             "prerequisite_ids": prerequisite_ids,

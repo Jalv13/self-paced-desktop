@@ -188,6 +188,33 @@ class AdminService:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+    def delete_subtopic(self, subject: str, subtopic_id: str) -> Dict[str, Any]:
+        """Delete a subtopic with validation."""
+        try:
+            # Validate subject exists
+            subjects = self.data_service.discover_subjects()
+            if subject not in subjects:
+                return {"success": False, "error": "Subject not found"}
+
+            # Validate subtopic exists
+            subject_config = self.data_service.load_subject_config(subject)
+            if not subject_config:
+                return {"success": False, "error": "Subject configuration not found"}
+
+            subtopics = subject_config.get("subtopics", {})
+            if subtopic_id not in subtopics:
+                return {"success": False, "error": "Subtopic not found"}
+
+            # Delete the subtopic
+            success = self.data_service.delete_subtopic(subject, subtopic_id)
+
+            if success:
+                return {"success": True, "message": "Subtopic deleted successfully"}
+            else:
+                return {"success": False, "error": "Failed to delete subtopic"}
+
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
     def update_subject(
         self, subject_id: str, update_payload: Dict[str, Any]
@@ -210,11 +237,7 @@ class AdminService:
             subtopics = update_payload.get("subtopics")
             allowed_tags = update_payload.get("allowed_tags")
 
-            if (
-                subject_info is None
-                and subtopics is None
-                and allowed_tags is None
-            ):
+            if subject_info is None and subtopics is None and allowed_tags is None:
                 return {
                     "success": False,
                     "error": "No updatable fields provided",
@@ -301,9 +324,7 @@ class AdminService:
                 )
 
                 lesson_count = len(lessons) if lessons else 0
-                initial_count = (
-                    len(quiz_data.get("questions", [])) if quiz_data else 0
-                )
+                initial_count = len(quiz_data.get("questions", [])) if quiz_data else 0
                 pool_count = len(pool_data) if pool_data else 0
 
                 subtopics_data.append(
@@ -499,6 +520,26 @@ class AdminService:
             lesson_data.setdefault("tags", [])
             lesson_data.setdefault("updated_date", "2025-10-02")
 
+            # Auto-assign order if not provided
+            if (
+                "order" not in lesson_data
+                or lesson_data.get("order") is None
+                or lesson_data.get("order") == ""
+            ):
+                # Get existing lessons to determine next order
+                existing_lessons = self.data_service.get_lesson_plans(subject, subtopic)
+                if existing_lessons and "lessons" in existing_lessons:
+                    # Find max order value
+                    max_order = 0
+                    for lesson in existing_lessons["lessons"].values():
+                        if isinstance(lesson, dict):
+                            lesson_order = lesson.get("order", 0)
+                            if lesson_order and isinstance(lesson_order, (int, float)):
+                                max_order = max(max_order, int(lesson_order))
+                    lesson_data["order"] = max_order + 1
+                else:
+                    lesson_data["order"] = 1
+
             # Save the lesson
             success = self.data_service.save_lesson_to_file(
                 subject, subtopic, lesson_id, lesson_data
@@ -519,7 +560,11 @@ class AdminService:
     def update_lesson(
         self, subject: str, subtopic: str, lesson_id: str, lesson_data: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Update an existing lesson."""
+        """Update an existing lesson.
+
+        If the lesson ID is changed, this will automatically migrate all student
+        progress records from the old ID to the new ID.
+        """
         try:
             # Validation
             if not self.data_service.validate_subject_subtopic(subject, subtopic):
@@ -528,17 +573,60 @@ class AdminService:
                     "error": "Invalid subject/subtopic combination",
                 }
 
-            # Ensure lesson ID is set
-            lesson_data["id"] = lesson_id
+            # Check if lesson ID is being changed
+            new_lesson_id = lesson_data.get("id", lesson_id)
+            id_changed = new_lesson_id != lesson_id
+
+            if id_changed:
+                # Validate that the new ID doesn't already exist
+                existing_lessons = self.data_service.get_lesson_map(subject, subtopic)
+                if new_lesson_id in existing_lessons:
+                    return {
+                        "success": False,
+                        "error": f"Lesson ID '{new_lesson_id}' already exists. Please choose a different ID.",
+                    }
+
+                # Delete the old lesson entry
+                delete_success = self.data_service.delete_lesson_from_file(
+                    subject, subtopic, lesson_id
+                )
+                if not delete_success:
+                    return {
+                        "success": False,
+                        "error": "Failed to remove old lesson entry during ID change",
+                    }
+
+                # Migrate student progress from old ID to new ID
+                progress_service = self.progress_service
+                migration_result = progress_service.migrate_lesson_id(
+                    subject, subtopic, lesson_id, new_lesson_id
+                )
+
+                if not migration_result.get("success"):
+                    return {
+                        "success": False,
+                        "error": f"Failed to migrate student progress: {migration_result.get('error')}",
+                    }
+
+            # Ensure the new lesson ID is set
+            lesson_data["id"] = new_lesson_id
             lesson_data["updated_date"] = "2025-10-02"
 
-            # Save the updated lesson
+            # Save the lesson with the new ID
             success = self.data_service.save_lesson_to_file(
-                subject, subtopic, lesson_id, lesson_data
+                subject, subtopic, new_lesson_id, lesson_data
             )
 
             if success:
-                return {"success": True, "message": "Lesson updated successfully"}
+                message = "Lesson updated successfully"
+                if id_changed:
+                    message += f" (ID changed from '{lesson_id}' to '{new_lesson_id}')"
+                return {
+                    "success": True,
+                    "message": message,
+                    "id_changed": id_changed,
+                    "new_lesson_id": new_lesson_id,
+                }
             else:
                 return {"success": False, "error": "Failed to update lesson"}
 
@@ -814,7 +902,10 @@ class AdminService:
         try:
             subjects = payload.get("subjects")
             if not isinstance(subjects, dict) or not subjects:
-                return {"success": False, "error": "No subjects provided in import data."}
+                return {
+                    "success": False,
+                    "error": "No subjects provided in import data.",
+                }
 
             data_root = self.data_service.data_root_path
 
@@ -838,7 +929,9 @@ class AdminService:
                         "w",
                         encoding="utf-8",
                     ) as config_file:
-                        json.dump(subject_config, config_file, indent=2, ensure_ascii=False)
+                        json.dump(
+                            subject_config, config_file, indent=2, ensure_ascii=False
+                        )
 
                 subtopics = subject_payload.get("subtopics", {})
                 if isinstance(subtopics, dict):

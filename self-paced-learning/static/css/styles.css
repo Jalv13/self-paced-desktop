@@ -467,10 +467,30 @@ h2 {
   right: 10px;
   background-color: #4caf50;
   color: white;
-  padding: 5px 10px;
+  padding: 5px 12px;
   border-radius: 15px;
   font-size: 0.8rem;
-  display: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.completion-badge i {
+  font-size: 0.9rem;
+}
+
+.completion-badge.badge-available {
+  background-color: #4caf50;
+}
+
+.completion-badge.badge-unavailable {
+  background-color: #e53e3e;
+}
+
+.completion-badge.badge-locked {
+  background-color: #f59e0b;
 }
 
 /* Utility class */
@@ -1319,8 +1339,8 @@ body.quiz-page {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease,
-    border-color 0.2s ease, background 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease,
+    background 0.2s ease;
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
 }
 
@@ -1347,10 +1367,16 @@ body.quiz-page {
 
 .code-runner-content {
   padding: 24px;
-  background: radial-gradient(circle at top left, rgba(96, 165, 250, 0.08),
-        transparent 55%),
-    radial-gradient(circle at bottom right, rgba(148, 163, 184, 0.08),
-        transparent 50%),
+  background: radial-gradient(
+      circle at top left,
+      rgba(96, 165, 250, 0.08),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      rgba(148, 163, 184, 0.08),
+      transparent 50%
+    ),
     #f8fafc;
   display: flex;
   flex-direction: column;
@@ -1385,8 +1411,7 @@ body.quiz-page {
   resize: vertical;
   box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.2),
     0 12px 30px rgba(15, 23, 42, 0.2);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease,
-    transform 0.2s ease;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .python-editor:focus {
@@ -1423,11 +1448,14 @@ body.quiz-page {
   letter-spacing: 0.01em;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease,
-    background 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease,
+    border-color 0.2s ease;
   color: #0f172a;
-  background: linear-gradient(135deg, rgba(96, 165, 250, 0.18),
-      rgba(59, 130, 246, 0.45));
+  background: linear-gradient(
+    135deg,
+    rgba(96, 165, 250, 0.18),
+    rgba(59, 130, 246, 0.45)
+  );
   box-shadow: 0 12px 25px rgba(148, 163, 184, 0.28);
 }
 
@@ -1492,8 +1520,11 @@ body.quiz-page {
 }
 
 .output-header {
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.6),
-      rgba(37, 99, 235, 0.35));
+  background: linear-gradient(
+    135deg,
+    rgba(37, 99, 235, 0.6),
+    rgba(37, 99, 235, 0.35)
+  );
   color: #e0f2fe;
   padding: 12px 18px;
   font-weight: 600;
@@ -1672,8 +1703,11 @@ body.quiz-page {
 }
 
 .code-runner-modal-content {
-  background: linear-gradient(165deg, rgba(15, 23, 42, 0.98),
-      rgba(17, 24, 39, 0.94));
+  background: linear-gradient(
+    165deg,
+    rgba(15, 23, 42, 0.98),
+    rgba(17, 24, 39, 0.94)
+  );
   border-radius: 24px;
   box-shadow: 0 35px 90px rgba(15, 23, 42, 0.55);
   width: 70vw;
@@ -1689,8 +1723,11 @@ body.quiz-page {
 }
 
 .code-runner-modal-header {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25),
-      rgba(79, 70, 229, 0.25));
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.25),
+    rgba(79, 70, 229, 0.25)
+  );
   color: #e2e8f0;
   padding: 22px 28px;
   font-weight: 600;
@@ -1714,8 +1751,11 @@ body.quiz-page {
 }
 
 .code-runner-modal-collapse {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2),
-      rgba(96, 165, 250, 0.35));
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.2),
+    rgba(96, 165, 250, 0.35)
+  );
   border: 1px solid rgba(59, 130, 246, 0.35);
   color: #e0f2fe;
   border-radius: 999px;
@@ -1759,8 +1799,11 @@ body.quiz-page {
   flex: 1;
   padding: 28px;
   overflow-y: auto;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.6),
-      rgba(15, 23, 42, 0.3));
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.6),
+    rgba(15, 23, 42, 0.3)
+  );
 }
 
 .code-runner-modal .python-editor {
@@ -1794,7 +1837,6 @@ body.quiz-page {
 .code-runner-modal-question p {
   margin-bottom: 8px;
 }
-
 
 .code-runner-content.code-runner-expanded {
   display: flex;
@@ -1895,7 +1937,6 @@ body.quiz-page {
   height: 100%;
   min-height: 0;
 }
-
 
 .code-runner-grid-output {
   grid-area: output;
@@ -2329,7 +2370,8 @@ body.quiz-page {
   font-size: 0.95rem;
   cursor: pointer;
   text-decoration: none;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .action-btn.primary {
@@ -2433,7 +2475,6 @@ body.quiz-page {
 .section-header .section-note {
   color: #111827;
 }
-
 
 .lessons-list {
   display: flex;

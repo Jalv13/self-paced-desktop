@@ -84,8 +84,8 @@
                                 <label for="lesson_id">Lesson ID *</label>
                                 <input type="text" id="lesson_id" name="lesson_id" required 
                                        placeholder="e.g., python-basics, advanced-functions"
-                                       {% if edit_mode %}value="{{ lesson_id }}" readonly{% endif %}>
-                                <small>Unique identifier for this lesson (lowercase, hyphens only)</small>
+                                       {% if edit_mode %}value="{{ lesson_id }}"{% endif %}>
+                                <small id="lessonIdHelp">Unique identifier for this lesson (lowercase, hyphens only). {% if edit_mode %}Changing this will update student progress records.{% endif %}</small>
                             </div>
                             
                             <div class="form-group">
@@ -112,10 +112,10 @@
                             
                             <div class="form-group">
                                 <label for="order">Lesson Order</label>
-                                <input type="number" id="order" name="order" min="1" max="100"
+                                <input type="number" id="order" name="order" min="1" max="999"
                                        placeholder="e.g., 1, 2, 3..."
                                        {% if edit_mode and lesson_data.order %}value="{{ lesson_data.order }}"{% endif %}>
-                                <small>Optional: Display order for initial lessons (1 = first, 2 = second, etc.)</small>
+                                <small>Display order within subtopic (lower numbers appear first). Leave blank to add at end.</small>
                             </div>
                         </div>
 
@@ -130,15 +130,15 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="lessonTags">Lesson Tags *</label>
+                            <label for="lessonTags">Lesson Tags</label>
                             <div class="tag-input-container">
                                 <input type="text" id="lessonTags" name="lessonTags" 
                                        placeholder="Start typing to search tags..."
                                        {% if edit_mode and lesson_data.tags %}value="{{ lesson_data.tags | join(', ') }}"{% endif %}
-                                       required autocomplete="off">
+                                       autocomplete="off">
                                 <div class="tag-suggestions" id="lessonTagSuggestions"></div>
                             </div>
-                            <small id="tagsHelpText">Select from available tags or type to search. Tags help match lessons to student needs</small>
+                            <small id="tagsHelpText">Optional: Select from available tags or type to search. Tags help match lessons to student needs</small>
                             <div class="tags-preview" id="lessonTagsPreview"></div>
                             <div class="available-tags" id="lessonAvailableTags"></div>
                             <div class="error-message" id="lessonTagsError"></div>
@@ -899,6 +899,34 @@
             // Add lesson type change handler
             document.getElementById('lessonType').addEventListener('change', updateLessonTypeHelp);
             
+            {% if edit_mode %}
+            // Track original lesson ID and warn if changed
+            const originalLessonId = '{{ lesson_id }}';
+            const lessonIdInput = document.getElementById('lesson_id');
+            let idChangeConfirmed = false;
+            
+            lessonIdInput.addEventListener('change', function() {
+                const newId = this.value.trim();
+                if (newId !== originalLessonId && !idChangeConfirmed) {
+                    const confirmed = confirm(
+                        'Warning: Changing the lesson ID will:\n\n' +
+                        '• Update this lesson\'s identifier\n' +
+                        '• Migrate all student progress to the new ID\n' +
+                        '• Break any bookmarked links to this lesson\n\n' +
+                        'Original ID: ' + originalLessonId + '\n' +
+                        'New ID: ' + newId + '\n\n' +
+                        'Are you sure you want to change the lesson ID?'
+                    );
+                    
+                    if (!confirmed) {
+                        this.value = originalLessonId;
+                    } else {
+                        idChangeConfirmed = true;
+                    }
+                }
+            });
+            {% endif %}
+            
             // Tag API integration variables
             let availableTags = [];
             let selectedTags = [];
@@ -913,7 +941,9 @@
                 }
                 
                 try {
-                    const response = await fetch(`/api/subjects/${currentSubject}/tags`);
+                    const response = await fetch(`/api/subjects/${currentSubject}/tags`, {
+                        cache: 'no-store'
+                    });
                     if (response.ok) {
                         const data = await response.json();
                         availableTags = data.tags || [];
@@ -1144,7 +1174,7 @@
                     loadAvailableTags();
                     
                     // Fetch subtopics for the selected subject
-                    fetch(`/api/subjects/${selectedSubject}/subtopics`)
+                    fetch(`/api/subjects/${selectedSubject}/subtopics`, { cache: 'no-store' })
                         .then(response => response.json())
                         .then(data => {
                             if (data.subtopics) {
@@ -1374,6 +1404,7 @@
                 subject: document.getElementById('subject').value,
                 subtopic: document.getElementById('subtopic').value,
                 lesson_id: document.getElementById('lesson_id').value,
+                id: document.getElementById('lesson_id').value,  // Include id for backend
                 title: document.getElementById('title').value,
                 lessonType: document.getElementById('lessonType').value,
                 videoId: document.getElementById('videoId').value,
@@ -1384,11 +1415,6 @@
             // Validation
             if (!formData.subject || !formData.subtopic || !formData.lesson_id || !formData.title) {
                 showNotification('Please fill in all required fields', 'error');
-                return;
-            }
-            
-            if (!formData.tags || formData.tags.length === 0) {
-                showNotification('Please add at least one tag to the lesson', 'error');
                 return;
             }
 
@@ -1411,7 +1437,13 @@
                 if (data.success) {
                     showNotification(data.message, 'success');
                     setTimeout(() => {
-                        window.location.href = '/admin/lessons';
+                        {% if edit_mode %}
+                            // If lesson ID was changed, redirect to lessons page
+                            // (can't redirect to edit page with new ID easily)
+                            window.location.href = '/admin/lessons/{{ subject }}/{{ subtopic }}';
+                        {% else %}
+                            window.location.href = '/admin/lessons';
+                        {% endif %}
                     }, 1500);
                 } else {
                     showNotification(data.error || 'An error occurred', 'error');

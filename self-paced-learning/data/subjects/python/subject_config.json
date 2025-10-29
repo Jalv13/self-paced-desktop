@@ -1,92 +1,116 @@
 {
   "subtopics": {
-    "week_1": {
-      "name": "Week 1 - The Hero Awakens",
-      "description": "Meet Python & Hello World - Learn print() and comments through an RPG adventure",
-      "order": 1,
-      "status": "active",
-      "prerequisites": [],
-      "estimated_time": "1 hour",
-      "video_count": 0,
-      "lesson_count": 10,
-      "question_count": 10
-    },
-    "week_2": {
-      "name": "Week 2 - Hero Stats Training",
-      "description": "Variables & Data Types - Create and manage hero stats using variables",
-      "order": 2,
-      "status": "active",
-      "prerequisites": ["week_1"],
-      "estimated_time": "1.5 hours",
-      "video_count": 0,
-      "lesson_count": 12,
-      "question_count": 11
-    },
-    "functions": {
-      "name": "Python Functions",
-      "description": "Master function concepts, arguments, return values, and advanced techniques",
-      "order": 3,
-      "status": "active",
-      "prerequisites": [],
-      "estimated_time": "2 hours",
-      "video_count": 1,
-      "lesson_count": 14,
-      "question_count": 44
-    },
-    "loops": {
-      "name": "Python Loops",
-      "description": "Learn how to automate repetitive tasks using for and while loops",
-      "order": 2,
-      "status": "active",
-      "prerequisites": [],
-      "estimated_time": "1.5 hours",
-      "video_count": 1,
-      "lesson_count": 0,
-      "question_count": 0
-    },
     "arrays": {
-      "name": "NumPy Arrays",
       "description": "Discover efficient numerical computations and data processing with NumPy arrays",
-      "order": 3,
-      "status": "active",
-      "prerequisites": ["dictionaries", "functions", "lists", "loops", "sets"],
       "estimated_time": "2 hours",
-      "video_count": 0,
       "lesson_count": 0,
-      "question_count": 0
-    },
-    "lists": {
-      "name": "Python Lists",
-      "description": "Understand Python's built-in list data structure and list comprehensions",
-      "order": 4,
+      "name": "NumPy Arrays",
+      "order": 1,
+      "prerequisites": [
+        "dictionaries",
+        "functions",
+        "lists",
+        "loops",
+        "sets"
+      ],
+      "question_count": 0,
       "status": "active",
-      "prerequisites": [],
-      "estimated_time": "1.5 hours",
-      "video_count": 0,
-      "lesson_count": 0,
-      "question_count": 0
-    },
-    "sets": {
-      "name": "Python Sets",
-      "description": "Learn about unordered collections and set operations like union and intersection",
-      "order": 5,
-      "status": "active",
-      "prerequisites": ["lists"],
-      "estimated_time": "1 hour",
-      "video_count": 0,
-      "lesson_count": 0,
-      "question_count": 0
+      "video_count": 0
     },
     "dictionaries": {
-      "name": "Python Dictionaries",
       "description": "Explore key-value mappings and dictionary comprehensions",
-      "order": 6,
-      "status": "active",
-      "prerequisites": ["lists"],
       "estimated_time": "1.5 hours",
-      "video_count": 0,
       "lesson_count": 0,
-      "question_count": 0
+      "name": "Python Dictionaries",
+      "order": 2,
+      "prerequisites": [
+        "lists"
+      ],
+      "question_count": 0,
+      "status": "active",
+      "video_count": 0
+    },
+    "functions": {
+      "description": "Master function concepts, arguments, return values, and advanced techniques",
+      "estimated_time": "2 hours",
+      "lesson_count": 14,
+      "name": "Python Functions",
+      "order": 3,
+      "prerequisites": [],
+      "question_count": 44,
+      "status": "active",
+      "video_count": 1
+    },
+    "lists": {
+      "description": "Understand Python's built-in list data structure and list comprehensions",
+      "estimated_time": "1.5 hours",
+      "lesson_count": 0,
+      "name": "Python Lists",
+      "order": 4,
+      "prerequisites": [],
+      "question_count": 0,
+      "status": "active",
+      "video_count": 0
+    },
+    "loops": {
+      "description": "Learn how to automate repetitive tasks using for and while loops",
+      "estimated_time": "1.5 hours",
+      "lesson_count": 0,
+      "name": "Python Loops",
+      "order": 5,
+      "prerequisites": [],
+      "question_count": 0,
+      "status": "active",
+      "video_count": 1
+    },
+    "sets": {
+      "description": "Learn about unordered collections and set operations like union and intersection",
+      "estimated_time": "1 hour",
+      "lesson_count": 0,
+      "name": "Python Sets",
+      "order": 6,
+      "prerequisites": [
+        "lists"
+      ],
+      "question_count": 0,
+      "status": "active",
+      "video_count": 0
+    },
+    "week_1": {
+      "description": "Meet Python & Hello World - Learn print() and comments through an RPG adventure",
+      "estimated_time": "1 hour",
+      "lesson_count": 10,
+      "name": "Week 1 - The Hero Awakens",
+      "order": 7,
+      "prerequisites": [],
+      "question_count": 10,
+      "status": "active",
+      "video_count": 0
+    },
+    "week_2": {
+      "description": "Variables & Data Types - Create and manage hero stats using variables",
+      "estimated_time": "1.5 hours",
+      "lesson_count": 12,
+      "name": "Week 2 - Hero Stats Training",
+      "order": 8,
+      "prerequisites": [
+        "week_1"
+      ],
+      "question_count": 11,
+      "status": "active",
+      "video_count": 0
+    },
+    "week-3": {
+      "description": "Your hero has stats now, but the villagers are not impressed. They shout:\n\"Traveler, tell us your name! How many coins do you carry? How strong are you?\"\n\nTo answer them, your hero needs to listen and respond. This is where we use input() and friendly output.",
+      "name": "Week 3 – Speak with the Villagers",
+      "order": 9,
+      "status": "active"
+    },
+    "week-4": {
+      "order": 10,
+      "name": "Week 4 – The Hero’s First Choice",
+      "description": "Your hero steps bravely into the forest. Birds sing… until suddenly — BAM! 🐉\nA monster blocks the path.\n\nThe villagers whisper:\n\"Now we’ll see if this hero is smart… or just lunch.\"\n\nIt’s time for your first big choice:\n\nWill you fight the monster?\n\nWill you run away (screaming, probably)?\n\nOr will you bribe it with shiny coins?\n\nIn Python, choices are written with conditionals: if, elif, and else.",
+      "status": "active"
     }
   },
   "allowed_tags": [
