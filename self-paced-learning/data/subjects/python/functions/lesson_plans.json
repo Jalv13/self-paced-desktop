@@ -13,8 +13,12 @@
           "text": "Functions help you avoid repetition, make code more organized, and allow easier debugging."
         }
       ],
-      "tags": ["function_basics", "function_definition", "terminology"],
-      "type": "remedial",
+      "tags": [
+        "python",
+        "functions",
+        "introduction"
+      ],
+      "type": "initial",
       "updated_date": "2025-09-25",
       "order": 1,
       "id": "python-functions-intro"
@@ -82,8 +86,13 @@
           ]
         }
       ],
-      "tags": ["function_definition", "function_basics", "syntax"],
-      "type": "remedial",
+      "tags": [
+        "python",
+        "functions",
+        "def",
+        "syntax"
+      ],
+      "type": "initial",
       "updated_date": "2025-09-25",
       "order": 2,
       "id": "def-keyword"
@@ -208,12 +217,14 @@
         }
       ],
       "tags": [
-        "function_arguments",
-        "keyword_arguments",
-        "function_definition",
-        "terminology"
+        "python",
+        "functions",
+        "parameters",
+        "arguments",
+        "default",
+        "keyword"
       ],
-      "type": "remedial",
+      "type": "initial",
       "updated_date": "2025-09-25",
       "order": 3,
       "id": "function-parameters"
@@ -313,8 +324,14 @@
           ]
         }
       ],
-      "tags": ["args_kwargs", "function_arguments", "terminology"],
-      "type": "remedial",
+      "tags": [
+        "python",
+        "functions",
+        "args",
+        "kwargs",
+        "arguments"
+      ],
+      "type": "initial",
       "updated_date": "2025-09-25",
       "order": 4,
       "id": "arbitrary-arguments"
@@ -359,8 +376,12 @@
           ]
         }
       ],
-      "tags": ["return_values", "function_basics", "syntax"],
-      "type": "remedial",
+      "tags": [
+        "python",
+        "functions",
+        "return"
+      ],
+      "type": "initial",
       "updated_date": "2025-09-25",
       "order": 5,
       "id": "return-values"
@@ -416,7 +437,12 @@
           ]
         }
       ],
-      "tags": ["python", "functions", "summary", "best practices"],
+      "tags": [
+        "python",
+        "functions",
+        "summary",
+        "best practices"
+      ],
       "type": "initial",
       "updated_date": "2025-09-25",
       "order": 7,
@@ -458,8 +484,12 @@
           ]
         }
       ],
-      "tags": ["recursion", "function_basics", "error_handling"],
-      "type": "remedial",
+      "tags": [
+        "python",
+        "functions",
+        "recursion"
+      ],
+      "type": "initial",
       "updated_date": "2025-01-01",
       "order": 8,
       "id": "recursion"

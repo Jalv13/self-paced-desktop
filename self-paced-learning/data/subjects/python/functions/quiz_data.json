@@ -11,7 +11,7 @@
       ],
       "question": "What is the primary characteristic of a Python function?",
       "tags": [
-        "function_basics",
+        "python function basics",
         "terminology"
       ],
       "type": "multiple_choice"
@@ -26,7 +26,7 @@
       ],
       "question": "Which keyword is used to define a function in Python?",
       "tags": [
-        "function_definition",
+        "function definition",
         "syntax"
       ],
       "type": "multiple_choice"
@@ -41,7 +41,7 @@
       ],
       "question": "How do you correctly call a Python function named `calculate_sum` that takes no arguments?",
       "tags": [
-        "function_basics",
+        "python function basics",
         "syntax"
       ],
       "type": "multiple_choice"
@@ -57,7 +57,7 @@
       "question": "In the function definition `def greet(user_name):`, what is `user_name` technically referred to?",
       "tags": [
         "terminology",
-        "function_definition"
+        "function definition"
       ],
       "type": "multiple_choice"
     },
@@ -71,8 +71,8 @@
       ],
       "question": "If a function is defined as `def print_product(a, b):` (expecting two arguments), what happens if you call it as `print_product(5)`?",
       "tags": [
-        "function_arguments",
-        "error_handling"
+        "passing function arguments",
+        "error handling"
       ],
       "type": "multiple_choice"
     },
@@ -86,8 +86,8 @@
       ],
       "question": "What is the main purpose of the `return` statement in a Python function?",
       "tags": [
-        "return_values",
-        "function_basics"
+        "return values",
+        "function return values"
       ],
       "type": "multiple_choice"
     },
@@ -101,8 +101,8 @@
       ],
       "question": "If a Python function does not explicitly use a `return` statement to send back a value, what does it return by default?",
       "tags": [
-        "return_values",
-        "function_basics"
+        "return values",
+        "function return values"
       ],
       "type": "multiple_choice"
     },
@@ -116,10 +116,10 @@
       ],
       "question": "To allow a function to accept an arbitrary number of positional arguments, which syntax is used in its definition?",
       "tags": [
-        "args_kwargs",
-        "function_arguments"
+        "*args and **kwargs",
+        "passing function arguments"
       ],
-      "type": 
+      "type": "multiple_choice"
     },
     {
       "answer_index": 2,
@@ -131,7 +131,7 @@
       ],
       "question": "When you define a function with `**kwargs`, what Python data type does `kwargs` become inside the function?",
       "tags": [
-        "args_kwargs",
+        "*args and **kwargs",
         "terminology"
       ],
       "type": "multiple_choice"
@@ -146,9 +146,9 @@
       ],
       "question": "Given `def configure_system(mode, retries=3, verbose=False):`, which of the following function calls is INVALID due to syntax rules?",
       "tags": [
-        "function_arguments",
+        "passing function arguments",
         "syntax",
-        "keyword_arguments"
+        "keyword arguments"
       ],
       "type": "multiple_choice"
     },
@@ -162,8 +162,8 @@
       ],
       "question": "What is essential for a recursive function to eventually stop calling itself?",
       "tags": [
-        "recursion",
-        "error_handling"
+        "recursive functions",
+        "error handling"
       ],
       "type": "multiple_choice"
     },
@@ -177,7 +177,7 @@
       ],
       "question": "In a Python function definition `def setup_config(*, user, host, port=22):`, what does the `*` (asterisk) indicate?",
       "tags": [
-        "positional_keyword_arguments",
+        "positional-only and keyword-only arguments",
         "syntax"
       ],
       "type": "multiple_choice"
@@ -186,7 +186,7 @@
       "correct_answer": "return",
       "question": "To send a value back from a function, you use the ____ statement.",
       "tags": [
-        "return_values",
+        "return values",
         "syntax"
       ],
       "type": "fill_in_the_blank"
@@ -196,9 +196,9 @@
       "sample_solution": "def greet(name):\n    return f'Hello, {name}!'",
       "starter_code": "def greet(name):\n    # Your code here",
       "tags": [
-        "function_definition",
-        "return_values",
-        "function_arguments"
+        "function definition",
+        "return values",
+        "passing function arguments"
       ],
       "type": "coding"
     },

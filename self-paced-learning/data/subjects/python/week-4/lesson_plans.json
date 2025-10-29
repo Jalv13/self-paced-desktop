@@ -1,0 +1,201 @@
+{
+  "lessons": [
+    {
+      "title": "Python conditions",
+      "videoId": "",
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "Your hero steps bravely into the forest. Birds sing… until suddenly — BAM! 🐉\nA monster blocks the path.\n\nThe villagers whisper:\n\"Now we’ll see if this hero is smart… or just lunch.\"\n\nIt’s time for your first big choice:\n\nWill you fight the monster?\n\nWill you run away (screaming, probably)?\n\nOr will you bribe it with shiny coins?\n\nIn Python, choices are written with conditionals: if, elif, and else.\n"
+        },
+        {
+          "type": "header",
+          "text": "IfElse"
+        },
+        {
+          "type": "paragraph",
+          "text": "Conditionals are like a choose-your-own-adventure book,\nYour hero looks at the situation and decides what to do.\n"
+        },
+        {
+          "type": "code",
+          "text": "choice = input(\"A monster appears! Do you FIGHT, RUN, or BRIBE? \")\n\nif choice == \"FIGHT\":\n    print(\"You swing your sword bravely!\")\nelif choice == \"RUN\":\n    print(\"You run as fast as your legs can carry you!\")\nelif choice == \"BRIBE\":\n    print(\"You toss some coins and the monster licks its lips… then lets you pass.\")\nelse:\n    print(\"The monster tilts its head… then EATS YOU! (Ouch.)\")\n\n# Think of if as the first test, elif as backup plans, and else as “everything else”.\n"
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n",
+          "expected_output": "",
+          "hints": [],
+          "solution": ""
+        },
+        {
+          "type": "header",
+          "text": "Hero Training Drill 1 – Health Check"
+        },
+        {
+          "type": "paragraph",
+          "text": "The guild healer pokes you with a stick and says:\n\"Hmm… are you alive or should I start the funeral?\" ⚰️\n\nCreate hero_hp = 50.\n\nIf HP > 0 → print \"Your hero is alive!\".\n\nElse → print \"Game Over! The healer sighs and writes your tombstone.\"\n"
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "hero_hp = 50\n\nif hero_hp > 0:\n    print(\"Your hero is alive!\")\nelse:\n    print(\"Game Over! The healer sighs and writes your tombstone.\")\n",
+          "expected_output": "",
+          "hints": [],
+          "solution": ""
+        }
+      ],
+      "tags": [
+        "ifelse comparsion_operators"
+      ],
+      "type": "initial",
+      "id": "python_conditions",
+      "updated_date": "2025-10-02"
+    },
+    {
+      "subject": "python",
+      "subtopic": "week-4",
+      "lesson_id": "condtion_comparsion_operators",
+      "title": "Comparison Operators",
+      "lessonType": "initial",
+      "videoId": "",
+      "tags": [
+        "comparsion_operators"
+      ],
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "Heroes often need to compare numbers:\n\nDo I have enough coins?\nIs my attack power greater than the monster’s defense?\nAm I still alive?"
+        },
+        {
+          "type": "header",
+          "text": "Python Comparsion Operators "
+        },
+        {
+          "type": "paragraph",
+          "text": "Python gives us operators for these:\n==  equals        (Example: 5 == 5)   ✅\n!=  not equal     (Example: 5 != 3)   ✅\n<   less than     (Example: 3 < 10)   ✅\n>   greater than  (Example: 10 > 20)  ❌\n<=  less or equal (Example: 7 <= 7)   ✅\n>=  greater or equal (Example: 8 >= 5)   ✅\n"
+        },
+        {
+          "type": "header",
+          "text": "Hero Training Drill 2 – Enough Coins?"
+        },
+        {
+          "type": "paragraph",
+          "text": "The shopkeeper says:\n\"This potion costs 10 coins. Pay up, or get out!\"\n\nCreate hero_coins = 8.\n\nIf coins >= 10 → print \"You buy the potion! (The shopkeeper winks.)\"\n\nElse → print \"Not enough coins! (The shopkeeper laughs at your poverty.)\"\n"
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\nhero_coins = 8\n\nif hero_coins >= 10:\n    print(\"You buy the potion! (The shopkeeper winks.)\")\nelse:\n    print(\"Not enough coins! (The shopkeeper laughs at your poverty.)\")\n",
+          "expected_output": "",
+          "hints": [],
+          "solution": ""
+        },
+        {
+          "type": "header",
+          "text": "Hero Training Drill 3 – Choose Your Path 🛤️"
+        },
+        {
+          "type": "paragraph",
+          "text": "Your hero reaches a fork in the road. A villager shouts:\n\"LEFT is treasure, RIGHT is danger… or was it the other way around? Oops.\"\n\nAsk: \"Do you go LEFT or RIGHT?\"\n\nIf LEFT → print \"You find a golden chest full of socks… wait, socks?\"\n\nIf RIGHT → print \"A wild goblin jumps out, and it looks HUNGRY!\"\n\nElse → print \"You wander in circles until you get dizzy and fall over.\"\n"
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\npath = input(\"Do you go LEFT or RIGHT? \")\n\nif path == \"LEFT\":\n    print(\"You find a golden chest full of socks… wait, socks?\")\nelif path == \"RIGHT\":\n    print(\"A wild goblin jumps out, and it looks HUNGRY!\")\nelse:\n    print(\"You wander in circles until you get dizzy and fall over.\")\n",
+          "expected_output": "",
+          "hints": [],
+          "solution": ""
+        }
+      ],
+      "id": "comparison_operators",
+      "type": "initial",
+      "updated_date": "2025-10-02"
+    },
+    {
+      "subject": "python",
+      "subtopic": "week-4",
+      "lesson_id": "python_condition_challenge",
+      "title": "Challenge Quest – The Monster’s Challenge",
+      "lessonType": "initial",
+      "videoId": "",
+      "tags": [
+        "if-else"
+      ],
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "✨ Story:\nA monster blocks your path. It growls:\n\"Traveler, choose wisely: FIGHT, RUN, or BRIBE?\"\n\n🔑 Your Mission:\n\nAsk the player for their choice.\n\nUse if/elif/else to decide the outcome:\n\nFIGHT → \"You fight bravely with your weapon! (Critical hit!)\"\n\nRUN → \"You sprint so fast, even the birds can’t keep up!\"\n\nBRIBE → \"You toss some coins… the monster buys ice cream instead of eating you.\"\n\nElse → \"The monster scratches its head… then eats you for dinner. Game Over!\"\n"
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n",
+          "expected_output": "",
+          "hints": [
+            "use if-else"
+          ],
+          "solution": "choice = input(\"A monster blocks your path! Do you FIGHT, RUN, or BRIBE? \")\n\nif choice == \"FIGHT\":\n    print(\"You fight bravely with your weapon! (Critical hit!)\")\nelif choice == \"RUN\":\n    print(\"You sprint so fast, even the birds can’t keep up!\")\nelif choice == \"BRIBE\":\n    print(\"You toss some coins… the monster buys ice cream instead of eating you.\")\nelse:\n    print(\"The monster scratches its head… then eats you for dinner. Game Over!\")\n"
+        }
+      ],
+      "id": "challenge_quest_–_the_monster’s_challenge",
+      "type": "initial",
+      "updated_date": "2025-10-02"
+    },
+    {
+      "subject": "python",
+      "subtopic": "week-4",
+      "lesson_id": "python_condition_summary",
+      "title": "Summary",
+      "lessonType": "initial",
+      "videoId": "",
+      "tags": [
+        "NA"
+      ],
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "So far, hope you understand if/elif/else conditionals.\nYou can use comparison operators to test numbers.\nTheir hero can now make funny, branching choices in the RPG.\n\n\n👉 Next module : when you fight, you need math — damage, healing, coins, and critical hits. We’ll learn operators and expressions.\n"
+        }
+      ],
+      "id": "summary",
+      "type": "initial",
+      "updated_date": "2025-10-02"
+    },
+    {
+      "subject": "python",
+      "subtopic": "week-4",
+      "lesson_id": "remedial-lesson-ifelse",
+      "title": "IfElse",
+      "lessonType": "remedial",
+      "videoId": "",
+      "tags": [
+        "if-else"
+      ],
+      "content": [
+        {
+          "type": "header",
+          "text": "🌲 Forest of Decisions 🌲"
+        },
+        {
+          "type": "paragraph",
+          "text": "You stand at a crossroads. Each choice changes your fate. In Python, choices are made with if, elif, and else statements.\n\n💡 Concept:\n\nif → first condition\n\nelif → backup option\n\nelse → anything else\n\nExample:\n\n\n\nchoice = 'RUN'\nif choice == 'FIGHT':\n    print('Swing sword!')\nelse:\n    print('Retreat!')\n"
+        },
+        {
+          "type": "header",
+          "text": "Practice Drills"
+        },
+        {
+          "type": "paragraph",
+          "text": "Drill I1 – The Brave Hero 💪\nTask: If choice == 'FIGHT', \n\nprint 'Hero attacks!'; \n\nelse print 'Hero hides!'.\n"
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\nchoice = 'FIGHT'\nif choice == 'FIGHT':\n    print('Hero attacks!')\nelse:\n    print('Hero hides!')\n",
+          "expected_output": "",
+          "hints": [],
+          "solution": ""
+        }
+      ],
+      "id": "ifelse",
+      "type": "remedial",
+      "updated_date": "2025-10-02"
+    }
+  ],
+  "updated_date": "2025-10-02"
+}
