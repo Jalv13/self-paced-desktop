@@ -332,17 +332,18 @@
                 placeholder="e.g., functions"
                 required
               />
-              <small>Use lowercase letters, numbers, and hyphens only.</small>
+              <small id="subtopicIdHelp">Use lowercase letters, numbers, and hyphens only.</small>
             </div>
 
             <div class="form-group">
-              <label for="modalSubtopicName">Display Name</label>
+              <label for="modalSubtopicName">Display Name *</label>
               <input
                 type="text"
                 id="modalSubtopicName"
                 class="form-control"
                 placeholder="Readable name shown in the UI"
               />
+              <small>This is what students will see. You can edit this anytime.</small>
             </div>
 
             <div class="form-group">
@@ -1351,6 +1352,7 @@
         const statusSelect = document.getElementById('modalSubtopicStatus');
         const estimatedInput = document.getElementById('modalSubtopicEstimatedTime');
         const tagsInput = document.getElementById('modalSubtopicTags');
+        const idHelpText = document.getElementById('subtopicIdHelp');
 
         subtopicModeInput.value = mode;
 
@@ -1364,6 +1366,10 @@
           }
           idInput.value = subtopicId;
           idInput.disabled = true;
+          if (idHelpText) {
+            idHelpText.textContent = 'ID cannot be changed after creation (used in URLs and file paths).';
+            idHelpText.style.color = '#718096';
+          }
           nameInput.value = data.name || '';
           descriptionInput.value = data.description || '';
           if (statusSelect) {
@@ -1403,6 +1409,10 @@
           }
           idInput.value = '';
           idInput.disabled = false;
+          if (idHelpText) {
+            idHelpText.textContent = 'Use lowercase letters, numbers, and hyphens only.';
+            idHelpText.style.color = '';
+          }
           nameInput.value = '';
           descriptionInput.value = '';
           if (statusSelect) {
@@ -1653,12 +1663,12 @@
         .then(data => {
           if (data.success) {
             showNotification(`Subtopic is now ${data.status}`, 'success');
-            
+
             // Update the UI immediately
             if (subtopicState && subtopicState[subtopicId]) {
               subtopicState[subtopicId].status = data.status;
             }
-            
+
             // Reload to reflect all changes
             setTimeout(() => {
               window.location.reload();

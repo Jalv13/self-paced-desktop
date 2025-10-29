@@ -560,7 +560,11 @@ class AdminService:
     def update_lesson(
         self, subject: str, subtopic: str, lesson_id: str, lesson_data: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Update an existing lesson."""
+        """Update an existing lesson.
+        
+        If the lesson ID is changed, this will automatically migrate all student
+        progress records from the old ID to the new ID.
+        """
         try:
             # Validation
             if not self.data_service.validate_subject_subtopic(subject, subtopic):
@@ -569,17 +573,60 @@ class AdminService:
                     "error": "Invalid subject/subtopic combination",
                 }
 
-            # Ensure lesson ID is set
-            lesson_data["id"] = lesson_id
+            # Check if lesson ID is being changed
+            new_lesson_id = lesson_data.get("id", lesson_id)
+            id_changed = new_lesson_id != lesson_id
+            
+            if id_changed:
+                # Validate that the new ID doesn't already exist
+                existing_lessons = self.data_service.get_lesson_map(subject, subtopic)
+                if new_lesson_id in existing_lessons:
+                    return {
+                        "success": False,
+                        "error": f"Lesson ID '{new_lesson_id}' already exists. Please choose a different ID."
+                    }
+                
+                # Delete the old lesson entry
+                delete_success = self.data_service.delete_lesson_from_file(
+                    subject, subtopic, lesson_id
+                )
+                if not delete_success:
+                    return {
+                        "success": False,
+                        "error": "Failed to remove old lesson entry during ID change"
+                    }
+                
+                # Migrate student progress from old ID to new ID
+                progress_service = self.progress_service
+                migration_result = progress_service.migrate_lesson_id(
+                    subject, subtopic, lesson_id, new_lesson_id
+                )
+                
+                if not migration_result.get("success"):
+                    return {
+                        "success": False,
+                        "error": f"Failed to migrate student progress: {migration_result.get('error')}"
+                    }
+
+            # Ensure the new lesson ID is set
+            lesson_data["id"] = new_lesson_id
             lesson_data["updated_date"] = "2025-10-02"
 
-            # Save the updated lesson
+            # Save the lesson with the new ID
             success = self.data_service.save_lesson_to_file(
-                subject, subtopic, lesson_id, lesson_data
+                subject, subtopic, new_lesson_id, lesson_data
             )
 
             if success:
-                return {"success": True, "message": "Lesson updated successfully"}
+                message = "Lesson updated successfully"
+                if id_changed:
+                    message += f" (ID changed from '{lesson_id}' to '{new_lesson_id}')"
+                return {
+                    "success": True,
+                    "message": message,
+                    "id_changed": id_changed,
+                    "new_lesson_id": new_lesson_id
+                }
             else:
                 return {"success": False, "error": "Failed to update lesson"}
 
