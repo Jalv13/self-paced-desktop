@@ -2816,7 +2816,7 @@
           const subtopicName = subtopic?.name || subtopicId.replace('-', ' ').title();
 
           if (confirm(`Are you sure you want to delete the subtopic "${subtopicName}"?\n\nThis will also delete all associated lessons and questions.`)) {
-              fetch(`/admin/subtopics/${subjectId}/${subtopicId}`, {
+              fetch(`/admin/subtopics/${subjectId}/${subtopicId}/delete`, {
                   method: 'DELETE',
                   headers: {
                       'Content-Type': 'application/json',

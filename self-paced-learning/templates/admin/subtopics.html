@@ -1570,11 +1570,39 @@
       }
 
       function deleteSubtopic(subject, subtopicId) {
-        if (!confirm('Delete this subtopic? This cannot be undone.')) {
+        if (!subject || !subtopicId) {
+          showNotification('Invalid subject or subtopic', 'error');
           return;
         }
-        console.log('Delete subtopic not implemented yet:', subject, subtopicId);
-        showNotification('Delete subtopic is coming soon.', 'error');
+
+        const subtopicData = subtopicState?.[subtopicId];
+        const subtopicName = subtopicData?.name || subtopicId;
+
+        if (!confirm(`Delete subtopic "${subtopicName}"?\n\nThis will permanently delete:\n- All lessons in this subtopic\n- All questions in this subtopic\n- All associated data\n\nThis action cannot be undone!`)) {
+          return;
+        }
+
+        fetch(`/admin/subtopics/${subject}/${subtopicId}/delete`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showNotification(data.message || 'Subtopic deleted successfully', 'success');
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          } else {
+            showNotification(data.error || 'Failed to delete subtopic', 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Error deleting subtopic:', error);
+          showNotification('An error occurred while deleting the subtopic', 'error');
+        });
       }
     </script>
   </body>

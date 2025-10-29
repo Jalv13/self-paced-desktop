@@ -188,6 +188,34 @@ class AdminService:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+    def delete_subtopic(self, subject: str, subtopic_id: str) -> Dict[str, Any]:
+        """Delete a subtopic with validation."""
+        try:
+            # Validate subject exists
+            subjects = self.data_service.discover_subjects()
+            if subject not in subjects:
+                return {"success": False, "error": "Subject not found"}
+
+            # Validate subtopic exists
+            subject_config = self.data_service.load_subject_config(subject)
+            if not subject_config:
+                return {"success": False, "error": "Subject configuration not found"}
+            
+            subtopics = subject_config.get("subtopics", {})
+            if subtopic_id not in subtopics:
+                return {"success": False, "error": "Subtopic not found"}
+
+            # Delete the subtopic
+            success = self.data_service.delete_subtopic(subject, subtopic_id)
+
+            if success:
+                return {"success": True, "message": "Subtopic deleted successfully"}
+            else:
+                return {"success": False, "error": "Failed to delete subtopic"}
+
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
     def update_subject(
         self, subject_id: str, update_payload: Dict[str, Any]
     ) -> Dict[str, Any]:

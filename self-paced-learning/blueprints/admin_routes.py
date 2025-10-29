@@ -1183,6 +1183,23 @@ def admin_reorder_subtopics(subject):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@admin_bp.route("/subtopics/<subject>/<subtopic_id>/delete", methods=["DELETE"])
+def admin_delete_subtopic(subject, subtopic_id):
+    """Delete a subtopic."""
+    try:
+        admin_service = get_admin_service()
+        result = admin_service.delete_subtopic(subject, subtopic_id)
+
+        if result["success"]:
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+
+    except Exception as e:
+        print(f"Error deleting subtopic: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # ============================================================================
 # EXPORT / IMPORT MANAGEMENT
 # ============================================================================
