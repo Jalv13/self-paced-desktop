@@ -2219,23 +2219,23 @@
       function addQuestion(quizType) {
           currentQuizType = quizType;
           currentQuestionIndex = -1;
-          
+
           const editModeEl = document.getElementById('editMode');
           const modalTitleEl = document.getElementById('questionModalTitle');
           const submitTextEl = document.getElementById('questionSubmitText');
           const modalEl = document.getElementById('questionModal');
           const submitBtn = document.querySelector('#questionModal .btn-primary');
-          
+
           // Ensure modal is properly reset
           editModeEl.value = 'false';
           modalTitleEl.textContent = 'Add Question';
           submitTextEl.textContent = 'Add Question';
-          
+
           // Ensure submit button is enabled
           if (submitBtn) {
               submitBtn.disabled = false;
           }
-          
+
           resetQuestionForm();
           modalEl.classList.add('show');
       }
@@ -2803,7 +2803,7 @@
                   // Restore button state BEFORE closing modal
                   submitBtn.textContent = originalText;
                   submitBtn.disabled = false;
-                  
+
                   showSuccessMessage(editMode ? 'Question updated successfully!' : 'Question added successfully!');
                   closeQuestionModal();
               });
@@ -2816,7 +2816,7 @@
           } catch (error) {
               console.error('Error:', error);
               alert('An error occurred while saving the question.');
-              
+
               // Restore button state on error
               submitBtn.textContent = originalText;
               submitBtn.disabled = false;
@@ -2978,12 +2978,12 @@
       function closeQuestionModal() {
           const modal = document.getElementById('questionModal');
           modal.classList.remove('show');
-          
+
           // Wait for modal close animation before resetting form
           setTimeout(() => {
               clearErrors();
               resetQuestionForm();
-              
+
               // Re-enable submit button to ensure it's not stuck
               const submitBtn = document.querySelector('#questionModal .btn-primary');
               if (submitBtn) {
