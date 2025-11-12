@@ -24,13 +24,29 @@
       ]
     },
     "test": {
-      "order": 3,
-      "name": "test",
       "description": "test",
       "estimated_time": "123",
+      "name": "test",
+      "order": 3,
       "status": "active",
       "tags": [
         "rest"
+      ]
+    },
+    "test123": {
+      "order": 4,
+      "name": "test123",
+      "description": "test123test123",
+      "estimated_time": "123",
+      "status": "active",
+      "tags": [
+        "test123",
+        "123",
+        "test"
+      ],
+      "prerequisites": [
+        "series",
+        "test"
       ]
     }
   },

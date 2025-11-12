@@ -24,6 +24,7 @@ class AIService:
         """Initialize the AI service with OpenAI configuration."""
         self.api_key = os.getenv("OPENAI_API_KEY")
         self.default_model = os.getenv("OPENAI_MODEL", "gpt-4")
+        self.model = self.default_model  # Set model attribute for API calls
         self.client: Optional[Any] = None
 
         if self.api_key and OpenAIClient:
@@ -51,7 +52,6 @@ class AIService:
     # CORE AI API METHODS
     # ============================================================================
 
-
     def call_openai_api(
         self,
         prompt: str,
@@ -68,8 +68,7 @@ class AIService:
         messages = [
             {
                 "role": "system",
-                "content": system_message
-                or "You are a helpful educational assistant.",
+                "content": system_message or "You are a helpful educational assistant.",
             },
             {"role": "user", "content": prompt},
         ]
@@ -113,7 +112,9 @@ class AIService:
 
         if getattr(self, "client", None) and getattr(self.client, "responses", None):
             try:
-                prompt_text = "\n".join(message["content"] for message in messages if message.get("content"))
+                prompt_text = "\n".join(
+                    message["content"] for message in messages if message.get("content")
+                )
                 response_kwargs = {
                     "model": model_to_use,
                     "input": prompt_text,
@@ -175,11 +176,12 @@ class AIService:
             if choices:
                 choice0 = choices[0] if choices else None
                 message = choice0.get("message") if isinstance(choice0, dict) else None
-                text_value = self._flatten_content(message.get("content") if message else None)
+                text_value = self._flatten_content(
+                    message.get("content") if message else None
+                )
                 if text_value:
                     return text_value
         return None
-
 
     def _flatten_content(self, content: Any) -> Optional[str]:
         if not content:
@@ -221,14 +223,18 @@ class AIService:
         from services import get_data_service
 
         total_questions = len(questions)
-        normalized_answers = [str(answer) if answer is not None else "" for answer in answers]
+        normalized_answers = [
+            str(answer) if answer is not None else "" for answer in answers
+        ]
         correct_answers = 0
         submission_details: List[str] = []
         wrong_indices: List[int] = []
         wrong_tag_candidates: List[str] = []
 
         for idx, question in enumerate(questions):
-            user_answer = normalized_answers[idx] if idx < len(normalized_answers) else ""
+            user_answer = (
+                normalized_answers[idx] if idx < len(normalized_answers) else ""
+            )
             question_type = (question.get("type") or "multiple_choice").strip().lower()
             status = "Incorrect"
 
@@ -296,7 +302,11 @@ class AIService:
         if not fallback_tags:
             fallback_tags = normalized_missed_tags
 
-        submission_text = "".join(submission_details) if submission_details else "[No submission details available]"
+        submission_text = (
+            "".join(submission_details)
+            if submission_details
+            else "[No submission details available]"
+        )
         system_message = (
             "You are an expert instructor. Your task is to analyze a student's quiz performance, "
             "classify their errors against a predefined list of topics, and evaluate their submitted code when provided."
@@ -344,10 +354,16 @@ class AIService:
                 candidate_tags = parsed_response.get("weak_concept_tags") or []
                 if isinstance(candidate_tags, str):
                     candidate_tags = [candidate_tags]
-                validated_tags = self._filter_allowed_tags(candidate_tags, allowed_lookup)
+                validated_tags = self._filter_allowed_tags(
+                    candidate_tags, allowed_lookup
+                )
                 if not validated_tags:
                     validated_tags = fallback_tags
-                feedback = parsed_response.get("detailed_feedback") or parsed_response.get("feedback") or ""
+                feedback = (
+                    parsed_response.get("detailed_feedback")
+                    or parsed_response.get("feedback")
+                    or ""
+                )
 
                 analysis["weak_topics"] = validated_tags
                 analysis["weak_tags"] = validated_tags
@@ -417,12 +433,22 @@ class AIService:
             acceptable = []
             if answer_text:
                 acceptable.extend(
-                    [part.strip().lower() for part in answer_text.split(",") if part.strip()]
+                    [
+                        part.strip().lower()
+                        for part in answer_text.split(",")
+                        if part.strip()
+                    ]
                 )
-            raw_list = question.get("correct_answers") or question.get("acceptable_answers")
+            raw_list = question.get("correct_answers") or question.get(
+                "acceptable_answers"
+            )
             if isinstance(raw_list, list):
                 acceptable.extend(
-                    [str(item).strip().lower() for item in raw_list if str(item).strip()]
+                    [
+                        str(item).strip().lower()
+                        for item in raw_list
+                        if str(item).strip()
+                    ]
                 )
             return user_clean.lower() in acceptable if acceptable else False
         if question_type == "coding":
@@ -445,7 +471,9 @@ class AIService:
 
         return tags
 
-    def _filter_allowed_tags(self, tags: List[str], allowed_lookup: Dict[str, str]) -> List[str]:
+    def _filter_allowed_tags(
+        self, tags: List[str], allowed_lookup: Dict[str, str]
+    ) -> List[str]:
         if not tags:
             return []
         if not allowed_lookup:
@@ -498,6 +526,7 @@ class AIService:
             except json.JSONDecodeError:
                 return None
         return None
+
     def _create_analysis_prompt(
         self,
         questions: List[Dict],
@@ -578,10 +607,14 @@ Keep the response concise and student-friendly.
     ) -> Dict[str, Any]:
         """Provide fallback analysis when AI is not available."""
         total_questions = len(questions)
-        normalized_answers = [str(answer) if answer is not None else "" for answer in answers]
+        normalized_answers = [
+            str(answer) if answer is not None else "" for answer in answers
+        ]
         correct_answers = 0
         for idx, question in enumerate(questions):
-            user_answer = normalized_answers[idx] if idx < len(normalized_answers) else ""
+            user_answer = (
+                normalized_answers[idx] if idx < len(normalized_answers) else ""
+            )
             if self._is_answer_correct(question, user_answer):
                 correct_answers += 1
 
@@ -660,18 +693,36 @@ Keep the response concise and student-friendly.
         wrong_answers: List[int],
         question_pool: List[Dict],
     ) -> List[Dict]:
-        """Generate a remedial quiz focusing on areas where student struggled."""
+        """Generate a remedial quiz focusing on areas where student struggled.
+
+        Extracts tags from the questions that were answered incorrectly and uses
+        them to select the most relevant remedial questions from the pool.
+        """
         if not question_pool:
             return []
 
         weak_topics = set()
         for wrong_index in wrong_answers:
             if wrong_index < len(original_questions):
-                topic = original_questions[wrong_index].get("topic", "")
-                if topic:
-                    weak_topics.add(topic.lower())
+                question = original_questions[wrong_index]
 
-        return self.select_remedial_questions(question_pool, weak_topics)
+                # Extract from tags field (list) - primary method
+                tags = question.get("tags", [])
+                if isinstance(tags, list):
+                    for tag in tags:
+                        if tag and isinstance(tag, str):
+                            weak_topics.add(tag.strip().lower())
+                elif isinstance(tags, str) and tags.strip():
+                    # Single tag as string
+                    weak_topics.add(tags.strip().lower())
+
+                # Fallback to legacy 'topic' field if it exists
+                topic = question.get("topic", "")
+                if topic and isinstance(topic, str):
+                    weak_topics.add(topic.strip().lower())
+
+        print(f"DEBUG: generate_remedial_quiz extracted weak_topics: {weak_topics}")
+        return self.select_remedial_questions(question_pool, list(weak_topics))
 
     def select_remedial_questions(
         self,
@@ -680,15 +731,168 @@ Keep the response concise and student-friendly.
         min_questions: int = 7,
         max_questions: int = 10,
     ) -> List[Dict]:
-        """Select a balanced set of remedial questions.
+        """Select a balanced set of remedial questions using AI.
 
-        The selector prioritizes questions that match the learner's weak topics
-        while ensuring we always surface between ``min_questions`` and
-        ``max_questions`` when enough questions are available.
+        Uses OpenAI to intelligently select questions based on the student's
+        weak topics, ensuring the most relevant questions are chosen.
+
+        REQUIRES AI to be available - will return empty list if AI service is not configured.
         """
 
+        print(f"DEBUG: select_remedial_questions called")
+        print(f"DEBUG: question_pool type: {type(question_pool)}")
+        print(f"DEBUG: target_tags: {target_tags}")
+
         if not question_pool:
+            print(f"DEBUG: question_pool is empty, returning []")
             return []
+
+        # Convert to list to work with it
+        questions_list = (
+            list(question_pool)
+            if not isinstance(question_pool, list)
+            else question_pool
+        )
+
+        if not questions_list:
+            print(f"DEBUG: questions_list is empty after conversion")
+            return []
+
+        # AI is REQUIRED - hard fail if not available
+        if not self.is_available():
+            print(
+                f"ERROR: AI service not available. Cannot select remedial questions without OpenAI API."
+            )
+            return []
+
+        if not target_tags:
+            print(
+                f"ERROR: No target tags provided. Cannot select questions without weak topics."
+            )
+            return []
+
+        print(f"DEBUG: Using AI for question selection")
+        try:
+            selected = self._ai_select_questions(
+                questions_list, target_tags, min_questions, max_questions
+            )
+            if selected:
+                print(f"DEBUG: AI selected {len(selected)} questions")
+                return selected
+            print(f"ERROR: AI selection returned empty list")
+            return []
+        except Exception as e:
+            print(f"ERROR: AI selection failed with error: {e}")
+            return []
+
+    def _ai_select_questions(
+        self,
+        questions: List[Dict],
+        weak_topics: List[str],
+        min_questions: int,
+        max_questions: int,
+    ) -> List[Dict]:
+        """Use AI to select the most appropriate remedial questions."""
+
+        # Prepare question summaries for AI
+        question_summaries = []
+        for i, q in enumerate(questions):
+            summary = {
+                "index": i,
+                "question": q.get("question", "")[:200],  # Truncate long questions
+                "type": q.get("type", "unknown"),
+                "tags": q.get("tags", []),
+            }
+            question_summaries.append(summary)
+
+        prompt = f"""You are an educational AI helping to create a remedial quiz for a student.
+
+The student has shown weakness in these topics: {', '.join(weak_topics)}
+
+Here are the available questions from the question pool:
+
+{json.dumps(question_summaries, indent=2)}
+
+Please analyze the questions and select {min_questions} to {max_questions} questions that would be most beneficial for this student's remedial learning.
+
+Your selection should:
+1. Focus primarily on the weak topics identified
+2. Include a good mix of question types if available
+3. Progress from foundational to more complex concepts
+4. Ensure comprehensive coverage of the weak areas
+
+Respond with a JSON object containing:
+- "selected_indices": array of question indices to use (e.g., [0, 3, 7, 12])
+- "reasoning": brief explanation of why these questions were selected
+- "feedback": encouraging message for the student explaining what they'll be working on
+
+Example response:
+{{
+  "selected_indices": [0, 2, 5, 7, 9, 11, 14],
+  "reasoning": "Selected questions focusing on loops and conditionals with increasing complexity",
+  "feedback": "These questions will help reinforce your understanding of loops and conditional statements, starting with basic concepts and building up to more complex scenarios."
+}}"""
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert educational assistant specializing in adaptive learning and question selection.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.7,
+                max_tokens=1000,
+            )
+
+            content = response.choices[0].message.content.strip()
+
+            # Parse AI response
+            if content.startswith("```json"):
+                content = content.split("```json")[1].split("```")[0].strip()
+            elif content.startswith("```"):
+                content = content.split("```")[1].split("```")[0].strip()
+
+            result = json.loads(content)
+            selected_indices = result.get("selected_indices", [])
+
+            # Store feedback for later display
+            self._last_selection_feedback = {
+                "reasoning": result.get("reasoning", ""),
+                "feedback": result.get("feedback", ""),
+            }
+
+            # Return selected questions
+            selected_questions = [
+                questions[i] for i in selected_indices if 0 <= i < len(questions)
+            ]
+
+            # If AI didn't select enough questions, add some more
+            if len(selected_questions) < min_questions:
+                remaining = [
+                    q for i, q in enumerate(questions) if i not in selected_indices
+                ]
+                random.shuffle(remaining)
+                selected_questions.extend(
+                    remaining[: min_questions - len(selected_questions)]
+                )
+
+            return selected_questions[:max_questions]
+
+        except Exception as e:
+            print(f"Error in AI question selection: {e}")
+            return []
+
+    def _tag_based_selection(
+        self,
+        questions: List[Dict],
+        target_tags: Optional[List[str]],
+        min_questions: int,
+        max_questions: int,
+    ) -> List[Dict]:
+        """Fallback tag-based question selection."""
 
         normalized_targets: Set[str] = set()
         if target_tags:
@@ -703,7 +907,7 @@ Keep the response concise and student-friendly.
         fallback: List[Dict] = []
         seen_identifiers: Set[str] = set()
 
-        for question in question_pool:
+        for question in questions:
             if not isinstance(question, dict):
                 continue
 
@@ -746,7 +950,6 @@ Keep the response concise and student-friendly.
         lower_bound = min(min_questions, upper_bound) if upper_bound else 0
 
         if lower_bound == 0:
-            # Not enough questions to meet the minimum requirement, return what we have.
             return ordered_questions
 
         if lower_bound == upper_bound:
@@ -754,7 +957,13 @@ Keep the response concise and student-friendly.
         else:
             target_count = random.randint(lower_bound, upper_bound)
 
-        return ordered_questions[:target_count]
+        result = ordered_questions[:target_count]
+        print(f"DEBUG: Tag-based selection returning {len(result)} questions")
+        return result
+
+    def get_last_selection_feedback(self) -> Optional[Dict[str, str]]:
+        """Get feedback from the last AI question selection."""
+        return getattr(self, "_last_selection_feedback", None)
 
     # ============================================================================
     # CONTENT GENERATION HELPERS

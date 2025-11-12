@@ -873,11 +873,13 @@
         e.preventDefault();
 
         const formData = {
-          name: document.getElementById('subjectName').value,
-          description: document.getElementById('description').value,
-          icon: document.getElementById('icon').value,
-          color: document.getElementById('color').value,
-          allowed_keywords: allowedKeywords
+          subject_info: {
+            name: document.getElementById('subjectName').value,
+            description: document.getElementById('description').value,
+            icon: document.getElementById('icon').value,
+            color: document.getElementById('color').value
+          },
+          allowed_tags: allowedKeywords
         };
 
         fetch(`/admin/subjects/{{ subject }}/update`, {

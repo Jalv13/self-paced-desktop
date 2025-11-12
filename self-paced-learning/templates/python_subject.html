@@ -3151,11 +3151,15 @@
           // Initialize Pyodide if not already done
           const py = await initPyodide();
 
-          // Capture stdout
+          // Capture stdout and setup input() workaround
           py.runPython(`
 import sys
 from io import StringIO
 sys.stdout = StringIO()
+
+# Enable input() to work in browser environment
+from js import prompt
+__builtins__.input = lambda msg="": str(prompt(msg) or "")
 `);
 
           // Run the user's code
@@ -3223,6 +3227,8 @@ sys.stdout = StringIO()
               '<i class="fas fa-question-circle"></i> Show Hints';
           }
         }
+
+        
       }
 
       // Add tab support to all textareas (especially for code editing)
