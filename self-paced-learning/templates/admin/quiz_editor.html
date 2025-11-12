@@ -139,6 +139,8 @@
                     <i class="fas fa-list"></i> Multiple Choice {% elif
                     question.type == 'fill_in_the_blank' %}
                     <i class="fas fa-edit"></i> Fill in the Blank {% elif
+                    question.type == 'short_answer' %}
+                    <i class="fas fa-align-left"></i> Short Answer {% elif
                     question.type == 'coding' %}
                     <i class="fas fa-code"></i> Coding {% else %}
                     <i class="fas fa-question"></i> {{ question.type.title() }}
@@ -256,6 +258,8 @@
                     <i class="fas fa-list"></i> Multiple Choice {% elif
                     question.type == 'fill_in_the_blank' %}
                     <i class="fas fa-edit"></i> Fill in the Blank {% elif
+                    question.type == 'short_answer' %}
+                    <i class="fas fa-align-left"></i> Short Answer {% elif
                     question.type == 'coding' %}
                     <i class="fas fa-code"></i> Coding {% else %}
                     <i class="fas fa-question"></i> {{ question.type.title() }}
@@ -369,6 +373,7 @@
               <select id="questionType" required>
                 <option value="multiple_choice">Multiple Choice</option>
                 <option value="fill_in_the_blank">Fill in the Blank</option>
+                <option value="short_answer">Short Answer</option>
                 <option value="coding">Coding</option>
               </select>
               <div class="error-message" id="questionTypeError"></div>
@@ -392,6 +397,36 @@
                 <span id="questionTextCounter">0</span>/1000 characters
               </div>
               <div class="error-message" id="questionTextError"></div>
+            </div>
+
+            <!-- Additional Content (Paragraphs & Code) -->
+            <div class="form-group">
+              <label>Additional Content (Optional)</label>
+              <small
+                >Add explanatory paragraphs or code examples to provide context
+                for the question</small
+              >
+
+              <div id="questionContentBlocks" class="content-blocks-container">
+                <!-- Content blocks will be added here -->
+              </div>
+
+              <div class="content-actions">
+                <button
+                  type="button"
+                  class="btn-secondary btn-sm"
+                  onclick="addQuestionContentBlock('paragraph')"
+                >
+                  <i class="fas fa-paragraph"></i> Add Paragraph
+                </button>
+                <button
+                  type="button"
+                  class="btn-secondary btn-sm"
+                  onclick="addQuestionContentBlock('code')"
+                >
+                  <i class="fas fa-code"></i> Add Code Block
+                </button>
+              </div>
             </div>
 
             <!-- Multiple Choice Options -->
@@ -468,6 +503,50 @@
                   reference</small
                 >
                 <div class="error-message" id="sampleSolutionError"></div>
+              </div>
+            </div>
+
+            <!-- Short Answer Question -->
+            <div
+              id="shortAnswerSection"
+              class="question-type-section"
+              style="display: none"
+            >
+              <div class="form-group">
+                <label for="expectedAnswer">Expected Answer (Optional)</label>
+                <textarea
+                  id="expectedAnswer"
+                  rows="3"
+                  placeholder="Provide a sample expected answer for reference..."
+                ></textarea>
+                <small
+                  >This helps AI evaluate student responses and provides
+                  guidance</small
+                >
+              </div>
+              <div class="form-group">
+                <label for="answerGuidelines"
+                  >Answer Guidelines (Optional)</label
+                >
+                <textarea
+                  id="answerGuidelines"
+                  rows="4"
+                  placeholder="Key points that should be included in the answer..."
+                ></textarea>
+                <small
+                  >Criteria for evaluating the answer (e.g., "Must mention
+                  variables and data types")</small
+                >
+              </div>
+              <div class="form-group">
+                <label for="minWords">Minimum Word Count (Optional)</label>
+                <input
+                  type="number"
+                  id="minWords"
+                  min="0"
+                  placeholder="e.g., 20"
+                />
+                <small>Minimum number of words expected in the answer</small>
               </div>
             </div>
 
@@ -1754,6 +1833,98 @@
           width: calc(100% - 40px);
         }
       }
+
+      /* Content blocks styling for questions */
+      .content-blocks-container {
+        margin: 10px 0;
+      }
+
+      .content-block {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 10px;
+      }
+
+      .content-block-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #495057;
+      }
+
+      .content-block-header i {
+        margin-right: 6px;
+      }
+
+      .content-textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: 14px;
+        resize: vertical;
+      }
+
+      .code-textarea {
+        font-family: "Courier New", monospace;
+        background: #f5f5f5;
+      }
+
+      .content-actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 8px;
+      }
+
+      .btn-icon {
+        background: transparent;
+        border: none;
+        color: #6c757d;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.2s;
+      }
+
+      .btn-icon:hover {
+        background: #e9ecef;
+        color: #495057;
+      }
+
+      /* Question content display in quiz */
+      .question-content {
+        margin: 15px 0;
+        padding: 12px;
+        background: #f8f9fa;
+        border-left: 3px solid #007bff;
+        border-radius: 4px;
+      }
+
+      .content-paragraph {
+        margin: 8px 0;
+        color: #495057;
+        line-height: 1.6;
+      }
+
+      .content-code {
+        background: #f5f5f5;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 12px;
+        margin: 8px 0;
+        overflow-x: auto;
+      }
+
+      .content-code code {
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+        color: #212529;
+      }
     </style>
 
     <script>
@@ -2015,6 +2186,11 @@
               section.style.display = 'block';
               section.classList.add('active');
               document.getElementById('questionTextHelp').textContent = 'Use ____ where the answer should go (e.g., "The ____ keyword defines a function")';
+          } else if (type === 'short_answer') {
+              const section = document.getElementById('shortAnswerSection');
+              section.style.display = 'block';
+              section.classList.add('active');
+              document.getElementById('questionTextHelp').textContent = 'Ask a question that requires a written response from the student';
           } else if (type === 'coding') {
               const section = document.getElementById('codingSection');
               section.style.display = 'block';
@@ -2043,11 +2219,25 @@
       function addQuestion(quizType) {
           currentQuizType = quizType;
           currentQuestionIndex = -1;
-          document.getElementById('editMode').value = 'false';
-          document.getElementById('questionModalTitle').textContent = 'Add Question';
-          document.getElementById('questionSubmitText').textContent = 'Add Question';
+          
+          const editModeEl = document.getElementById('editMode');
+          const modalTitleEl = document.getElementById('questionModalTitle');
+          const submitTextEl = document.getElementById('questionSubmitText');
+          const modalEl = document.getElementById('questionModal');
+          const submitBtn = document.querySelector('#questionModal .btn-primary');
+          
+          // Ensure modal is properly reset
+          editModeEl.value = 'false';
+          modalTitleEl.textContent = 'Add Question';
+          submitTextEl.textContent = 'Add Question';
+          
+          // Ensure submit button is enabled
+          if (submitBtn) {
+              submitBtn.disabled = false;
+          }
+          
           resetQuestionForm();
-          document.getElementById('questionModal').classList.add('show');
+          modalEl.classList.add('show');
       }
 
       // Edit question
@@ -2094,6 +2284,9 @@
           showQuestionTypeSection('multiple_choice');
           resetOptions();
           clearErrors();
+
+          // Clear content blocks
+          document.getElementById('questionContentBlocks').innerHTML = '';
 
           // Reset tags with new multiselect system
           selectedTags = [];
@@ -2142,6 +2335,9 @@
           updateSelectedTagsDisplay();
           updateHiddenInput();
 
+          // Load content blocks if present
+          loadQuestionContentBlocks(question.content || []);
+
           // Update character counter
           const counter = document.getElementById('questionTextCounter');
           counter.textContent = (question.question || '').length;
@@ -2176,6 +2372,11 @@
 
           } else if (question.type === 'fill_in_the_blank') {
               document.getElementById('correctAnswer').value = question.correct_answer || '';
+
+          } else if (question.type === 'short_answer') {
+              document.getElementById('expectedAnswer').value = question.expected_answer || '';
+              document.getElementById('answerGuidelines').value = question.answer_guidelines || '';
+              document.getElementById('minWords').value = question.min_words || '';
 
           } else if (question.type === 'coding') {
               document.getElementById('starterCode').value = question.starter_code || '';
@@ -2258,6 +2459,87 @@
           updateOptionLabels();
       }
 
+      // Content block management for questions
+      let questionContentBlockCounter = 0;
+
+      function addQuestionContentBlock(type) {
+          const container = document.getElementById('questionContentBlocks');
+          const blockId = `qcontent-block-${questionContentBlockCounter++}`;
+
+          const blockDiv = document.createElement('div');
+          blockDiv.className = 'content-block';
+          blockDiv.dataset.type = type;
+          blockDiv.dataset.blockId = blockId;
+
+          let contentHTML = '';
+          if (type === 'paragraph') {
+              contentHTML = `
+                  <div class="content-block-header">
+                      <span><i class="fas fa-paragraph"></i> Paragraph</span>
+                      <button type="button" class="btn-icon" onclick="removeQuestionContentBlock('${blockId}')" title="Remove">
+                          <i class="fas fa-times"></i>
+                      </button>
+                  </div>
+                  <textarea class="content-textarea" placeholder="Enter explanatory text..." rows="3"></textarea>
+              `;
+          } else if (type === 'code') {
+              contentHTML = `
+                  <div class="content-block-header">
+                      <span><i class="fas fa-code"></i> Code Block</span>
+                      <button type="button" class="btn-icon" onclick="removeQuestionContentBlock('${blockId}')" title="Remove">
+                          <i class="fas fa-times"></i>
+                      </button>
+                  </div>
+                  <textarea class="content-textarea code-textarea" placeholder="Enter code example..." rows="4"></textarea>
+              `;
+          }
+
+          blockDiv.innerHTML = contentHTML;
+          container.appendChild(blockDiv);
+      }
+
+      function removeQuestionContentBlock(blockId) {
+          const block = document.querySelector(`[data-block-id="${blockId}"]`);
+          if (block) {
+              block.remove();
+          }
+      }
+
+      function collectQuestionContentBlocks() {
+          const blocks = document.querySelectorAll('#questionContentBlocks .content-block');
+          const content = [];
+
+          blocks.forEach(block => {
+              const type = block.dataset.type;
+              const textarea = block.querySelector('textarea');
+              const text = textarea ? textarea.value.trim() : '';
+
+              if (text) {
+                  content.push({ type, text });
+              }
+          });
+
+          return content;
+      }
+
+      function loadQuestionContentBlocks(contentArray) {
+          const container = document.getElementById('questionContentBlocks');
+          container.innerHTML = '';
+
+          if (!contentArray || !Array.isArray(contentArray)) {
+              return;
+          }
+
+          contentArray.forEach(block => {
+              addQuestionContentBlock(block.type);
+              const lastBlock = container.lastElementChild;
+              const textarea = lastBlock.querySelector('textarea');
+              if (textarea && block.text) {
+                  textarea.value = block.text;
+              }
+          });
+      }
+
       function removeOption(index) {
           const container = document.getElementById('optionsContainer');
           const options = container.querySelectorAll('.option-input');
@@ -2332,7 +2614,8 @@
           const questionData = {
               type: document.getElementById('questionType').value,
               question: document.getElementById('questionText').value.trim(),
-              tags: document.getElementById('questionTags').value.split(',').map(tag => tag.trim()).filter(tag => tag)
+              tags: document.getElementById('questionTags').value.split(',').map(tag => tag.trim()).filter(tag => tag),
+              content: collectQuestionContentBlocks()  // Collect content blocks
           };
 
           // Validate common fields
@@ -2347,6 +2630,10 @@
               }
           } else if (questionData.type === 'fill_in_the_blank') {
               if (!validateFillInBlank(questionData)) {
+                  return;
+              }
+          } else if (questionData.type === 'short_answer') {
+              if (!validateShortAnswer(questionData)) {
                   return;
               }
           } else if (questionData.type === 'coding') {
@@ -2446,6 +2733,27 @@
           return true;
       }
 
+      function validateShortAnswer(questionData) {
+          const expectedAnswer = document.getElementById('expectedAnswer').value.trim();
+          const answerGuidelines = document.getElementById('answerGuidelines').value.trim();
+          const minWords = document.getElementById('minWords').value;
+
+          // All fields are optional for short answer
+          if (expectedAnswer) {
+              questionData.expected_answer = expectedAnswer;
+          }
+
+          if (answerGuidelines) {
+              questionData.answer_guidelines = answerGuidelines;
+          }
+
+          if (minWords && parseInt(minWords) > 0) {
+              questionData.min_words = parseInt(minWords);
+          }
+
+          return true;
+      }
+
       function validateCoding(questionData) {
           const starterCode = document.getElementById('starterCode').value;
           const sampleSolution = document.getElementById('sampleSolution').value;
@@ -2489,10 +2797,16 @@
               // Re-render questions
               renderQuestions(currentQuizType);
               updateTabCounts();
-              closeQuestionModal();
 
-              // Show success message
-              showSuccessMessage(editMode ? 'Question updated successfully!' : 'Question added successfully!');
+              // Wait for next frame to ensure DOM is updated before closing modal
+              requestAnimationFrame(() => {
+                  // Restore button state BEFORE closing modal
+                  submitBtn.textContent = originalText;
+                  submitBtn.disabled = false;
+                  
+                  showSuccessMessage(editMode ? 'Question updated successfully!' : 'Question added successfully!');
+                  closeQuestionModal();
+              });
 
               // Auto-save to server after a short delay (silent save)
               setTimeout(() => {
@@ -2502,8 +2816,8 @@
           } catch (error) {
               console.error('Error:', error);
               alert('An error occurred while saving the question.');
-          } finally {
-              // Restore button state
+              
+              // Restore button state on error
               submitBtn.textContent = originalText;
               submitBtn.disabled = false;
           }
@@ -2662,9 +2976,21 @@
 
       // Modal functions
       function closeQuestionModal() {
-          document.getElementById('questionModal').classList.remove('show');
-          clearErrors();
-          resetQuestionForm();
+          const modal = document.getElementById('questionModal');
+          modal.classList.remove('show');
+          
+          // Wait for modal close animation before resetting form
+          setTimeout(() => {
+              clearErrors();
+              resetQuestionForm();
+              
+              // Re-enable submit button to ensure it's not stuck
+              const submitBtn = document.querySelector('#questionModal .btn-primary');
+              if (submitBtn) {
+                  submitBtn.disabled = false;
+                  submitBtn.textContent = document.getElementById('editMode').value === 'true' ? 'Update Question' : 'Add Question';
+              }
+          }, 100);
       }
 
       function closePreviewModal() {

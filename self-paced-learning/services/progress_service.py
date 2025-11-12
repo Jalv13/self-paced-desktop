@@ -490,6 +490,30 @@ class ProgressService:
             return []
         return list(stored)
 
+    def store_wrong_indices(
+        self, subject: str, subtopic: str, wrong_indices: List[int]
+    ) -> List[int]:
+        """Store indices of questions that were answered incorrectly."""
+
+        # Sanitize - ensure they're integers
+        sanitized_indices = [
+            int(idx)
+            for idx in wrong_indices
+            if isinstance(idx, (int, str)) and str(idx).isdigit()
+        ]
+        key = self.get_session_key(subject, subtopic, "wrong_indices")
+        self._set_user_state_value("wrong_indices", key, sanitized_indices)
+        return sanitized_indices
+
+    def get_wrong_indices(self, subject: str, subtopic: str) -> List[int]:
+        """Fetch stored wrong answer indices."""
+
+        key = self.get_session_key(subject, subtopic, "wrong_indices")
+        stored = self._get_user_state_value("wrong_indices", key, [])
+        if not stored:
+            return []
+        return list(stored)
+
     def set_weak_topics(self, subject: str, subtopic: str, topics: List[str]) -> None:
         """Store normalized weak topics for remedial guidance."""
         normalized: List[str] = []

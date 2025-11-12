@@ -1,91 +1,94 @@
 {
   "subtopics": {
+    "dictionaries": {
+      "description": "Explore key-value mappings and dictionary comprehensions",
+      "estimated_time": "1.5 hours",
+      "lesson_count": 0,
+      "name": "Python Dictionaries",
+      "order": 1,
+      "prerequisites": [
+        "lists"
+      ],
+      "progress": {
+        "overall": {
+          "completion_percentage": 0,
+          "is_complete": false
+        }
+      },
+      "question_count": 0,
+      "status": "inactive",
+      "video_count": 0
+    },
     "arrays": {
       "description": "Discover efficient numerical computations and data processing with NumPy arrays",
       "estimated_time": "2 hours",
       "lesson_count": 0,
       "name": "NumPy Arrays",
-      "order": 1,
+      "order": 2,
       "prerequisites": [
-        "dictionaries",
         "functions",
+        "dictionaries",
         "lists",
         "loops",
         "sets"
       ],
-      "question_count": 0,
-      "status": "inactive",
-      "video_count": 0,
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "total_count": 0,
+          "completed_lessons": [],
           "completion_percentage": 0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
-          "completion_percentage": 0,
-          "watched_videos": []
+          "total_count": 0
         },
         "overall": {
           "completed_items": 0,
-          "total_items": 0,
           "completion_percentage": 0,
-          "is_complete": false
+          "is_complete": false,
+          "total_items": 0
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
         }
-      }
+      },
+      "question_count": 0,
+      "status": "active",
+      "video_count": 0,
+      "tags": [
+        "rest"
+      ]
     },
     "functions": {
       "description": "Master function concepts, arguments, return values, and advanced techniques",
       "estimated_time": "2 hours",
       "lesson_count": 7,
       "name": "Python Functions",
-      "order": 2,
+      "order": 3,
       "prerequisites": [],
-      "question_count": 15,
-      "status": "inactive",
-      "video_count": 0,
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "total_count": 7,
-          "completion_percentage": 0.0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
+          "completed_lessons": [],
           "completion_percentage": 0,
-          "watched_videos": []
+          "total_count": 7
         },
         "overall": {
           "completed_items": 0,
-          "total_items": 7,
-          "completion_percentage": 0.0,
-          "is_complete": false
-        }
-      }
-    },
-    "dictionaries": {
-      "description": "Explore key-value mappings and dictionary comprehensions",
-      "estimated_time": "1.5 hours",
-      "lesson_count": 0,
-      "name": "Python Dictionaries",
-      "order": 3,
-      "prerequisites": [
-        "lists"
-      ],
-      "question_count": 0,
-      "status": "inactive",
-      "video_count": 0,
-      "progress": {
-        "overall": {
           "completion_percentage": 0,
-          "is_complete": false
+          "is_complete": false,
+          "total_items": 7
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
         }
-      }
+      },
+      "question_count": 15,
+      "status": "inactive",
+      "video_count": 0
     },
     "lists": {
       "description": "Understand Python's built-in list data structure and list comprehensions",
@@ -94,29 +97,29 @@
       "name": "Python Lists",
       "order": 4,
       "prerequisites": [],
-      "question_count": 1,
-      "status": "inactive",
-      "video_count": 0,
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "total_count": 10,
-          "completion_percentage": 0.0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
+          "completed_lessons": [],
           "completion_percentage": 0,
-          "watched_videos": []
+          "total_count": 10
         },
         "overall": {
           "completed_items": 0,
-          "total_items": 10,
-          "completion_percentage": 0.0,
-          "is_complete": false
+          "completion_percentage": 0,
+          "is_complete": false,
+          "total_items": 10
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
         }
-      }
+      },
+      "question_count": 1,
+      "status": "inactive",
+      "video_count": 0
     },
     "loops": {
       "description": "Learn how to automate repetitive tasks using for and while loops",
@@ -125,29 +128,29 @@
       "name": "Python Loops",
       "order": 5,
       "prerequisites": [],
-      "question_count": 0,
-      "status": "inactive",
-      "video_count": 0,
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "total_count": 7,
-          "completion_percentage": 0.0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
+          "completed_lessons": [],
           "completion_percentage": 0,
-          "watched_videos": []
+          "total_count": 7
         },
         "overall": {
           "completed_items": 0,
-          "total_items": 7,
-          "completion_percentage": 0.0,
-          "is_complete": false
+          "completion_percentage": 0,
+          "is_complete": false,
+          "total_items": 7
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
         }
-      }
+      },
+      "question_count": 0,
+      "status": "inactive",
+      "video_count": 0
     },
     "sets": {
       "description": "Learn about unordered collections and set operations like union and intersection",
@@ -158,137 +161,137 @@
       "prerequisites": [
         "lists"
       ],
-      "question_count": 0,
-      "status": "inactive",
-      "video_count": 0,
       "progress": {
         "overall": {
           "completion_percentage": 0,
           "is_complete": false
         }
-      }
+      },
+      "question_count": 0,
+      "status": "inactive",
+      "video_count": 0
+    },
+    "week-3": {
+      "description": "Your hero has stats now, but the villagers are not impressed. They shout:\n\"Traveler, tell us your name! How many coins do you carry? How strong are you?\"\n\nTo answer them, your hero needs to listen and respond. This is where we use input() and friendly output.",
+      "lesson_count": 0,
+      "name": "Week 3 – Speak with the Villagers",
+      "order": 7,
+      "progress": {
+        "lessons": {
+          "completed_count": 0,
+          "completed_lessons": [],
+          "completion_percentage": 0,
+          "total_count": 0
+        },
+        "overall": {
+          "completed_items": 0,
+          "completion_percentage": 0,
+          "is_complete": false,
+          "total_items": 0
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
+        }
+      },
+      "question_count": 0,
+      "status": "active",
+      "video_count": 0
+    },
+    "week-4": {
+      "description": "Your hero steps bravely into the forest. Birds sing… until suddenly — BAM! 🐉\nA monster blocks the path.\n\nThe villagers whisper:\n\"Now we’ll see if this hero is smart… or just lunch.\"\n\nIt’s time for your first big choice:\n\nWill you fight the monster?\n\nWill you run away (screaming, probably)?\n\nOr will you bribe it with shiny coins?\n\nIn Python, choices are written with conditionals: if, elif, and else.",
+      "lesson_count": 5,
+      "name": "Week 4 – The Hero’s First Choice",
+      "order": 8,
+      "progress": {
+        "lessons": {
+          "completed_count": 0,
+          "completed_lessons": [],
+          "completion_percentage": 0,
+          "total_count": 5
+        },
+        "overall": {
+          "completed_items": 0,
+          "completion_percentage": 0,
+          "is_complete": false,
+          "total_items": 5
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
+        }
+      },
+      "question_count": 0,
+      "status": "active",
+      "video_count": 0
     },
     "week_1": {
       "description": "Meet Python & Hello World - Learn print() and comments through an RPG adventure",
       "estimated_time": "1 hour",
       "lesson_count": 10,
       "name": "Week 1 - The Hero Awakens",
-      "order": 7,
+      "order": 9,
       "prerequisites": [],
-      "question_count": 10,
-      "status": "active",
-      "video_count": 0,
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "total_count": 10,
-          "completion_percentage": 0.0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
+          "completed_lessons": [],
           "completion_percentage": 0,
-          "watched_videos": []
+          "total_count": 10
         },
         "overall": {
           "completed_items": 0,
-          "total_items": 10,
-          "completion_percentage": 0.0,
-          "is_complete": false
+          "completion_percentage": 0,
+          "is_complete": false,
+          "total_items": 10
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
         }
-      }
+      },
+      "question_count": 10,
+      "status": "active",
+      "video_count": 0
     },
     "week_2": {
       "description": "Variables & Data Types - Create and manage hero stats using variables",
       "estimated_time": "1.5 hours",
       "lesson_count": 12,
       "name": "Week 2 - Hero Stats Training",
-      "order": 8,
+      "order": 10,
       "prerequisites": [
         "week_1"
       ],
+      "progress": {
+        "lessons": {
+          "completed_count": 0,
+          "completed_lessons": [],
+          "completion_percentage": 0,
+          "total_count": 12
+        },
+        "overall": {
+          "completed_items": 0,
+          "completion_percentage": 0,
+          "is_complete": false,
+          "total_items": 12
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
+        }
+      },
       "question_count": 11,
       "status": "active",
-      "video_count": 0,
-      "progress": {
-        "lessons": {
-          "completed_count": 0,
-          "total_count": 12,
-          "completion_percentage": 0.0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
-          "completion_percentage": 0,
-          "watched_videos": []
-        },
-        "overall": {
-          "completed_items": 0,
-          "total_items": 12,
-          "completion_percentage": 0.0,
-          "is_complete": false
-        }
-      }
-    },
-    "week-3": {
-      "description": "Your hero has stats now, but the villagers are not impressed. They shout:\n\"Traveler, tell us your name! How many coins do you carry? How strong are you?\"\n\nTo answer them, your hero needs to listen and respond. This is where we use input() and friendly output.",
-      "name": "Week 3 – Speak with the Villagers",
-      "order": 9,
-      "status": "active",
-      "question_count": 0,
-      "lesson_count": 0,
-      "video_count": 0,
-      "progress": {
-        "lessons": {
-          "completed_count": 0,
-          "total_count": 0,
-          "completion_percentage": 0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
-          "completion_percentage": 0,
-          "watched_videos": []
-        },
-        "overall": {
-          "completed_items": 0,
-          "total_items": 0,
-          "completion_percentage": 0,
-          "is_complete": false
-        }
-      }
-    },
-    "week-4": {
-      "order": 10,
-      "name": "Week 4 – The Hero’s First Choice",
-      "description": "Your hero steps bravely into the forest. Birds sing… until suddenly — BAM! 🐉\nA monster blocks the path.\n\nThe villagers whisper:\n\"Now we’ll see if this hero is smart… or just lunch.\"\n\nIt’s time for your first big choice:\n\nWill you fight the monster?\n\nWill you run away (screaming, probably)?\n\nOr will you bribe it with shiny coins?\n\nIn Python, choices are written with conditionals: if, elif, and else.",
-      "status": "active",
-      "question_count": 0,
-      "lesson_count": 5,
-      "video_count": 0,
-      "progress": {
-        "lessons": {
-          "completed_count": 0,
-          "total_count": 5,
-          "completion_percentage": 0.0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
-          "completion_percentage": 0,
-          "watched_videos": []
-        },
-        "overall": {
-          "completed_items": 0,
-          "total_items": 5,
-          "completion_percentage": 0.0,
-          "is_complete": false
-        }
-      }
+      "video_count": 0
     }
   },
   "allowed_tags": [

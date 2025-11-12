@@ -515,8 +515,14 @@ class AdminService:
                 lesson_id = title.lower().replace(" ", "_").replace("-", "_")
                 lesson_data["id"] = lesson_id
 
+            # Handle lesson type - check both 'type' and 'lessonType' fields
+            lesson_type = lesson_data.get("type") or lesson_data.get("lessonType")
+            if lesson_type:
+                lesson_data["type"] = lesson_type.strip().lower()
+            else:
+                lesson_data["type"] = "remedial"  # Default to remedial
+
             # Set default values
-            lesson_data.setdefault("type", "initial")
             lesson_data.setdefault("tags", [])
             lesson_data.setdefault("updated_date", "2025-10-02")
 

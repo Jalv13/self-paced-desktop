@@ -589,6 +589,9 @@ def admin_edit_lesson(subject, subtopic, lesson_id):
             # Get the new lesson ID (may be different from the URL param)
             new_lesson_id = data.get("id", lesson_id)
 
+            # Get order if provided
+            order = data.get("order")
+
             if not lesson_title:
                 return jsonify({"error": "Lesson title is required"}), 400
 
@@ -610,6 +613,10 @@ def admin_edit_lesson(subject, subtopic, lesson_id):
                 "tags": tags,
                 "type": lesson_type,
             }
+
+            # Only include order if it was provided (not None)
+            if order is not None:
+                lesson_data["order"] = order
 
             result = admin_service.update_lesson(
                 subject, subtopic, lesson_id, lesson_data

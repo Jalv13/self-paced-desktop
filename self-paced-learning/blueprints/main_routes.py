@@ -315,6 +315,12 @@ def analyze_quiz():
             current_subject, current_subtopic, weak_topic_candidates
         )
 
+        # Store wrong answer indices for remedial quiz generation
+        wrong_indices = analysis_result.get("wrong_question_indices", [])
+        progress_service.store_wrong_indices(
+            current_subject, current_subtopic, wrong_indices
+        )
+
         progress_service.store_quiz_answers(current_subject, current_subtopic, answers)
 
         return jsonify({"success": True, "analysis": stored_analysis})
@@ -511,6 +517,7 @@ def generate_remedial_quiz():
     try:
         data_service = get_data_service()
         progress_service = get_progress_service()
+        ai_service = get_ai_service()
 
         current_subject = session.get("current_subject")
         current_subtopic = session.get("current_subtopic")
@@ -521,48 +528,51 @@ def generate_remedial_quiz():
                 400,
             )
 
-        weak_topics = progress_service.get_weak_topics(
+        # Get the original quiz questions that were taken
+        quiz_session = progress_service.get_quiz_session_data(
             current_subject, current_subtopic
         )
+        original_questions = quiz_session.get("questions", [])
 
-        if not weak_topics:
-            analysis = (
-                progress_service.get_quiz_analysis(current_subject, current_subtopic)
-                or {}
-            )
-            fallback_topics = (
-                analysis.get("weak_tags")
-                or analysis.get("weak_topics")
-                or analysis.get("missed_tags")
-                or analysis.get("weak_areas")
-                or []
-            )
-            if isinstance(fallback_topics, list):
-                weak_topics = [
-                    str(topic) for topic in fallback_topics if isinstance(topic, str)
-                ]
-            elif isinstance(fallback_topics, str):
-                weak_topics = [fallback_topics]
-
-        weak_topics = [
-            topic for topic in weak_topics if isinstance(topic, str) and topic.strip()
-        ]
-
-        if not weak_topics:
+        if not original_questions:
             return (
                 jsonify(
                     {
                         "success": False,
-                        "error": "No weak topics identified; remedial quiz not required.",
+                        "error": "Error: No quiz session found. Please take the initial quiz first.",
                     }
                 ),
                 400,
             )
 
+        # Get wrong answer indices from the analysis
+        wrong_indices = progress_service.get_wrong_indices(
+            current_subject, current_subtopic
+        )
+
+        if not wrong_indices:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "No incorrect answers found. Remedial quiz not needed - you did great!",
+                    }
+                ),
+                400,
+            )
+
+        # Get question pool for remedial questions
         question_pool = (
             data_service.get_question_pool_questions(current_subject, current_subtopic)
             or []
         )
+
+        print(
+            f"DEBUG: generate_remedial_quiz - subject: {current_subject}, subtopic: {current_subtopic}"
+        )
+        print(f"DEBUG: original_questions count: {len(original_questions)}")
+        print(f"DEBUG: wrong_indices: {wrong_indices}")
+        print(f"DEBUG: question_pool loaded, count: {len(question_pool)}")
 
         if not question_pool:
             return (
@@ -575,10 +585,13 @@ def generate_remedial_quiz():
                 404,
             )
 
-        ai_service = get_ai_service()
-        remedial_questions = ai_service.select_remedial_questions(
-            question_pool,
-            weak_topics,
+        # Use AI to generate targeted remedial quiz based on wrong answers
+        remedial_questions = ai_service.generate_remedial_quiz(
+            original_questions, wrong_indices, question_pool
+        )
+
+        print(
+            f"DEBUG: remedial_questions returned, count: {len(remedial_questions) if remedial_questions else 0}"
         )
 
         if not remedial_questions:
@@ -586,11 +599,19 @@ def generate_remedial_quiz():
                 jsonify(
                     {
                         "success": False,
-                        "error": "We couldn't find follow-up questions for your weak topics. Please review the materials and try again.",
+                        "error": "Unable to generate remedial quiz. AI service may be unavailable or no suitable questions found in the pool.",
                     }
                 ),
-                404,
+                500,
             )
+
+        # Get weak topics for storage (from previous analysis)
+        weak_topics = progress_service.get_weak_topics(
+            current_subject, current_subtopic
+        )
+
+        # Get AI feedback about the selection
+        ai_feedback = ai_service.get_last_selection_feedback()
 
         stored_count = progress_service.set_remedial_quiz_data(
             current_subject, current_subtopic, remedial_questions, weak_topics
@@ -600,12 +621,18 @@ def generate_remedial_quiz():
             current_subject, current_subtopic, "remedial", remedial_questions
         )
 
+        # Store AI feedback in session for display on quiz page
+        if ai_feedback:
+            session["remedial_feedback"] = ai_feedback.get("feedback", "")
+            session["remedial_reasoning"] = ai_feedback.get("reasoning", "")
+
         return jsonify(
             {
                 "success": True,
                 "question_count": stored_count,
                 "stored_question_count": stored_count,
                 "redirect_url": url_for("main.take_remedial_quiz_page"),
+                "ai_feedback": ai_feedback.get("feedback", "") if ai_feedback else None,
             }
         )
 
@@ -637,12 +664,22 @@ def take_remedial_quiz_page():
             f"Remedial Quiz - {current_subject.title()} {current_subtopic.title()}"
         )
 
+        # Get AI feedback from session
+        ai_feedback = session.get("remedial_feedback", "")
+        ai_reasoning = session.get("remedial_reasoning", "")
+
+        # Clear feedback from session after retrieving
+        session.pop("remedial_feedback", None)
+        session.pop("remedial_reasoning", None)
+
         return render_template(
             "quiz.html",
             questions=remedial_questions,
             quiz_title=quiz_title,
             is_remedial=True,
             admin_override=progress_service.get_admin_override_status(),
+            ai_feedback=ai_feedback,
+            ai_reasoning=ai_reasoning,
         )
 
     except Exception as e:

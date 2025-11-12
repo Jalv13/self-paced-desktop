@@ -1400,6 +1400,10 @@
         document.getElementById('lessonForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
+            // Get order value and convert to number if present
+            const orderInput = document.getElementById('order');
+            const orderValue = orderInput && orderInput.value ? parseInt(orderInput.value, 10) : null;
+            
             const formData = {
                 subject: document.getElementById('subject').value,
                 subtopic: document.getElementById('subtopic').value,
@@ -1409,6 +1413,7 @@
                 lessonType: document.getElementById('lessonType').value,
                 videoId: document.getElementById('videoId').value,
                 tags: document.getElementById('lessonTags').value.split(',').map(tag => tag.trim()).filter(tag => tag),
+                order: orderValue,
                 content: collectContentData()
             };
 
