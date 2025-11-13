@@ -22,6 +22,14 @@ from typing import Dict, List, Optional, Any, Set
 main_bp = Blueprint("main", __name__)
 
 
+@main_bp.before_request
+def ensure_authenticated():
+    """Redirect anonymous users to the login page."""
+    if session.get("user_id"):
+        return None
+    return redirect(url_for("auth.login"))
+
+
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
@@ -97,11 +105,26 @@ def subject_selection():
                     "subtopics": 0,
                 }
 
-        return render_template("subject_selection.html", subjects=subjects)
+        user_role = session.get("role")
+        username = session.get("username")
+
+        return render_template(
+            "subject_selection.html",
+            subjects=subjects,
+            user_role=user_role,
+            username=username,
+        )
 
     except Exception as e:
         print(f"Error loading subjects: {e}")
-        return render_template("subject_selection.html", subjects={})
+        user_role = session.get("role")
+        username = session.get("username")
+        return render_template(
+            "subject_selection.html",
+            subjects={},
+            user_role=user_role,
+            username=username,
+        )
 
 
 @main_bp.route("/subjects/<subject>")

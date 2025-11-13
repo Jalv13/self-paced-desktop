@@ -17,6 +17,9 @@ from flask import Flask, session, render_template, jsonify
 from dotenv import load_dotenv
 import werkzeug
 
+from extensions import db, migrate
+from models import Class, ClassRegistration, LessonProgress, User  # noqa: F401
+
 # Import our refactored services and blueprints
 from services import init_services
 from blueprints import register_blueprints, get_blueprint_info
@@ -29,6 +32,18 @@ if not getattr(werkzeug, '__version__', None):
 
 # Create Flask application
 app = Flask(__name__)
+
+# Database configuration
+app.config.setdefault(
+    "SQLALCHEMY_DATABASE_URI",
+    os.getenv("DATABASE_URL", "sqlite:///self_paced_learning.db"),
+)
+app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
+app.config.setdefault("TEMPLATES_AUTO_RELOAD", True)
+
+# Initialize extensions
+db.init_app(app)
+migrate.init_app(app, db)
 
 # App configuration
 app.secret_key = os.getenv("FLASK_KEY")

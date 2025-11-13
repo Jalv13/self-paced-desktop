@@ -2037,9 +2037,15 @@
 
       // Function to go back to topics grid
       function backToTopicsFromInitial() {
-        document.getElementById("initial-learning-layout").style.display =
-          "none";
-        document.querySelector(".topics-grid").style.display = "block";
+        const initialLayout = document.getElementById("initial-learning-layout");
+        if (initialLayout) {
+          initialLayout.style.display = "none";
+        }
+
+        const topicsGrid = document.querySelector(".topics-grid");
+        if (topicsGrid) {
+          topicsGrid.style.display = "";
+        }
       }
 
       function showLessonSelector(subject, subtopic) {

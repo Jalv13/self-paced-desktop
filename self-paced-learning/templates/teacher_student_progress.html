@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ student.username }} | Progress Overview</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      integrity="sha512-SzlrxWUlpfuzQ+pcUCosxcglQRNAq/DZjVsC0lE40xsADsfeQoEypE+enwcjE7CkWLa4+0PqJrj2d2M7pZx1Xg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <style>
+      body {
+        background: #f1f5f9;
+        margin: 0;
+        font-family: "Inter", Arial, sans-serif;
+      }
+      header {
+        background: linear-gradient(120deg, #4338ca, #6366f1);
+        color: #fff;
+        padding: 2.8rem 1.5rem 3.5rem;
+        text-align: center;
+        box-shadow: 0 14px 45px rgba(99, 102, 241, 0.35);
+      }
+      header h1 {
+        margin: 0;
+        font-size: 2.4rem;
+        font-weight: 700;
+        color: #fff;
+      }
+      header p {
+        margin: 0.75rem 0 0;
+        color: rgba(255, 255, 255, 0.8);
+      }
+      main {
+        max-width: 1080px;
+        margin: -80px auto 3rem;
+        padding: 0 1.5rem;
+      }
+      .card {
+        background: #fff;
+        border-radius: 22px;
+        box-shadow: 0 30px 60px rgba(30, 64, 175, 0.14);
+        padding: 2.75rem;
+      }
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+      }
+      .summary-item {
+        background: #eef2ff;
+        border-radius: 18px;
+        padding: 1.5rem;
+        color: #312e81;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+      }
+      .summary-item span.label {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: rgba(49, 46, 129, 0.7);
+        font-weight: 600;
+      }
+      .summary-item span.value {
+        font-size: 1.8rem;
+        font-weight: 700;
+      }
+      .subject-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 2rem;
+      }
+      .subject-tab {
+        flex: 1 1 220px;
+        border: none;
+        border-radius: 16px;
+        padding: 1rem 1.25rem;
+        background: #eef2ff;
+        color: #312e81;
+        font-size: 1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      }
+      .subject-tab.active {
+        background: linear-gradient(135deg, #4338ca, #6366f1);
+        color: #fff;
+        box-shadow: 0 15px 35px rgba(67, 56, 202, 0.35);
+      }
+      .subject-tab span.progress {
+        font-size: 0.9rem;
+        font-weight: 500;
+        opacity: 0.85;
+      }
+      .subject-panels {
+        margin-top: 1rem;
+      }
+      .subject-panel {
+        display: none;
+        animation: fadeIn 0.3s ease;
+      }
+      .subject-panel.active {
+        display: block;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .subtopic-item {
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+        background: #f8fafc;
+      }
+      .subtopic-toggle {
+        width: 100%;
+        border: none;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.1rem 1.4rem;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #0f172a;
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+      .subtopic-toggle:hover {
+        background: rgba(99, 102, 241, 0.08);
+      }
+      .subtopic-toggle i {
+        transition: transform 0.2s ease;
+      }
+      .subtopic-toggle[aria-expanded="true"] i {
+        transform: rotate(180deg);
+      }
+      .subtopic-progress {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #4f46e5;
+        margin-left: auto;
+        text-align: right;
+      }
+      .subtopic-content {
+        display: none;
+        padding: 0 1.4rem 1.2rem;
+      }
+      .subtopic-content.open {
+        display: block;
+      }
+      .lesson-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.6rem;
+      }
+      .lesson-item {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 0.75rem;
+        align-items: center;
+        background: #fff;
+        border-radius: 14px;
+        padding: 0.8rem 1rem;
+        border: 1px solid #e2e8f0;
+      }
+      .lesson-item.completed {
+        border-color: #bbf7d0;
+        background: #ecfdf5;
+      }
+      .lesson-item .status {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .lesson-item .status.completed {
+        color: #047857;
+      }
+      .lesson-item .status.pending {
+        color: #b45309;
+      }
+      .empty-state {
+        text-align: center;
+        color: #64748b;
+        padding: 2rem 1rem;
+      }
+      .back-link {
+        margin-top: 2.5rem;
+        text-align: center;
+      }
+      .back-link a {
+        color: #4338ca;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+      .back-link a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>{{ student.username }}'s Progress</h1>
+      <p>Track lesson completion across every subject and subtopic.</p>
+    </header>
+
+    <main>
+      <div class="card">
+        {% if not progress_summary or not progress_summary.subjects %}
+          <div class="empty-state">
+            <p>No lesson progress recorded yet. Encourage {{ student.username }} to dive into the lessons!</p>
+          </div>
+        {% else %}
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span class="label">Completed Lessons</span>
+              <span class="value">{{ progress_summary.completed_lessons }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Total Lessons</span>
+              <span class="value">{{ progress_summary.total_lessons }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Subjects</span>
+              <span class="value">{{ progress_summary.subject_count }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Subtopics</span>
+              <span class="value">{{ progress_summary.subtopic_count }}</span>
+            </div>
+          </div>
+
+          <div class="subject-tabs" role="tablist">
+            {% for subject in progress_summary.subjects %}
+              <button
+                class="subject-tab {% if loop.first %}active{% endif %}"
+                role="tab"
+                aria-selected="{{ 'true' if loop.first else 'false' }}"
+                data-target="subject-panel-{{ loop.index }}"
+                type="button"
+              >
+                <span>{{ subject.display_name }}</span>
+                <span class="progress">
+                  {{ subject.completed_lessons }} / {{ subject.total_lessons }}
+                </span>
+              </button>
+            {% endfor %}
+          </div>
+
+          <div class="subject-panels">
+            {% for subject in progress_summary.subjects %}
+              <section
+                id="subject-panel-{{ loop.index }}"
+                class="subject-panel {% if loop.first %}active{% endif %}"
+                role="tabpanel"
+                aria-hidden="{{ 'false' if loop.first else 'true' }}"
+              >
+                {% if subject.subtopics %}
+                  <div class="subtopic-accordion">
+                    {% for subtopic in subject.subtopics %}
+                      <div class="subtopic-item">
+                        <button
+                          class="subtopic-toggle"
+                          type="button"
+                          aria-expanded="{{ 'true' if loop.first else 'false' }}"
+                        >
+                          <span>{{ subtopic.display_name }}</span>
+                          <span class="subtopic-progress">
+                            {{ subtopic.completed_lessons }}/{{ subtopic.total_lessons }} lessons
+                          </span>
+                          <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="subtopic-content {% if loop.first %}open{% endif %}">
+                          {% if subtopic.lessons %}
+                            <ul class="lesson-list">
+                              {% for lesson in subtopic.lessons %}
+                                <li
+                                  class="lesson-item {% if lesson.completed %}completed{% endif %}"
+                                >
+                                  <span>
+                                    {% if lesson.completed %}
+                                      <i class="fas fa-check-circle" style="color: #16a34a"></i>
+                                    {% else %}
+                                      <i class="fas fa-circle" style="color: #cbd5f5"></i>
+                                    {% endif %}
+                                  </span>
+                                  <span>{{ lesson.title }}</span>
+                                  <span
+                                    class="status {% if lesson.completed %}completed{% else %}pending{% endif %}"
+                                  >
+                                    {% if lesson.completed %}Completed{% else %}Pending{% endif %}
+                                  </span>
+                                </li>
+                              {% endfor %}
+                            </ul>
+                          {% else %}
+                            <div class="empty-state">
+                              <p>No lessons found for this subtopic.</p>
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <div class="empty-state">
+                    <p>No subtopics available for this subject.</p>
+                  </div>
+                {% endif %}
+              </section>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="back-link">
+          <a href="{{ url_for('teacher.students') }}">
+            <i class="fas fa-arrow-left"></i>
+            Back to students
+          </a>
+        </div>
+      </div>
+    </main>
+    <script>
+      (function () {
+        const tabs = document.querySelectorAll(".subject-tab");
+        const panels = document.querySelectorAll(".subject-panel");
+
+        tabs.forEach((tab) => {
+          tab.addEventListener("click", () => {
+            const targetId = tab.dataset.target;
+            tabs.forEach((btn) => {
+              const isActive = btn === tab;
+              btn.classList.toggle("active", isActive);
+              btn.setAttribute("aria-selected", isActive ? "true" : "false");
+            });
+            panels.forEach((panel) => {
+              const isActive = panel.id === targetId;
+              panel.classList.toggle("active", isActive);
+              panel.setAttribute("aria-hidden", isActive ? "false" : "true");
+            });
+          });
+        });
+
+        document.querySelectorAll(".subtopic-toggle").forEach((toggle) => {
+          toggle.addEventListener("click", () => {
+            const content = toggle.nextElementSibling;
+            const isOpen = content.classList.toggle("open");
+            toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

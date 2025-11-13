@@ -6,6 +6,8 @@ body {
   margin: 0; /* Reset margin */
   padding: 0; /* Reset padding */
   background-color: #f5f9fc; /* Light blue-gray background */
+  scrollbar-gutter: stable both-edges;
+  overflow-y: scroll; /* Keep scrollbar space reserved to avoid layout shifts */
 }
 
 /* Hide remote environment attached browser banner if injected */

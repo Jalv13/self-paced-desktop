@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login | Self-Paced Learning</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <style>
+      body {
+        background: linear-gradient(135deg, #f0f4ff 0%, #d9e6ff 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        font-family: "Inter", Arial, sans-serif;
+      }
+      .auth-card {
+        background: #fff;
+        padding: 2.5rem 2.75rem;
+        border-radius: 18px;
+        box-shadow: 0 22px 45px rgba(33, 56, 100, 0.15);
+        width: min(420px, calc(100% - 32px));
+      }
+      .auth-card h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.9rem;
+        font-weight: 700;
+        color: #1f2a44;
+        text-align: center;
+      }
+      .auth-card p.subtitle {
+        margin: 0 0 1.75rem;
+        text-align: center;
+        color: #546285;
+      }
+      label {
+        font-weight: 600;
+        color: #1f2a44;
+        display: block;
+        margin-bottom: 0.4rem;
+      }
+      input[type="email"],
+      input[type="password"] {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        border-radius: 10px;
+        border: 1px solid #cad6f1;
+        margin-bottom: 1.25rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        font-size: 1rem;
+      }
+      input:focus {
+        outline: none;
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+      }
+      button {
+        width: 100%;
+        border: none;
+        border-radius: 10px;
+        padding: 0.95rem;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #fff;
+        background: linear-gradient(135deg, #4f46e5, #4338ca);
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 18px rgba(79, 70, 229, 0.35);
+      }
+      .auth-footer {
+        margin-top: 1.5rem;
+        text-align: center;
+        color: #546285;
+      }
+      .auth-footer a {
+        color: #4f46e5;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .auth-footer a:hover {
+        text-decoration: underline;
+      }
+      .flash-container {
+        margin-bottom: 1.25rem;
+      }
+      .flash-message {
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        margin-bottom: 0.65rem;
+        font-weight: 500;
+        border: 1px solid transparent;
+      }
+      .flash-message.error {
+        background: #ffe5e7;
+        color: #a11828;
+        border-color: #f5b7bd;
+      }
+      .flash-message.success {
+        background: #e8fff4;
+        color: #127b49;
+        border-color: #9de2bf;
+      }
+      .flash-message.info,
+      .flash-message.warning {
+        background: #eef3ff;
+        color: #28376f;
+        border-color: #bac8ff;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="auth-card">
+      <h1>Welcome Back</h1>
+      <p class="subtitle">Log in to continue your self-paced adventure.</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-container">
+            {% for category, message in messages %}
+              <div class="flash-message {{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="post" action="{{ url_for('auth.login') }}">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          autocomplete="email"
+          required
+        />
+
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          autocomplete="current-password"
+          required
+        />
+
+        <button type="submit">Log In</button>
+      </form>
+
+      <div class="auth-footer">
+        Need an account?
+        <a href="{{ url_for('auth.register') }}">Create one</a>.
+      </div>
+    </section>
+  </body>
+</html>

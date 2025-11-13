@@ -4,7 +4,9 @@ Handles all learning progress tracking, session management, and user state.
 Extracts progress logic from the main application routes.
 """
 
-from flask import session, has_request_context
+from collections import defaultdict
+from datetime import datetime
+from flask import session, has_request_context, current_app
 from typing import Dict, List, Optional, Any, Tuple
 
 
@@ -191,6 +193,75 @@ class ProgressService:
     # LESSON PROGRESS TRACKING
     # ============================================================================
 
+    def _persist_completion(
+        self,
+        subject: str,
+        subtopic: str,
+        item_id: str,
+        item_type: str,
+        completed: bool = True,
+    ) -> None:
+        """Persist progress changes to the database when a user is authenticated."""
+        if not has_request_context():
+            return
+
+        user_id = session.get("user_id")
+        if not user_id:
+            return
+
+        logger = None
+        try:
+            logger = current_app.logger
+        except Exception:
+            logger = None
+
+        try:
+            from extensions import db
+            from models import LessonProgress
+        except Exception as import_exc:  # pragma: no cover - defensive
+            if logger:
+                logger.debug(
+                    "Skipping persistent progress due to import error: %s", import_exc
+                )
+            return
+
+        try:
+            progress = LessonProgress.query.filter_by(
+                student_id=user_id,
+                subject=subject,
+                subtopic=subtopic,
+                item_id=item_id,
+                item_type=item_type,
+            ).first()
+
+            if progress:
+                progress.completed = completed
+                progress.updated_at = datetime.utcnow()
+            else:
+                progress = LessonProgress(
+                    student_id=user_id,
+                    subject=subject,
+                    subtopic=subtopic,
+                    item_id=item_id,
+                    item_type=item_type,
+                    completed=completed,
+                    updated_at=datetime.utcnow(),
+                )
+                db.session.add(progress)
+
+            db.session.commit()
+        except Exception as exc:  # pragma: no cover - logging path
+            db.session.rollback()
+            if logger:
+                logger.warning(
+                    "Failed to persist progress for user %s on %s/%s/%s: %s",
+                    user_id,
+                    subject,
+                    subtopic,
+                    item_id,
+                    exc,
+                )
+
     def mark_lesson_complete(self, subject: str, subtopic: str, lesson_id: str) -> bool:
         """Mark a specific lesson as completed."""
         if not has_request_context():
@@ -208,6 +279,7 @@ class ProgressService:
                 session[completed_key] = completed_lessons
                 session.permanent = True
 
+            self._persist_completion(subject, subtopic, lesson_id, "lesson", True)
             return True
         except Exception as e:
             print(f"Error marking lesson complete: {e}")
@@ -233,7 +305,55 @@ class ProgressService:
         completed_key = self.get_session_key(subject, subtopic, "completed_lessons")
         if not has_request_context():
             return list(self._test_completed_lessons.get(completed_key, set()))
-        return session.get(completed_key, [])
+        completed_lessons = session.get(completed_key)
+        if completed_lessons:
+            return completed_lessons
+
+        user_id = session.get("user_id")
+        if not user_id:
+            return []
+
+        logger = None
+        try:
+            logger = current_app.logger
+        except Exception:
+            logger = None
+
+        try:
+            from models import LessonProgress
+        except Exception as import_exc:  # pragma: no cover - defensive
+            if logger:
+                logger.debug(
+                    "Unable to hydrate lesson progress from storage: %s", import_exc
+                )
+            return []
+
+        try:
+            records = (
+                LessonProgress.query.filter_by(
+                    student_id=user_id,
+                    subject=subject,
+                    subtopic=subtopic,
+                    item_type="lesson",
+                    completed=True,
+                )
+                .with_entities(LessonProgress.item_id)
+                .all()
+            )
+        except Exception as exc:
+            if logger:
+                logger.debug(
+                    "Failed to load persisted lesson progress for %s/%s: %s",
+                    subject,
+                    subtopic,
+                    exc,
+                )
+            return []
+
+        completed_lessons = [str(row.item_id) for row in records]
+        session[completed_key] = completed_lessons
+        session.permanent = True
+        return completed_lessons
 
     def get_lesson_progress_stats(
         self, subject: str, subtopic: str, total_lessons: int
@@ -327,6 +447,7 @@ class ProgressService:
                 session[watched_key] = watched_videos
                 session.permanent = True
 
+            self._persist_completion(subject, subtopic, video_id, "video", True)
             return True
         except Exception as e:
             print(f"Error marking video complete: {e}")
@@ -493,23 +614,27 @@ class ProgressService:
     def store_wrong_indices(
         self, subject: str, subtopic: str, wrong_indices: List[int]
     ) -> List[int]:
-        """Store indices of questions that were answered incorrectly."""
+        """Persist the indices of questions the learner missed."""
 
-        # Sanitize - ensure they're integers
-        sanitized_indices = [
-            int(idx)
-            for idx in wrong_indices
-            if isinstance(idx, (int, str)) and str(idx).isdigit()
-        ]
+        sanitized: List[int] = []
+        for value in wrong_indices or []:
+            try:
+                numeric = int(value)
+            except (TypeError, ValueError):
+                continue
+            if numeric < 0:
+                continue
+            sanitized.append(numeric)
+
         key = self.get_session_key(subject, subtopic, "wrong_indices")
-        self._set_user_state_value("wrong_indices", key, sanitized_indices)
-        return sanitized_indices
+        self._set_user_state_value("quiz_analysis", key, sanitized)
+        return sanitized
 
     def get_wrong_indices(self, subject: str, subtopic: str) -> List[int]:
-        """Fetch stored wrong answer indices."""
+        """Retrieve stored wrong-question indices."""
 
         key = self.get_session_key(subject, subtopic, "wrong_indices")
-        stored = self._get_user_state_value("wrong_indices", key, [])
+        stored = self._get_user_state_value("quiz_analysis", key, [])
         if not stored:
             return []
         return list(stored)
@@ -727,6 +852,190 @@ class ProgressService:
         except Exception as e:
             print(f"Error updating progress: {e}")
             return False
+
+    def get_student_progress_summary(self, student_id: int) -> Dict[str, Any]:
+        """Return aggregated lesson progress for the specified student."""
+        summary: Dict[str, Any] = {
+            "completed_lessons": 0,
+            "total_lessons": 0,
+            "subject_count": 0,
+            "subtopic_count": 0,
+            "subjects": [],
+        }
+
+        if not student_id:
+            return summary
+
+        logger = None
+        try:
+            logger = current_app.logger
+        except Exception:
+            logger = None
+
+        try:
+            from models import LessonProgress
+            from services import get_data_service
+        except Exception as import_exc:  # pragma: no cover - defensive
+            if logger:
+                logger.debug(
+                    "Progress summary unavailable due to import error: %s", import_exc
+                )
+            return summary
+
+        data_service = get_data_service()
+
+        try:
+            subjects_meta = data_service.discover_subjects()
+        except Exception as exc:
+            subjects_meta = {}
+            if logger:
+                logger.warning("Unable to discover subjects for summary: %s", exc)
+
+        lesson_records = (
+            LessonProgress.query.filter_by(student_id=student_id, item_type="lesson")
+            .order_by(LessonProgress.subject.asc(), LessonProgress.subtopic.asc())
+            .all()
+        )
+
+        progress_by_subtopic: Dict[Tuple[str, str], Dict[str, bool]] = defaultdict(dict)
+        for record in lesson_records:
+            key = (record.subject, record.subtopic)
+            progress_by_subtopic[key][str(record.item_id)] = bool(record.completed)
+
+        subject_order: List[str] = list(subjects_meta.keys())
+        for subject_id, _ in progress_by_subtopic.keys():
+            if subject_id not in subject_order:
+                subject_order.append(subject_id)
+
+        summary_subjects: List[Dict[str, Any]] = []
+        total_lessons = 0
+        total_completed = 0
+        total_subtopics = 0
+
+        for subject_id in subject_order:
+            subject_meta = subjects_meta.get(subject_id, {})
+            subject_display = subject_meta.get(
+                "name", subject_id.replace("_", " ").title()
+            )
+
+            try:
+                subject_config = data_service.load_subject_config(subject_id) or {}
+            except Exception as exc:
+                subject_config = {}
+                if logger:
+                    logger.debug(
+                        "Failed to load config for subject %s: %s", subject_id, exc
+                    )
+
+            subtopics_config = {}
+            if isinstance(subject_config, dict):
+                subtopics_config = subject_config.get("subtopics", {}) or {}
+
+            subtopics_in_config = list(subtopics_config.keys())
+            subtopics_in_progress = [
+                subtopic
+                for (subject, subtopic) in progress_by_subtopic.keys()
+                if subject == subject_id
+            ]
+
+            seen_subtopics = set()
+            subtopic_ids: List[str] = []
+            for subtopic in subtopics_in_config + subtopics_in_progress:
+                if subtopic and subtopic not in seen_subtopics:
+                    seen_subtopics.add(subtopic)
+                    subtopic_ids.append(subtopic)
+
+            subject_subtopics: List[Dict[str, Any]] = []
+            subject_total_lessons = 0
+            subject_completed_lessons = 0
+
+            for subtopic_id in subtopic_ids:
+                try:
+                    lessons = data_service.get_lesson_plans(subject_id, subtopic_id) or []
+                except Exception as exc:
+                    lessons = []
+                    if logger:
+                        logger.debug(
+                            "Failed to load lessons for %s/%s: %s",
+                            subject_id,
+                            subtopic_id,
+                            exc,
+                        )
+
+                if not lessons and (subject_id, subtopic_id) in progress_by_subtopic:
+                    lessons = [
+                        {"id": lesson_id, "title": lesson_id.replace("_", " ").title()}
+                        for lesson_id in progress_by_subtopic[(subject_id, subtopic_id)]
+                    ]
+
+                lesson_entries: List[Dict[str, Any]] = []
+                completed_count = 0
+
+                for lesson in lessons:
+                    lesson_id = str(lesson.get("id") or "").strip()
+                    if not lesson_id:
+                        continue
+
+                    completed = progress_by_subtopic.get(
+                        (subject_id, subtopic_id), {}
+                    ).get(lesson_id, False)
+                    if completed:
+                        completed_count += 1
+
+                    lesson_entries.append(
+                        {
+                            "id": lesson_id,
+                            "title": lesson.get("title")
+                            or lesson.get("name")
+                            or lesson_id.replace("_", " ").title(),
+                            "completed": completed,
+                        }
+                    )
+
+                if not lesson_entries:
+                    continue
+
+                subtopic_meta = subtopics_config.get(subtopic_id, {})
+                subtopic_display = subtopic_meta.get(
+                    "name", subtopic_id.replace("_", " ").title()
+                )
+
+                subject_subtopics.append(
+                    {
+                        "id": subtopic_id,
+                        "display_name": subtopic_display,
+                        "total_lessons": len(lesson_entries),
+                        "completed_lessons": completed_count,
+                        "lessons": lesson_entries,
+                    }
+                )
+
+                subject_total_lessons += len(lesson_entries)
+                subject_completed_lessons += completed_count
+
+            if not subject_subtopics:
+                continue
+
+            summary_subjects.append(
+                {
+                    "id": subject_id,
+                    "display_name": subject_display,
+                    "total_lessons": subject_total_lessons,
+                    "completed_lessons": subject_completed_lessons,
+                    "subtopics": subject_subtopics,
+                }
+            )
+            total_lessons += subject_total_lessons
+            total_completed += subject_completed_lessons
+            total_subtopics += len(subject_subtopics)
+
+        summary["subjects"] = summary_subjects
+        summary["completed_lessons"] = total_completed
+        summary["total_lessons"] = total_lessons
+        summary["subject_count"] = len(summary_subjects)
+        summary["subtopic_count"] = total_subtopics
+
+        return summary
 
     # ============================================================================
     # ADMIN OVERRIDE FUNCTIONALITY
