@@ -122,7 +122,10 @@
                   value="{{ quiz_data.quiz_title }}"
                   placeholder="Quiz Title"
                 />
-                <button class="btn-primary" onclick="addQuestion('initial')">
+                <button
+                  class="btn-primary add-question-btn"
+                  data-quiz-type="initial"
+                >
                   <i class="fas fa-plus"></i>
                   Add Question
                 </button>
@@ -241,7 +244,10 @@
                 areas identified by AI analysis.
               </p>
               <div class="section-actions">
-                <button class="btn-primary" onclick="addQuestion('pool')">
+                <button
+                  class="btn-primary add-question-btn"
+                  data-quiz-type="pool"
+                >
                   <i class="fas fa-plus"></i>
                   Add Question
                 </button>
@@ -2215,29 +2221,19 @@
 
 
 
-      // Add question
+      // Add question - simply opens the modal in add mode
       function addQuestion(quizType) {
+          console.log('Opening modal to add question for:', quizType);
+
+          // Set state
           currentQuizType = quizType;
           currentQuestionIndex = -1;
-          
-          const editModeEl = document.getElementById('editMode');
-          const modalTitleEl = document.getElementById('questionModalTitle');
-          const submitTextEl = document.getElementById('questionSubmitText');
-          const modalEl = document.getElementById('questionModal');
-          const submitBtn = document.querySelector('#questionModal .btn-primary');
-          
-          // Ensure modal is properly reset
-          editModeEl.value = 'false';
-          modalTitleEl.textContent = 'Add Question';
-          submitTextEl.textContent = 'Add Question';
-          
-          // Ensure submit button is enabled
-          if (submitBtn) {
-              submitBtn.disabled = false;
-          }
-          
+
+          // Reset form
           resetQuestionForm();
-          modalEl.classList.add('show');
+
+          // Open modal
+          document.getElementById('questionModal').classList.add('show');
       }
 
       // Edit question
@@ -2803,7 +2799,7 @@
                   // Restore button state BEFORE closing modal
                   submitBtn.textContent = originalText;
                   submitBtn.disabled = false;
-                  
+
                   showSuccessMessage(editMode ? 'Question updated successfully!' : 'Question added successfully!');
                   closeQuestionModal();
               });
@@ -2816,7 +2812,7 @@
           } catch (error) {
               console.error('Error:', error);
               alert('An error occurred while saving the question.');
-              
+
               // Restore button state on error
               submitBtn.textContent = originalText;
               submitBtn.disabled = false;
@@ -2876,7 +2872,7 @@
                       <i class="fas fa-${quizType === 'initial' ? 'clipboard-list' : 'database'}"></i>
                       <h3>No ${quizType === 'initial' ? 'Initial Quiz' : 'Question Pool'} Questions</h3>
                       <p>${quizType === 'initial' ? 'Add questions that students will encounter in their first quiz for this subtopic.' : 'Add questions for remedial quizzes that target specific knowledge gaps identified by AI analysis.'}</p>
-                      <button class="btn-primary" onclick="addQuestion('${quizType}')">
+                      <button class="btn-primary add-question-btn" data-quiz-type="${quizType}">
                           <i class="fas fa-plus"></i>
                           Add First Question
                       </button>
@@ -2978,12 +2974,12 @@
       function closeQuestionModal() {
           const modal = document.getElementById('questionModal');
           modal.classList.remove('show');
-          
+
           // Wait for modal close animation before resetting form
           setTimeout(() => {
               clearErrors();
               resetQuestionForm();
-              
+
               // Re-enable submit button to ensure it's not stuck
               const submitBtn = document.querySelector('#questionModal .btn-primary');
               if (submitBtn) {
@@ -2999,8 +2995,39 @@
 
       // Initialize modal events
       document.addEventListener('DOMContentLoaded', function() {
+          console.log('Initializing quiz editor...');
+
           // Initialize multiselect functionality
           initializeMultiselect();
+
+          // Event delegation for ALL clicks on the page
+          document.addEventListener('click', function(e) {
+              // Check if we clicked an "Add Question" button (or something inside it)
+              const addBtn = e.target.closest('.add-question-btn');
+              if (addBtn) {
+                  console.log('Add button clicked');
+                  const quizType = addBtn.dataset.quizType;
+                  if (quizType) {
+                      console.log('Opening modal for:', quizType);
+                      addQuestion(quizType);
+                  }
+                  return;
+              }
+
+              // Check if we clicked edit button
+              const editBtn = e.target.closest('.btn-icon:not(.btn-danger)');
+              if (editBtn && editBtn.hasAttribute('onclick') && editBtn.getAttribute('onclick').includes('editQuestion')) {
+                  // Let the inline handler work
+                  return;
+              }
+
+              // Check if we clicked delete button
+              const deleteBtn = e.target.closest('.btn-icon.btn-danger');
+              if (deleteBtn && deleteBtn.hasAttribute('onclick') && deleteBtn.getAttribute('onclick').includes('deleteQuestion')) {
+                  // Let the inline handler work
+                  return;
+              }
+          });
 
           // Close modal on overlay click
           document.getElementById('questionModal').addEventListener('click', function(e) {

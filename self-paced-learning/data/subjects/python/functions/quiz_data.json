@@ -203,15 +203,107 @@
       "type": "coding"
     },
     {
-      "type": "multiple_choice",
+      "answer_index": 0,
+      "options": [
+        "test",
+        "sets"
+      ],
       "question": "test test",
       "tags": [
         "test",
         "test2"
       ],
+      "type": "multiple_choice"
+    },
+    {
+      "answer_index": 1,
+      "content": [],
       "options": [
         "test",
-        "sets"
+        "test1"
+      ],
+      "question": "test",
+      "tags": [
+        "Comment"
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "answer_index": 1,
+      "content": [],
+      "options": [
+        "test2",
+        "test"
+      ],
+      "question": "test",
+      "tags": [
+        "Comment"
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "answer_index": 0,
+      "content": [],
+      "options": [
+        "test",
+        "test2"
+      ],
+      "question": "test",
+      "tags": [],
+      "type": "multiple_choice"
+    },
+    {
+      "answer_index": 0,
+      "content": [],
+      "options": [
+        "test",
+        "tes3"
+      ],
+      "question": "sfz",
+      "tags": [],
+      "type": "multiple_choice"
+    },
+    {
+      "answer_index": 0,
+      "content": [],
+      "options": [
+        "test",
+        "1123"
+      ],
+      "question": "r",
+      "tags": [],
+      "type": "multiple_choice"
+    },
+    {
+      "answer_index": 0,
+      "content": [],
+      "options": [
+        "test",
+        "tes3"
+      ],
+      "question": "test",
+      "tags": [],
+      "type": "multiple_choice"
+    },
+    {
+      "type": "multiple_choice",
+      "question": "test",
+      "tags": [],
+      "content": [],
+      "options": [
+        "test1",
+        "test1.2"
+      ],
+      "answer_index": 0
+    },
+    {
+      "type": "multiple_choice",
+      "question": "test12",
+      "tags": [],
+      "content": [],
+      "options": [
+        "test2",
+        "test2.2"
       ],
       "answer_index": 0
     }

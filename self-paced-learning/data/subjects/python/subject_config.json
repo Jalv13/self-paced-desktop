@@ -1,11 +1,42 @@
 {
   "subtopics": {
+    "functions": {
+      "description": "Master function concepts, arguments, return values, and advanced techniques",
+      "estimated_time": "2 hours",
+      "lesson_count": 7,
+      "name": "Python Functions",
+      "order": 1,
+      "prerequisites": [],
+      "progress": {
+        "lessons": {
+          "completed_count": 0,
+          "total_count": 7,
+          "completion_percentage": 0.0,
+          "completed_lessons": []
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "watched_videos": []
+        },
+        "overall": {
+          "completed_items": 0,
+          "total_items": 7,
+          "completion_percentage": 0.0,
+          "is_complete": false
+        }
+      },
+      "question_count": 23,
+      "status": "active",
+      "video_count": 0
+    },
     "dictionaries": {
       "description": "Explore key-value mappings and dictionary comprehensions",
       "estimated_time": "1.5 hours",
       "lesson_count": 0,
       "name": "Python Dictionaries",
-      "order": 1,
+      "order": 2,
       "prerequisites": [
         "lists"
       ],
@@ -24,7 +55,7 @@
       "estimated_time": "2 hours",
       "lesson_count": 0,
       "name": "NumPy Arrays",
-      "order": 2,
+      "order": 3,
       "prerequisites": [
         "functions",
         "dictionaries",
@@ -35,21 +66,21 @@
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "completed_lessons": [],
+          "total_count": 0,
           "completion_percentage": 0,
-          "total_count": 0
+          "completed_lessons": []
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "watched_videos": []
         },
         "overall": {
           "completed_items": 0,
+          "total_items": 0,
           "completion_percentage": 0,
-          "is_complete": false,
-          "total_items": 0
-        },
-        "videos": {
-          "completion_percentage": 0,
-          "total_count": 0,
-          "watched_count": 0,
-          "watched_videos": []
+          "is_complete": false
         }
       },
       "question_count": 0,
@@ -58,37 +89,6 @@
       "tags": [
         "rest"
       ]
-    },
-    "functions": {
-      "description": "Master function concepts, arguments, return values, and advanced techniques",
-      "estimated_time": "2 hours",
-      "lesson_count": 7,
-      "name": "Python Functions",
-      "order": 3,
-      "prerequisites": [],
-      "progress": {
-        "lessons": {
-          "completed_count": 0,
-          "completed_lessons": [],
-          "completion_percentage": 0,
-          "total_count": 7
-        },
-        "overall": {
-          "completed_items": 0,
-          "completion_percentage": 0,
-          "is_complete": false,
-          "total_items": 7
-        },
-        "videos": {
-          "completion_percentage": 0,
-          "total_count": 0,
-          "watched_count": 0,
-          "watched_videos": []
-        }
-      },
-      "question_count": 15,
-      "status": "inactive",
-      "video_count": 0
     },
     "lists": {
       "description": "Understand Python's built-in list data structure and list comprehensions",
@@ -100,21 +100,21 @@
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "completed_lessons": [],
+          "total_count": 10,
+          "completion_percentage": 0.0,
+          "completed_lessons": []
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
           "completion_percentage": 0,
-          "total_count": 10
+          "watched_videos": []
         },
         "overall": {
           "completed_items": 0,
-          "completion_percentage": 0,
-          "is_complete": false,
-          "total_items": 10
-        },
-        "videos": {
-          "completion_percentage": 0,
-          "total_count": 0,
-          "watched_count": 0,
-          "watched_videos": []
+          "total_items": 10,
+          "completion_percentage": 0.0,
+          "is_complete": false
         }
       },
       "question_count": 1,
@@ -131,21 +131,21 @@
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "completed_lessons": [],
+          "total_count": 7,
+          "completion_percentage": 0.0,
+          "completed_lessons": []
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
           "completion_percentage": 0,
-          "total_count": 7
+          "watched_videos": []
         },
         "overall": {
           "completed_items": 0,
-          "completion_percentage": 0,
-          "is_complete": false,
-          "total_items": 7
-        },
-        "videos": {
-          "completion_percentage": 0,
-          "total_count": 0,
-          "watched_count": 0,
-          "watched_videos": []
+          "total_items": 7,
+          "completion_percentage": 0.0,
+          "is_complete": false
         }
       },
       "question_count": 0,
@@ -179,21 +179,21 @@
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "completed_lessons": [],
+          "total_count": 0,
           "completion_percentage": 0,
-          "total_count": 0
+          "completed_lessons": []
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "watched_videos": []
         },
         "overall": {
           "completed_items": 0,
+          "total_items": 0,
           "completion_percentage": 0,
-          "is_complete": false,
-          "total_items": 0
-        },
-        "videos": {
-          "completion_percentage": 0,
-          "total_count": 0,
-          "watched_count": 0,
-          "watched_videos": []
+          "is_complete": false
         }
       },
       "question_count": 0,
@@ -208,21 +208,21 @@
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "completed_lessons": [],
+          "total_count": 5,
+          "completion_percentage": 0.0,
+          "completed_lessons": []
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
           "completion_percentage": 0,
-          "total_count": 5
+          "watched_videos": []
         },
         "overall": {
           "completed_items": 0,
-          "completion_percentage": 0,
-          "is_complete": false,
-          "total_items": 5
-        },
-        "videos": {
-          "completion_percentage": 0,
-          "total_count": 0,
-          "watched_count": 0,
-          "watched_videos": []
+          "total_items": 5,
+          "completion_percentage": 0.0,
+          "is_complete": false
         }
       },
       "question_count": 0,
@@ -239,21 +239,21 @@
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "completed_lessons": [],
+          "total_count": 10,
+          "completion_percentage": 0.0,
+          "completed_lessons": []
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
           "completion_percentage": 0,
-          "total_count": 10
+          "watched_videos": []
         },
         "overall": {
           "completed_items": 0,
-          "completion_percentage": 0,
-          "is_complete": false,
-          "total_items": 10
-        },
-        "videos": {
-          "completion_percentage": 0,
-          "total_count": 0,
-          "watched_count": 0,
-          "watched_videos": []
+          "total_items": 10,
+          "completion_percentage": 0.0,
+          "is_complete": false
         }
       },
       "question_count": 10,
@@ -272,21 +272,21 @@
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "completed_lessons": [],
+          "total_count": 12,
+          "completion_percentage": 0.0,
+          "completed_lessons": []
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
           "completion_percentage": 0,
-          "total_count": 12
+          "watched_videos": []
         },
         "overall": {
           "completed_items": 0,
-          "completion_percentage": 0,
-          "is_complete": false,
-          "total_items": 12
-        },
-        "videos": {
-          "completion_percentage": 0,
-          "total_count": 0,
-          "watched_count": 0,
-          "watched_videos": []
+          "total_items": 12,
+          "completion_percentage": 0.0,
+          "is_complete": false
         }
       },
       "question_count": 11,
