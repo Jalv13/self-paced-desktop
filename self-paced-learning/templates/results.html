@@ -8,6 +8,11 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/styles.css') }}"
     />
+    <!-- Font Awesome for icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
     <!-- Pyodide for Python code execution -->
     <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
     <!-- Markdown rendering and sanitization -->
@@ -591,7 +596,7 @@
             } else if (item.type === "paragraph") {
               const paragraphHtml = renderBlockMarkdown(item.text || "");
               if (paragraphHtml) {
-                contentHtml += paragraphHtml;
+                contentHtml += `<div class="lesson-paragraph">${paragraphHtml}</div>`;
               }
             } else if (item.type === "list") {
               const listItems = (item.items || [])
@@ -833,7 +838,8 @@
         let pyodide = null;
         let pyodideLoading = false;
 
-        async function initPyodide() {
+        // Make initPyodide globally accessible
+        window.initPyodide = async function() {
           if (pyodide) return pyodide;
           if (pyodideLoading) {
             // Wait for existing initialization to complete
@@ -856,9 +862,10 @@
           } finally {
             pyodideLoading = false;
           }
-        }
+        };
 
-        async function runPythonCode(blockId) {
+        // Make runPythonCode globally accessible
+        window.runPythonCode = async function(blockId) {
           const codeElement = document.getElementById(`code-editor-${blockId}`);
           const outputElement = document.getElementById(
             `code-output-${blockId}`
@@ -882,7 +889,7 @@
 
           try {
             // Initialize Pyodide if not already done
-            const py = await initPyodide();
+            const py = await window.initPyodide();
 
             // Capture stdout and setup input() workaround
             py.runPython(`
@@ -916,9 +923,10 @@
             runButton.disabled = false;
             runButton.innerHTML = `<i class="fas fa-play"></i> Run Code`;
           }
-        }
+        };
 
-        function clearOutput(blockId) {
+        // Make clearOutput globally accessible
+        window.clearOutput = function(blockId) {
           const outputElement = document.getElementById(
             `code-output-${blockId}`
           );
@@ -926,9 +934,10 @@
             outputElement.textContent = "";
             outputElement.className = "output-content";
           }
-        }
+        };
 
-        function showSolution(blockId) {
+        // Make showSolution globally accessible
+        window.showSolution = function(blockId) {
           const solutionElement = document.getElementById(
             `solution-${blockId}`
           );
@@ -947,9 +956,10 @@
                 '<i class="fas fa-lightbulb"></i> Show Solution';
             }
           }
-        }
+        };
 
-        function showHints(blockId) {
+        // Make showHints globally accessible
+        window.showHints = function(blockId) {
           const hintsElement = document.getElementById(`hints-${blockId}`);
           const button = document.querySelector(
             `#code-runner-${blockId} .show-hints-btn`
@@ -966,7 +976,7 @@
                 '<i class="fas fa-question-circle"></i> Show Hints';
             }
           }
-        }
+        };
 
         // Add tab support to all textareas (especially for code editing)
         document.addEventListener("keydown", function (e) {
@@ -1000,7 +1010,10 @@
           `#code-runner-${blockId} .code-runner-toggle`
         );
 
-        if (!toggleButton) return;
+        if (!toggleButton) {
+          console.warn(`Toggle button not found for block ${blockId}`);
+          return;
+        }
 
         toggleButton.setAttribute(
           "aria-expanded",
@@ -1010,13 +1023,32 @@
           "aria-label",
           isExpanded ? "Collapse code runner" : "Expand code runner"
         );
-        toggleButton.classList.toggle("is-expanded", isExpanded);
-        toggleButton.innerHTML = isExpanded
-          ? '<i class="fas fa-compress-alt"></i>'
-          : '<i class="fas fa-expand-alt"></i>';
+        
+        // Update the class for styling
+        if (isExpanded) {
+          toggleButton.classList.add("is-expanded");
+        } else {
+          toggleButton.classList.remove("is-expanded");
+        }
+        
+        // Update the icon
+        const icon = toggleButton.querySelector('i');
+        if (icon) {
+          if (isExpanded) {
+            icon.className = 'fas fa-compress-alt';
+          } else {
+            icon.className = 'fas fa-expand-alt';
+          }
+        } else {
+          // Fallback: replace innerHTML
+          toggleButton.innerHTML = isExpanded
+            ? '<i class="fas fa-compress-alt"></i>'
+            : '<i class="fas fa-expand-alt"></i>';
+        }
       }
 
-      function toggleCodeRunner(blockId) {
+      // Make toggleCodeRunner globally accessible
+      window.toggleCodeRunner = function(blockId) {
         const modal = document.getElementById("code-runner-modal");
         const isActive =
           modal &&
@@ -1031,9 +1063,10 @@
           }
           expandCodeRunner(blockId);
         }
-      }
+      };
 
-      function expandCodeRunner(blockId) {
+      // Make expandCodeRunner globally accessible
+      window.expandCodeRunner = function(blockId) {
         const originalContainer = document.getElementById(
           `code-runner-${blockId}`
         );
@@ -1151,9 +1184,10 @@
             modalTextareaFinal.focus();
           }
         }, 100);
-      }
+      };
 
-      function closeCodeRunnerModal() {
+      // Make closeCodeRunnerModal globally accessible
+      window.closeCodeRunnerModal = function() {
         const modal = document.getElementById("code-runner-modal");
         if (!modal || !modal.classList.contains("active")) {
           return;
@@ -1167,8 +1201,9 @@
           setExpandButtonState(activeCodeRunnerId, false);
         }
         activeCodeRunnerId = null;
-      }
+      };
 
+      // Helper function for syncing to modal
       function syncToModal(blockId) {
         const original = document.getElementById(`code-editor-${blockId}`);
         const modal = document.getElementById(`code-editor-${blockId}-modal`);
@@ -1220,7 +1255,7 @@
         outputElement.textContent = "Initializing Python environment...";
 
         try {
-          const py = await initPyodide();
+          const py = await window.initPyodide();
           py.runPython(`
       import sys
       from io import StringIO

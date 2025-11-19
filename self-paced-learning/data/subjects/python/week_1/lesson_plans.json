@@ -103,7 +103,9 @@
           "text": "This is the legendary Hello World spell - every programmer's first step."
         }
       ],
-      "tags": ["Print"],
+      "tags": [
+        "Print"
+      ],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 3,
@@ -134,7 +136,9 @@
           "text": "Think of this as your hero shouting their stats to the villagers."
         }
       ],
-      "tags": ["Print"],
+      "tags": [
+        "Print"
+      ],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 4,
@@ -168,7 +172,9 @@
           ]
         }
       ],
-      "tags": ["Print"],
+      "tags": [
+        "Print"
+      ],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 5,
@@ -199,7 +205,9 @@
           "text": "Use comments to explain code, leave reminders, or just write funny thoughts for future heroes."
         }
       ],
-      "tags": ["Comment"],
+      "tags": [
+        "Comment"
+      ],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 6,
@@ -233,7 +241,10 @@
           ]
         }
       ],
-      "tags": ["Print", "Comment"],
+      "tags": [
+        "Print",
+        "Comment"
+      ],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 7,
@@ -267,7 +278,10 @@
           ]
         }
       ],
-      "tags": ["Print", "Comment"],
+      "tags": [
+        "Print",
+        "Comment"
+      ],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 8,
@@ -290,7 +304,10 @@
           "text": "Next week: the hero will need stats (HP, coins, weapons). We'll learn about variables and data types to give the hero strength."
         }
       ],
-      "tags": ["Print", "Comment"],
+      "tags": [
+        "Print",
+        "Comment"
+      ],
       "type": "initial",
       "updated_date": "2025-10-08",
       "order": 9,
@@ -302,7 +319,7 @@
       "content": [
         {
           "type": "paragraph",
-          "text": "This remedial lesson is for heroes who need extra practice with Week 1 concepts. It is divided into two independent parts: Print and Comment. You can study only the part where you need more help."
+          "text": "This remedial lesson is for heroes who need extra practice with Week 1 concepts. It is divided into two independent parts: Print and Comment. You can study only the part where you need more help. "
         },
         {
           "type": "header",
@@ -388,12 +405,12 @@
           "type": "code_runner",
           "starter_code": "# Write your code here\n",
           "expected_output": "The village bell rings.\nThe villagers run to the square.",
-          "solution": "print(\"The village bell rings.\")\nprint(\"The villagers run to the square.\")",
           "hints": [
             "Use two separate print() statements",
             "Put each sentence in quotation marks",
             "Each print() creates a new line"
-          ]
+          ],
+          "solution": "print(\"The village bell rings.\")\nprint(\"The villagers run to the square.\")"
         },
         {
           "type": "header",
@@ -407,12 +424,12 @@
           "type": "code_runner",
           "starter_code": "# Write your code here\n",
           "expected_output": "The hero has 45 HP.",
-          "solution": "print(\"The hero has\", 45, \"HP.\")",
           "hints": [
             "Use commas to separate text and numbers",
             "The number doesn't need quotation marks",
             "Format: print(\"text\", number, \"text\")"
-          ]
+          ],
+          "solution": "print(\"The hero has\", 45, \"HP.\")"
         },
         {
           "type": "header",
@@ -426,12 +443,12 @@
           "type": "code_runner",
           "starter_code": "# Write your code here\n",
           "expected_output": "The forest is dark and quiet.\nA strange owl hoots from the trees.\nThe hero lights a torch.",
-          "solution": "print(\"The forest is dark and quiet.\")\nprint(\"A strange owl hoots from the trees.\")\nprint(\"The hero lights a torch.\")",
           "hints": [
             "Be creative with your story",
             "Write three separate print() statements",
             "Each line should describe a different action or scene"
-          ]
+          ],
+          "solution": "print(\"The forest is dark and quiet.\")\nprint(\"A strange owl hoots from the trees.\")\nprint(\"The hero lights a torch.\")"
         },
         {
           "type": "header",
@@ -481,12 +498,12 @@
           "type": "code_runner",
           "starter_code": "# Write your code here\n",
           "expected_output": "The practice begins!",
-          "solution": "# This is my practice scroll\nprint(\"The practice begins!\")",
           "hints": [
             "Comments start with #",
             "Comments don't produce output",
             "The print() statement comes after the comment"
-          ]
+          ],
+          "solution": "# This is my practice scroll\nprint(\"The practice begins!\")"
         },
         {
           "type": "header",
@@ -494,18 +511,18 @@
         },
         {
           "type": "paragraph",
-          "text": "Task: Write a program with two lines.\n  Line 1: A comment explaining what the code does.\n  Example: # This line prints the sword discovery\n  Line 2: A print statement that shows: The hero finds a sword."
+          "text": "Task: Write a program with two lines.\n  Line 1: A comment explaining what the code does.\n  Example: # This line prints the sword discovery\n  Line 2: A print statement that shows: The hero finds a sword. "
         },
         {
           "type": "code_runner",
           "starter_code": "# Write your code here\n",
           "expected_output": "The hero finds a sword.",
-          "solution": "# This line prints the sword discovery\nprint(\"The hero finds a sword.\")",
           "hints": [
             "First line should be a comment with #",
             "Second line should be print() statement",
             "Comments help explain what the code does"
-          ]
+          ],
+          "solution": "# This line prints the sword discovery\nprint(\"The hero finds a sword.\")"
         },
         {
           "type": "header",
@@ -521,21 +538,25 @@
         },
         {
           "type": "code_runner",
-          "starter_code": "# Write your code here\n",
+          "starter_code": "Example structure:\n# Hero enters the cave\nprint(\"The cave is cold and dark.\")\n# Hero lights a torch\nprint(\"The torch glows brightly.\")",
           "expected_output": "The cave is cold and dark.\nThe torch glows brightly.",
-          "solution": "# Hero enters the cave\nprint(\"The cave is cold and dark.\")\n# Hero lights a torch\nprint(\"The torch glows brightly.\")",
           "hints": [
             "Alternate between comments and print() statements",
             "Comments explain what's happening",
             "Print statements create the actual output"
-          ]
+          ],
+          "solution": "# Hero enters the cave\nprint(\"The cave is cold and dark.\")\n# Hero lights a torch\nprint(\"The torch glows brightly.\")"
         }
       ],
-      "tags": ["Print", "Comment"],
+      "tags": [
+        "Print",
+        "Comment"
+      ],
       "type": "remedial",
-      "updated_date": "2025-10-08",
+      "updated_date": "2025-10-02",
       "order": 2,
       "id": "week-1-remedial"
     }
-  ]
+  ],
+  "updated_date": "2025-10-02"
 }
