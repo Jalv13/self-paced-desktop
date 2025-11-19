@@ -110,13 +110,23 @@
                 class="python-editor"
                 placeholder="Write your Python code here..."
                 required
-              >{{ q.starter_code or '' }}</textarea>
+              >
+{{ q.starter_code or '' }}</textarea
+              >
             </div>
             <div class="code-controls">
-              <button type="button" class="run-code-btn" onclick="runPythonCodeInQuiz('q{{ idx }}')">
+              <button
+                type="button"
+                class="run-code-btn"
+                onclick="runPythonCodeInQuiz('q{{ idx }}')"
+              >
                 <i class="fas fa-play"></i> Test Your Code
               </button>
-              <button type="button" class="clear-output-btn" onclick="clearOutputInQuiz('q{{ idx }}')">
+              <button
+                type="button"
+                class="clear-output-btn"
+                onclick="clearOutputInQuiz('q{{ idx }}')"
+              >
                 <i class="fas fa-trash"></i> Clear Output
               </button>
             </div>
@@ -126,7 +136,11 @@
             </div>
             {% if q.sample_solution %}
             <div class="sample-solution-hint">
-              <small><i class="fas fa-info-circle"></i> You can test your code before submitting. Your final code will be submitted when you click "Submit Quiz".</small>
+              <small
+                ><i class="fas fa-info-circle"></i> You can test your code
+                before submitting. Your final code will be submitted when you
+                click "Submit Quiz".</small
+              >
             </div>
             {% endif %}
           </div>
@@ -252,8 +266,12 @@
       }
 
       async function runPythonCodeInQuiz(questionId) {
-        const codeElement = document.getElementById(`code-editor-${questionId}`);
-        const outputElement = document.getElementById(`code-output-${questionId}`);
+        const codeElement = document.getElementById(
+          `code-editor-${questionId}`
+        );
+        const outputElement = document.getElementById(
+          `code-output-${questionId}`
+        );
         const runButton = document.querySelector(
           `#code-runner-${questionId} .run-code-btn`
         );
@@ -312,7 +330,9 @@ __builtins__.input = lambda msg="": str(prompt(msg) or "")
       }
 
       function clearOutputInQuiz(questionId) {
-        const outputElement = document.getElementById(`code-output-${questionId}`);
+        const outputElement = document.getElementById(
+          `code-output-${questionId}`
+        );
         if (outputElement) {
           outputElement.textContent = "";
           outputElement.className = "output-content";
@@ -397,7 +417,7 @@ __builtins__.input = lambda msg="": str(prompt(msg) or "")
       .python-editor {
         width: 100%;
         min-height: 200px;
-        font-family: 'Courier New', monospace;
+        font-family: "Courier New", monospace;
         font-size: 14px;
         padding: 12px;
         border: 1px solid #ced4da;
@@ -464,7 +484,7 @@ __builtins__.input = lambda msg="": str(prompt(msg) or "")
       }
 
       .output-content {
-        font-family: 'Courier New', monospace;
+        font-family: "Courier New", monospace;
         font-size: 13px;
         white-space: pre-wrap;
         word-wrap: break-word;

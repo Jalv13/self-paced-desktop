@@ -839,7 +839,7 @@
         let pyodideLoading = false;
 
         // Make initPyodide globally accessible
-        window.initPyodide = async function() {
+        window.initPyodide = async function () {
           if (pyodide) return pyodide;
           if (pyodideLoading) {
             // Wait for existing initialization to complete
@@ -865,7 +865,7 @@
         };
 
         // Make runPythonCode globally accessible
-        window.runPythonCode = async function(blockId) {
+        window.runPythonCode = async function (blockId) {
           const codeElement = document.getElementById(`code-editor-${blockId}`);
           const outputElement = document.getElementById(
             `code-output-${blockId}`
@@ -926,7 +926,7 @@
         };
 
         // Make clearOutput globally accessible
-        window.clearOutput = function(blockId) {
+        window.clearOutput = function (blockId) {
           const outputElement = document.getElementById(
             `code-output-${blockId}`
           );
@@ -937,7 +937,7 @@
         };
 
         // Make showSolution globally accessible
-        window.showSolution = function(blockId) {
+        window.showSolution = function (blockId) {
           const solutionElement = document.getElementById(
             `solution-${blockId}`
           );
@@ -959,7 +959,7 @@
         };
 
         // Make showHints globally accessible
-        window.showHints = function(blockId) {
+        window.showHints = function (blockId) {
           const hintsElement = document.getElementById(`hints-${blockId}`);
           const button = document.querySelector(
             `#code-runner-${blockId} .show-hints-btn`
@@ -1023,21 +1023,21 @@
           "aria-label",
           isExpanded ? "Collapse code runner" : "Expand code runner"
         );
-        
+
         // Update the class for styling
         if (isExpanded) {
           toggleButton.classList.add("is-expanded");
         } else {
           toggleButton.classList.remove("is-expanded");
         }
-        
+
         // Update the icon
-        const icon = toggleButton.querySelector('i');
+        const icon = toggleButton.querySelector("i");
         if (icon) {
           if (isExpanded) {
-            icon.className = 'fas fa-compress-alt';
+            icon.className = "fas fa-compress-alt";
           } else {
-            icon.className = 'fas fa-expand-alt';
+            icon.className = "fas fa-expand-alt";
           }
         } else {
           // Fallback: replace innerHTML
@@ -1048,7 +1048,7 @@
       }
 
       // Make toggleCodeRunner globally accessible
-      window.toggleCodeRunner = function(blockId) {
+      window.toggleCodeRunner = function (blockId) {
         const modal = document.getElementById("code-runner-modal");
         const isActive =
           modal &&
@@ -1066,7 +1066,7 @@
       };
 
       // Make expandCodeRunner globally accessible
-      window.expandCodeRunner = function(blockId) {
+      window.expandCodeRunner = function (blockId) {
         const originalContainer = document.getElementById(
           `code-runner-${blockId}`
         );
@@ -1187,7 +1187,7 @@
       };
 
       // Make closeCodeRunnerModal globally accessible
-      window.closeCodeRunnerModal = function() {
+      window.closeCodeRunnerModal = function () {
         const modal = document.getElementById("code-runner-modal");
         if (!modal || !modal.classList.contains("active")) {
           return;
