@@ -11,6 +11,8 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
+    <!-- Pyodide for Python code execution -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
   </head>
   <body class="quiz-page">
     {% if admin_override %}
@@ -99,13 +101,50 @@
           {% endif %}
         </label>
         {% endfor %} {# --- CODING QUESTION --- #} {% elif q.type == 'coding' %}
-        <textarea
-          name="q{{ idx }}"
-          placeholder="Write your Python code here..."
-          required
-        >
+        <div class="code-runner-block" id="code-runner-q{{ idx }}">
+          <div class="code-runner-content">
+            <div class="code-editor">
+              <textarea
+                id="code-editor-q{{ idx }}"
+                name="q{{ idx }}"
+                class="python-editor"
+                placeholder="Write your Python code here..."
+                required
+              >
 {{ q.starter_code or '' }}</textarea
-        >
+              >
+            </div>
+            <div class="code-controls">
+              <button
+                type="button"
+                class="run-code-btn"
+                onclick="runPythonCodeInQuiz('q{{ idx }}')"
+              >
+                <i class="fas fa-play"></i> Test Your Code
+              </button>
+              <button
+                type="button"
+                class="clear-output-btn"
+                onclick="clearOutputInQuiz('q{{ idx }}')"
+              >
+                <i class="fas fa-trash"></i> Clear Output
+              </button>
+            </div>
+            <div class="code-output">
+              <div class="output-header">Test Output:</div>
+              <pre id="code-output-q{{ idx }}" class="output-content"></pre>
+            </div>
+            {% if q.sample_solution %}
+            <div class="sample-solution-hint">
+              <small
+                ><i class="fas fa-info-circle"></i> You can test your code
+                before submitting. Your final code will be submitted when you
+                click "Submit Quiz".</small
+              >
+            </div>
+            {% endif %}
+          </div>
+        </div>
 
         {# --- SHORT ANSWER QUESTION --- #} {% elif q.type == 'short_answer' %}
         <textarea
@@ -196,6 +235,109 @@
             submitButton.classList.remove("disabled");
           }
         });
+
+      // Pyodide functionality for code execution in quiz
+      let pyodide = null;
+      let pyodideLoading = false;
+
+      async function initPyodide() {
+        if (pyodide) return pyodide;
+        if (pyodideLoading) {
+          // Wait for existing initialization to complete
+          while (pyodideLoading) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+          return pyodide;
+        }
+
+        pyodideLoading = true;
+        try {
+          pyodide = await loadPyodide({
+            indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/",
+          });
+          console.log("Pyodide loaded successfully");
+          return pyodide;
+        } catch (error) {
+          console.error("Failed to load Pyodide:", error);
+          throw error;
+        } finally {
+          pyodideLoading = false;
+        }
+      }
+
+      async function runPythonCodeInQuiz(questionId) {
+        const codeElement = document.getElementById(
+          `code-editor-${questionId}`
+        );
+        const outputElement = document.getElementById(
+          `code-output-${questionId}`
+        );
+        const runButton = document.querySelector(
+          `#code-runner-${questionId} .run-code-btn`
+        );
+
+        if (!codeElement || !outputElement) return;
+
+        const code = codeElement.value;
+        if (!code.trim()) {
+          outputElement.textContent = "Please enter some Python code to run.";
+          outputElement.className = "output-content";
+          return;
+        }
+
+        // Update button state
+        runButton.disabled = true;
+        runButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Running...`;
+        outputElement.textContent = "Initializing Python environment...";
+        outputElement.className = "output-content";
+
+        try {
+          // Initialize Pyodide if not already done
+          const py = await initPyodide();
+
+          // Capture stdout and setup input() workaround
+          py.runPython(`
+import sys
+from io import StringIO
+sys.stdout = StringIO()
+
+# Enable input() to work in browser environment
+from js import prompt
+__builtins__.input = lambda msg="": str(prompt(msg) or "")
+`);
+
+          // Run the user's code
+          try {
+            py.runPython(code);
+
+            // Get the output
+            const output = py.runPython("sys.stdout.getvalue()");
+            outputElement.textContent =
+              output || "Code executed successfully (no output)";
+            outputElement.className = "output-content success";
+          } catch (pythonError) {
+            outputElement.textContent = `Error: ${pythonError.message}`;
+            outputElement.className = "output-content error";
+          }
+        } catch (error) {
+          outputElement.textContent = `Failed to initialize Python environment: ${error.message}`;
+          outputElement.className = "output-content error";
+        } finally {
+          // Re-enable button
+          runButton.disabled = false;
+          runButton.innerHTML = '<i class="fas fa-play"></i> Test Your Code';
+        }
+      }
+
+      function clearOutputInQuiz(questionId) {
+        const outputElement = document.getElementById(
+          `code-output-${questionId}`
+        );
+        if (outputElement) {
+          outputElement.textContent = "";
+          outputElement.className = "output-content";
+        }
+      }
     </script>
 
     <style>
@@ -251,6 +393,130 @@
         cursor: not-allowed !important;
         opacity: 0.65 !important;
         pointer-events: none !important;
+      }
+
+      /* Code runner styles */
+      .code-runner-block {
+        background: #f8f9fa;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin: 15px 0;
+      }
+
+      .code-runner-content {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .code-editor {
+        width: 100%;
+      }
+
+      .python-editor {
+        width: 100%;
+        min-height: 200px;
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+        padding: 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        background: #fff;
+        resize: vertical;
+      }
+
+      .code-controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .run-code-btn,
+      .clear-output-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        font-size: 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+      }
+
+      .run-code-btn {
+        background: #28a745;
+        color: white;
+      }
+
+      .run-code-btn:hover:not(:disabled) {
+        background: #218838;
+      }
+
+      .run-code-btn:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.65;
+      }
+
+      .clear-output-btn {
+        background: #6c757d;
+        color: white;
+      }
+
+      .clear-output-btn:hover {
+        background: #5a6268;
+      }
+
+      .code-output {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 12px;
+      }
+
+      .output-header {
+        font-weight: bold;
+        color: #495057;
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+
+      .output-content {
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        color: #212529;
+        min-height: 60px;
+      }
+
+      .output-content.success {
+        color: #155724;
+        background: #d4edda;
+        padding: 8px;
+        border-radius: 4px;
+      }
+
+      .output-content.error {
+        color: #721c24;
+        background: #f8d7da;
+        padding: 8px;
+        border-radius: 4px;
+      }
+
+      .sample-solution-hint {
+        margin-top: 8px;
+        padding: 8px;
+        background: #e7f3ff;
+        border-left: 3px solid #007bff;
+        border-radius: 4px;
+      }
+
+      .sample-solution-hint small {
+        color: #004085;
+        font-size: 13px;
       }
     </style>
   </body>

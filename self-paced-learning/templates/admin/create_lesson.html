@@ -1443,11 +1443,10 @@
                     showNotification(data.message, 'success');
                     setTimeout(() => {
                         {% if edit_mode %}
-                            // If lesson ID was changed, redirect to lessons page
-                            // (can't redirect to edit page with new ID easily)
-                            window.location.href = '/admin/lessons/{{ subject }}/{{ subtopic }}';
+                            // Redirect back to lessons page with subject and subtopic filters
+                            window.location.href = '/admin/lessons?subject={{ subject }}&subtopic={{ subtopic }}';
                         {% else %}
-                            window.location.href = '/admin/lessons';
+                            window.location.href = '/admin/lessons/select-subject';
                         {% endif %}
                     }, 1500);
                 } else {
