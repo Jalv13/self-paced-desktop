@@ -20,21 +20,28 @@
         Self-Paced Learning
       </div>
       <div class="top-actions">
-        <span class="welcome">
-          Hello, {{ username or "Learner" }}{% if user_role %} &middot; {{ user_role|title }}{% endif %}
-        </span>
-        {% if user_role == "teacher" %}
-          <a class="link" href="{{ url_for('teacher.students') }}">
-            <i class="fas fa-users"></i> Manage Students
+        {% if username %}
+          <span class="welcome">
+            Hello, {{ username or "Learner" }}{% if is_admin %} &middot; Admin{% elif user_role %} &middot; {{ user_role|title }}{% endif %}
+          </span>
+          {% if user_role == "teacher" %}
+            <a class="link" href="{{ url_for('teacher.students') }}">
+              <i class="fas fa-users"></i> Manage Students
+            </a>
+          {% elif user_role == "student" %}
+            <a class="link" href="{{ url_for('student.view_classes') }}">
+              <i class="fas fa-chalkboard-teacher"></i> My Classes
+            </a>
+          {% endif %}
+          <a class="link danger" href="{{ url_for('auth.logout') }}">
+            <i class="fas fa-right-from-bracket"></i> Logout
           </a>
-        {% elif user_role == "student" %}
-          <a class="link" href="{{ url_for('student.view_classes') }}">
-            <i class="fas fa-chalkboard-teacher"></i> My Classes
+        {% else %}
+          <span class="welcome">Hello, please sign in to start learning</span>
+          <a class="btn-login" href="{{ url_for('auth.login') }}">
+            <i class="fas fa-right-to-bracket"></i> Log In
           </a>
         {% endif %}
-        <a class="link danger" href="{{ url_for('auth.logout') }}">
-          <i class="fas fa-right-from-bracket"></i> Logout
-        </a>
       </div>
     </nav>
 
@@ -74,10 +81,17 @@
             </span>
           </div>
           <div class="subject-actions">
-            <a href="/subjects/{{ subject_id }}" class="btn btn-primary">
-              <i class="fas fa-play"></i>
-              Start Learning
-            </a>
+            {% if username %}
+              <a href="/subjects/{{ subject_id }}" class="btn btn-primary">
+                <i class="fas fa-play"></i>
+                Start Learning
+              </a>
+            {% else %}
+              <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                <i class="fas fa-right-to-bracket"></i>
+                Log In to Start Learning
+              </a>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -85,7 +99,7 @@
     </div>
 
     <!-- Admin Panel Link (Optional) -->
-    {% if user_role == "teacher" %}
+    {% if is_admin %}
       <div class="admin-link">
         <a href="/admin" class="btn btn-secondary">
           <i class="fas fa-cog"></i>
@@ -107,7 +121,8 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 1rem 2rem;
+        min-height: 60px;
+        padding: 0.75rem 1.75rem;
         background: #0f172a;
         color: #fff;
         box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
@@ -127,6 +142,26 @@
         gap: 1.25rem;
         font-weight: 500;
         font-size: 0.95rem;
+        flex-wrap: nowrap;
+      }
+
+      .btn-login {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.9rem;
+        background: linear-gradient(135deg, #4f46e5, #4338ca);
+        color: #fff;
+        border-radius: 999px;
+        text-decoration: none;
+        font-weight: 600;
+        box-shadow: 0 6px 16px rgba(67, 56, 202, 0.35);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .btn-login:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px rgba(67, 56, 202, 0.35);
       }
 
       .top-actions .link {

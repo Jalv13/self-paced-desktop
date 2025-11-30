@@ -54,9 +54,11 @@ def login():
         user = user_service.authenticate(email, password)
 
         if user:
+            is_admin = user.username.lower() == "admin"
             session["user_id"] = user.id
-            session["role"] = user.role
             session["username"] = user.username
+            session["is_admin"] = is_admin
+            session["role"] = "admin" if is_admin else user.role
             flash(f"Welcome back, {user.username}!", "success")
             return redirect(url_for("main.subject_selection"))
 
@@ -71,4 +73,4 @@ def logout():
     if session:
         session.clear()
     flash("Logged out successfully.", "info")
-    return redirect(url_for("auth.login"))
+    return redirect(url_for("main.subject_selection"))

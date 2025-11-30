@@ -98,8 +98,62 @@ class DataService:
     # LESSON DATA OPERATIONS
     # ============================================================================
 
-    def get_lesson_plans(self, subject: str, subtopic: str) -> Optional[List[Dict]]:
-        """Load lesson plans for a specific subject/subtopic."""
+    @staticmethod
+    def _is_lesson_listed(lesson: Dict[str, Any]) -> bool:
+        """Return True if the lesson should be visible to learners (not hidden/unavailable)."""
+        if not lesson:
+            return False
+
+        visibility = str(lesson.get("visibility", "") or "").strip().lower()
+        status = str(lesson.get("status", "") or "").strip().lower()
+
+        if visibility in {"unlisted", "hidden", "private"}:
+            return False
+        if status in {
+            "unlisted",
+            "inactive",
+            "unavailable",
+            "hidden",
+            "archived",
+            "disabled",
+            "draft",
+        }:
+            return False
+        if lesson.get("unlisted") is True:
+            return False
+        if lesson.get("listed") is False:
+            return False
+        if lesson.get("is_listed") is False:
+            return False
+
+        return True
+
+    def get_lesson_plans(
+        self, subject: str, subtopic: str, include_unlisted: bool = True
+    ) -> Optional[List[Dict]]:
+        """
+        Load lesson plans for a specific subject/subtopic.
+
+        Set ``include_unlisted`` to False to hide lessons marked hidden/unlisted/unavailable
+        and to ignore subtopics whose status is not active for learner-facing views.
+        """
+        if not include_unlisted:
+            try:
+                subject_config = self.load_subject_config(subject) or {}
+                subtopic_status = (
+                    subject_config.get("subtopics", {})
+                    .get(subtopic, {})
+                    .get("status", "")
+                )
+                subtopic_status = (
+                    "" if subtopic_status is None else str(subtopic_status)
+                ).strip().lower()
+                if subtopic_status and subtopic_status != "active":
+                    return []
+            except Exception:
+                # If status cannot be determined, fall back to loading the data.
+                pass
+
         lesson_data = self.data_loader.load_lesson_plans(subject, subtopic)
 
         if not lesson_data or "lessons" not in lesson_data:
@@ -108,20 +162,35 @@ class DataService:
         lessons = lesson_data["lessons"]
 
         # Convert lessons object to array if needed
+        lesson_list: List[Dict[str, Any]] = []
+
         if isinstance(lessons, dict):
             # Convert from {id: lesson_data} to [lesson_data] format
-            lesson_list = []
             for lesson_id, lesson_content in lessons.items():
-                lesson_content["id"] = lesson_id  # Add ID to lesson content
-                lesson_list.append(lesson_content)
-
-            # Sort by order if available
-            lesson_list.sort(key=lambda x: x.get("order", 999))
-            return lesson_list
+                if not isinstance(lesson_content, dict):
+                    continue
+                lesson_copy = dict(lesson_content)
+                lesson_copy["id"] = lesson_copy.get("id", lesson_id)
+                lesson_list.append(lesson_copy)
         elif isinstance(lessons, list):
-            return lessons
-        else:
-            return []
+            for index, lesson_content in enumerate(lessons):
+                if not isinstance(lesson_content, dict):
+                    continue
+                lesson_copy = dict(lesson_content)
+                if "id" not in lesson_copy:
+                    # Maintain legacy ordering-based identifiers for list payloads
+                    lesson_copy["id"] = lesson_copy.get("lesson_id") or f"lesson_{index + 1}"
+                lesson_list.append(lesson_copy)
+
+        # Sort by order if available
+        lesson_list.sort(key=lambda x: x.get("order", 999))
+
+        if not include_unlisted:
+            lesson_list = [
+                lesson for lesson in lesson_list if self._is_lesson_listed(lesson)
+            ]
+
+        return lesson_list
 
     def get_all_lessons(self) -> List[Dict]:
         """Get all lessons across all subjects and subtopics."""
@@ -581,7 +650,7 @@ class DataService:
         return sorted(list(tags))
 
     def find_lessons_by_tags(
-        self, subject: str, required_tags: List[str]
+        self, subject: str, required_tags: List[str], include_unlisted: bool = True
     ) -> List[Dict]:
         """Find lessons that contain all required tags."""
         matching_lessons = []
@@ -589,7 +658,9 @@ class DataService:
 
         if subject_config and "subtopics" in subject_config:
             for subtopic_id in subject_config["subtopics"].keys():
-                lessons = self.get_lesson_plans(subject, subtopic_id)
+                lessons = self.get_lesson_plans(
+                    subject, subtopic_id, include_unlisted=include_unlisted
+                )
 
                 if lessons:
                     for lesson in lessons:

@@ -951,7 +951,9 @@ class ProgressService:
 
             for subtopic_id in subtopic_ids:
                 try:
-                    lessons = data_service.get_lesson_plans(subject_id, subtopic_id) or []
+                    lessons = data_service.get_lesson_plans(
+                        subject_id, subtopic_id, include_unlisted=False
+                    ) or []
                 except Exception as exc:
                     lessons = []
                     if logger:
@@ -1148,10 +1150,9 @@ class ProgressService:
         from services import get_data_service  # Lazy import to avoid circular deps
 
         data_service = get_data_service()
-        loader = data_service.data_loader
-
-        lesson_data = loader.load_lesson_plans(subject, subtopic) or {}
-        raw_lessons = lesson_data.get("lessons", {}) or {}
+        lessons = data_service.get_lesson_plans(
+            subject, subtopic, include_unlisted=False
+        ) or []
 
         lesson_items: List[Tuple[str, Dict[str, Any]]] = []
         normalized_lesson_type = (lesson_type or "").strip().lower()
@@ -1171,19 +1172,12 @@ class ProgressService:
 
             return raw_type == normalized_lesson_type
 
-        if isinstance(raw_lessons, dict):
-            lesson_items = [
-                (lesson_id, lesson)
-                for lesson_id, lesson in raw_lessons.items()
-                if include_lesson(lesson or {})
-            ]
-        elif isinstance(raw_lessons, list):
-            for index, lesson in enumerate(raw_lessons):
-                lesson = lesson or {}
-                if not include_lesson(lesson):
-                    continue
-                lesson_id = lesson.get("id") or f"lesson_{index + 1}"
-                lesson_items.append((lesson_id, lesson))
+        for index, lesson in enumerate(lessons):
+            lesson = lesson or {}
+            if not include_lesson(lesson):
+                continue
+            lesson_id = lesson.get("id") or f"lesson_{index + 1}"
+            lesson_items.append((lesson_id, lesson))
 
         lesson_titles = {
             lesson_id: lesson.get("title", lesson_id)

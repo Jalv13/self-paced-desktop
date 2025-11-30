@@ -35,25 +35,25 @@
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "completed_lessons": [],
+          "total_count": 0,
           "completion_percentage": 0,
-          "total_count": 0
+          "completed_lessons": []
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "watched_videos": []
         },
         "overall": {
           "completed_items": 0,
+          "total_items": 0,
           "completion_percentage": 0,
-          "is_complete": false,
-          "total_items": 0
-        },
-        "videos": {
-          "completion_percentage": 0,
-          "total_count": 0,
-          "watched_count": 0,
-          "watched_videos": []
+          "is_complete": false
         }
       },
       "question_count": 0,
-      "status": "active",
+      "status": "inactive",
       "video_count": 0,
       "tags": [
         "rest"
@@ -171,89 +171,41 @@
       "status": "inactive",
       "video_count": 0
     },
-    "week-3": {
-      "description": "Your hero has stats now, but the villagers are not impressed. They shout:\n\"Traveler, tell us your name! How many coins do you carry? How strong are you?\"\n\nTo answer them, your hero needs to listen and respond. This is where we use input() and friendly output.",
-      "lesson_count": 0,
-      "name": "Week 3 – Speak with the Villagers",
-      "order": 7,
-      "progress": {
-        "lessons": {
-          "completed_count": 0,
-          "completed_lessons": [],
-          "completion_percentage": 0,
-          "total_count": 0
-        },
-        "overall": {
-          "completed_items": 0,
-          "completion_percentage": 0,
-          "is_complete": false,
-          "total_items": 0
-        },
-        "videos": {
-          "completion_percentage": 0,
-          "total_count": 0,
-          "watched_count": 0,
-          "watched_videos": []
-        }
-      },
-      "question_count": 0,
-      "status": "active",
-      "video_count": 0
-    },
-    "week-4": {
-      "description": "Your hero steps bravely into the forest. Birds sing… until suddenly — BAM! 🐉\nA monster blocks the path.\n\nThe villagers whisper:\n\"Now we’ll see if this hero is smart… or just lunch.\"\n\nIt’s time for your first big choice:\n\nWill you fight the monster?\n\nWill you run away (screaming, probably)?\n\nOr will you bribe it with shiny coins?\n\nIn Python, choices are written with conditionals: if, elif, and else.",
-      "lesson_count": 5,
-      "name": "Week 4 – The Hero’s First Choice",
-      "order": 8,
-      "progress": {
-        "lessons": {
-          "completed_count": 0,
-          "completed_lessons": [],
-          "completion_percentage": 0,
-          "total_count": 5
-        },
-        "overall": {
-          "completed_items": 0,
-          "completion_percentage": 0,
-          "is_complete": false,
-          "total_items": 5
-        },
-        "videos": {
-          "completion_percentage": 0,
-          "total_count": 0,
-          "watched_count": 0,
-          "watched_videos": []
-        }
-      },
-      "question_count": 0,
-      "status": "active",
-      "video_count": 0
-    },
     "week_1": {
       "description": "Meet Python & Hello World - Learn print() and comments through an RPG adventure",
       "estimated_time": "1 hour",
       "lesson_count": 10,
       "name": "Week 1 - The Hero Awakens",
-      "order": 9,
+      "order": 7,
       "prerequisites": [],
       "progress": {
         "lessons": {
-          "completed_count": 0,
-          "completed_lessons": [],
-          "completion_percentage": 0,
-          "total_count": 10
-        },
-        "overall": {
-          "completed_items": 0,
-          "completion_percentage": 0,
-          "is_complete": false,
-          "total_items": 10
+          "completed_count": 9,
+          "total_count": 10,
+          "completion_percentage": 90.0,
+          "completed_lessons": [
+            "adventure-begins",
+            "challenge-prologue",
+            "comments-in-python",
+            "intro-to-python",
+            "print-function",
+            "print-multiple-values",
+            "training-drill-1",
+            "training-drill-2",
+            "week-1-summary"
+          ]
         },
         "videos": {
-          "completion_percentage": 0,
-          "total_count": 0,
           "watched_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
           "watched_videos": []
+        },
+        "overall": {
+          "completed_items": 9,
+          "total_items": 10,
+          "completion_percentage": 90.0,
+          "is_complete": false
         }
       },
       "question_count": 10,
@@ -265,31 +217,106 @@
       "estimated_time": "1.5 hours",
       "lesson_count": 12,
       "name": "Week 2 - Hero Stats Training",
-      "order": 10,
+      "order": 8,
       "prerequisites": [
         "week_1"
       ],
       "progress": {
         "lessons": {
-          "completed_count": 0,
-          "completed_lessons": [],
-          "completion_percentage": 0,
-          "total_count": 12
-        },
-        "overall": {
-          "completed_items": 0,
-          "completion_percentage": 0,
-          "is_complete": false,
-          "total_items": 12
+          "completed_count": 11,
+          "total_count": 12,
+          "completion_percentage": 91.66666666666666,
+          "completed_lessons": [
+            "challenge-hero-card",
+            "checking-data-types",
+            "intro-to-data-types",
+            "intro-to-variables",
+            "printing-different-types",
+            "story-setup-hero-stats",
+            "training-drill-1-coins",
+            "training-drill-2-stats",
+            "training-drill-3-alive",
+            "training-drill-4-weapon",
+            "week-2-summary"
+          ]
         },
         "videos": {
-          "completion_percentage": 0,
-          "total_count": 0,
           "watched_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
           "watched_videos": []
+        },
+        "overall": {
+          "completed_items": 11,
+          "total_items": 12,
+          "completion_percentage": 91.66666666666666,
+          "is_complete": false
         }
       },
       "question_count": 11,
+      "status": "active",
+      "video_count": 0
+    },
+    "week-3": {
+      "description": "Your hero has stats now, but the villagers are not impressed. They shout:\n\"Traveler, tell us your name! How many coins do you carry? How strong are you?\"\n\nTo answer them, your hero needs to listen and respond. This is where we use input() and friendly output.",
+      "lesson_count": 0,
+      "name": "Week 3 – Speak with the Villagers",
+      "order": 9,
+      "progress": {
+        "lessons": {
+          "completed_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "completed_lessons": []
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "watched_videos": []
+        },
+        "overall": {
+          "completed_items": 0,
+          "total_items": 0,
+          "completion_percentage": 0,
+          "is_complete": false
+        }
+      },
+      "question_count": 0,
+      "status": "active",
+      "video_count": 0
+    },
+    "week-4": {
+      "description": "Your hero steps bravely into the forest. Birds sing… until suddenly — BAM! 🐉\nA monster blocks the path.\n\nThe villagers whisper:\n\"Now we’ll see if this hero is smart… or just lunch.\"\n\nIt’s time for your first big choice:\n\nWill you fight the monster?\n\nWill you run away (screaming, probably)?\n\nOr will you bribe it with shiny coins?\n\nIn Python, choices are written with conditionals: if, elif, and else.",
+      "lesson_count": 5,
+      "name": "Week 4 – The Hero’s First Choice",
+      "order": 10,
+      "progress": {
+        "lessons": {
+          "completed_count": 4,
+          "total_count": 5,
+          "completion_percentage": 80.0,
+          "completed_lessons": [
+            "challenge_quest_–_the_monster’s_challenge",
+            "comparison_operators",
+            "python_conditions",
+            "summary"
+          ]
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "watched_videos": []
+        },
+        "overall": {
+          "completed_items": 4,
+          "total_items": 5,
+          "completion_percentage": 80.0,
+          "is_complete": false
+        }
+      },
+      "question_count": 0,
       "status": "active",
       "video_count": 0
     }
