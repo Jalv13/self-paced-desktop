@@ -37,9 +37,7 @@
       "lesson_count": 0,
       "name": "Python Dictionaries",
       "order": 2,
-      "prerequisites": [
-        "lists"
-      ],
+      "prerequisites": ["lists"],
       "progress": {
         "overall": {
           "completion_percentage": 0,
@@ -56,13 +54,7 @@
       "lesson_count": 0,
       "name": "NumPy Arrays",
       "order": 3,
-      "prerequisites": [
-        "functions",
-        "dictionaries",
-        "lists",
-        "loops",
-        "sets"
-      ],
+      "prerequisites": ["functions", "dictionaries", "lists", "loops", "sets"],
       "progress": {
         "lessons": {
           "completed_count": 0,
@@ -84,11 +76,9 @@
         }
       },
       "question_count": 0,
-      "status": "active",
+      "status": "inactive",
       "video_count": 0,
-      "tags": [
-        "rest"
-      ]
+      "tags": ["rest"]
     },
     "lists": {
       "description": "Understand Python's built-in list data structure and list comprehensions",
@@ -158,9 +148,7 @@
       "lesson_count": 0,
       "name": "Python Sets",
       "order": 6,
-      "prerequisites": [
-        "lists"
-      ],
+      "prerequisites": ["lists"],
       "progress": {
         "overall": {
           "completion_percentage": 0,
@@ -234,7 +222,7 @@
       "estimated_time": "1 hour",
       "lesson_count": 10,
       "name": "Week 1 - The Hero Awakens",
-      "order": 9,
+      "order": 7,
       "prerequisites": [],
       "progress": {
         "lessons": {
@@ -265,10 +253,8 @@
       "estimated_time": "1.5 hours",
       "lesson_count": 12,
       "name": "Week 2 - Hero Stats Training",
-      "order": 10,
-      "prerequisites": [
-        "week_1"
-      ],
+      "order": 8,
+      "prerequisites": ["week_1"],
       "progress": {
         "lessons": {
           "completed_count": 0,
@@ -290,6 +276,69 @@
         }
       },
       "question_count": 11,
+      "status": "active",
+      "video_count": 0
+    },
+    "week-3": {
+      "description": "Your hero has stats now, but the villagers are not impressed. They shout:\n\"Traveler, tell us your name! How many coins do you carry? How strong are you?\"\n\nTo answer them, your hero needs to listen and respond. This is where we use input() and friendly output.",
+      "lesson_count": 0,
+      "name": "Week 3 – Speak with the Villagers",
+      "order": 9,
+      "progress": {
+        "lessons": {
+          "completed_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "completed_lessons": []
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "watched_videos": []
+        },
+        "overall": {
+          "completed_items": 0,
+          "total_items": 0,
+          "completion_percentage": 0,
+          "is_complete": false
+        }
+      },
+      "question_count": 0,
+      "status": "active",
+      "video_count": 0
+    },
+    "week-4": {
+      "description": "Your hero steps bravely into the forest. Birds sing… until suddenly — BAM! 🐉\nA monster blocks the path.\n\nThe villagers whisper:\n\"Now we’ll see if this hero is smart… or just lunch.\"\n\nIt’s time for your first big choice:\n\nWill you fight the monster?\n\nWill you run away (screaming, probably)?\n\nOr will you bribe it with shiny coins?\n\nIn Python, choices are written with conditionals: if, elif, and else.",
+      "lesson_count": 5,
+      "name": "Week 4 – The Hero’s First Choice",
+      "order": 10,
+      "progress": {
+        "lessons": {
+          "completed_count": 4,
+          "total_count": 5,
+          "completion_percentage": 80.0,
+          "completed_lessons": [
+            "challenge_quest_–_the_monster’s_challenge",
+            "comparison_operators",
+            "python_conditions",
+            "summary"
+          ]
+        },
+        "videos": {
+          "watched_count": 0,
+          "total_count": 0,
+          "completion_percentage": 0,
+          "watched_videos": []
+        },
+        "overall": {
+          "completed_items": 4,
+          "total_items": 5,
+          "completion_percentage": 80.0,
+          "is_complete": false
+        }
+      },
+      "question_count": 0,
       "status": "active",
       "video_count": 0
     }

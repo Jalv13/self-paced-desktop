@@ -9,6 +9,7 @@ from .data_service import DataService
 from .progress_service import ProgressService
 from .ai_service import AIService
 from .admin_service import AdminService
+from .user_service import UserService
 
 
 class ServiceFactory:
@@ -21,6 +22,7 @@ class ServiceFactory:
         self._progress_service = None
         self._ai_service = None
         self._admin_service = None
+        self._user_service = None
 
     @property
     def data_service(self) -> DataService:
@@ -50,6 +52,13 @@ class ServiceFactory:
             self._admin_service = AdminService(self.data_service, self.progress_service)
         return self._admin_service
 
+    @property
+    def user_service(self) -> UserService:
+        """Get or create the user service instance."""
+        if self._user_service is None:
+            self._user_service = UserService()
+        return self._user_service
+
     def get_all_services(self) -> dict:
         """Get all service instances as a dictionary."""
         return {
@@ -57,6 +66,7 @@ class ServiceFactory:
             "progress_service": self.progress_service,
             "ai_service": self.ai_service,
             "admin_service": self.admin_service,
+            "user_service": self.user_service,
         }
 
     def reset_services(self):
@@ -65,6 +75,7 @@ class ServiceFactory:
         self._progress_service = None
         self._ai_service = None
         self._admin_service = None
+        self._user_service = None
 
 
 # Global service factory instance (will be initialized by app)
@@ -102,3 +113,8 @@ def get_ai_service() -> AIService:
 def get_admin_service() -> AdminService:
     """Get the admin service instance."""
     return get_service_factory().admin_service
+
+
+def get_user_service() -> UserService:
+    """Get the user service instance."""
+    return get_service_factory().user_service

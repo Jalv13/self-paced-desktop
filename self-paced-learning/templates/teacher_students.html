@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Teacher Dashboard | Students</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      integrity="sha512-SzlrxWUlpfuzQ+pcUCosxcglQRNAq/DZjVsC0lE40xsADsfeQoEypE+enwcjE7CkWLa4+0PqJrj2d2M7pZx1Xg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <style>
+      body {
+        background: #f2f5ff;
+        margin: 0;
+        font-family: "Inter", Arial, sans-serif;
+      }
+      header {
+        background: linear-gradient(120deg, #4338ca, #4f46e5);
+        color: #fff;
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+        box-shadow: 0 8px 24px rgba(79, 70, 229, 0.35);
+      }
+      header h1 {
+        margin: 0;
+        font-size: 2.2rem;
+        font-weight: 700;
+      }
+      main {
+        max-width: 960px;
+        margin: -60px auto 2.5rem;
+        padding: 0 1.5rem;
+      }
+      .card {
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 20px 45px rgba(30, 64, 175, 0.12);
+        padding: 2.5rem;
+      }
+      .teacher-code {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #eef2ff;
+        border-radius: 14px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 2rem;
+        color: #312e81;
+        font-weight: 600;
+      }
+      .students-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .student-item {
+        background: #f8faff;
+        border-radius: 16px;
+        padding: 1rem 1.25rem;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 1rem;
+        align-items: center;
+        border: 1px solid transparent;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      .student-item:hover {
+        border-color: #c7d2fe;
+        box-shadow: 0 12px 24px rgba(79, 70, 229, 0.18);
+      }
+      .student-details {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+      }
+      .student-name {
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: #1e293b;
+      }
+      .student-email {
+        color: #475569;
+        font-size: 0.95rem;
+      }
+      .actions {
+        display: flex;
+        gap: 0.75rem;
+      }
+      .btn {
+        padding: 0.6rem 1rem;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 22px rgba(79, 70, 229, 0.2);
+      }
+      .btn-progress {
+        background: #4f46e5;
+        color: #fff;
+      }
+      .btn-remove {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #64748b;
+      }
+      .flash-container {
+        margin-bottom: 1.5rem;
+      }
+      .flash-message {
+        border-radius: 12px;
+        padding: 0.9rem 1.1rem;
+        border: 1px solid transparent;
+        font-weight: 500;
+        margin-bottom: 0.75rem;
+      }
+      .flash-message.info,
+      .flash-message.success {
+        background: #ecfeff;
+        color: #0f172a;
+        border-color: #bae6fd;
+      }
+      .flash-message.error {
+        background: #fee2e2;
+        color: #7f1d1d;
+        border-color: #fecaca;
+      }
+      .back-link {
+        margin-top: 2.25rem;
+        text-align: center;
+      }
+      .back-link a {
+        color: #4338ca;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+      .back-link a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Your Classroom</h1>
+      <p>Monitor progress and support every learner in your class.</p>
+    </header>
+
+    <main>
+      <div class="card">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-container">
+              {% for category, message in messages %}
+                <div class="flash-message {{ category }}">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <div class="teacher-code">
+          <span><i class="fas fa-id-card"></i> Share your teacher code</span>
+          <span>{{ code or "Unavailable" }}</span>
+        </div>
+
+        {% if students %}
+          <div class="students-list">
+            {% for student in students %}
+              <div class="student-item">
+                <div class="student-details">
+                  <span class="student-name">{{ student.username }}</span>
+                  <span class="student-email">{{ student.email }}</span>
+                </div>
+
+                <div class="actions">
+                  <a
+                    class="btn btn-progress"
+                    href="{{ url_for('teacher.student_progress', student_id=student.id) }}"
+                  >
+                    <i class="fas fa-chart-line"></i> View Progress
+                  </a>
+
+                  <form
+                    method="post"
+                    action="{{ url_for('teacher.remove_student', student_id=student.id) }}"
+                  >
+                    <button class="btn btn-remove" type="submit">
+                      <i class="fas fa-user-minus"></i> Remove
+                    </button>
+                  </form>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <p>No students enrolled yet. Share your code to invite them.</p>
+          </div>
+        {% endif %}
+
+        <div class="back-link">
+          <a href="{{ url_for('main.subject_selection') }}">
+            <i class="fas fa-arrow-left"></i> Back to learning dashboard
+          </a>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

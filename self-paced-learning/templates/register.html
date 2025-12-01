@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Create Account | Self-Paced Learning</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <style>
+      body {
+        background: radial-gradient(circle at top, #f8faff 0%, #e1e8ff 100%);
+        min-height: 100vh;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Inter", Arial, sans-serif;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      .auth-card {
+        background: #fff;
+        padding: 2.5rem 3rem;
+        border-radius: 18px;
+        width: min(460px, calc(100% - 32px));
+        box-shadow: 0 25px 55px rgba(36, 58, 115, 0.18);
+      }
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: 2rem;
+        color: #1a2244;
+        text-align: center;
+      }
+      .subtitle {
+        margin: 0 0 2rem;
+        text-align: center;
+        color: #5b678d;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+        color: #1a2244;
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 0.95rem 1rem;
+        border-radius: 12px;
+        border: 1px solid #c7d2f7;
+        margin-bottom: 1.35rem;
+        font-size: 1rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+      }
+      button {
+        width: 100%;
+        padding: 0.95rem;
+        border-radius: 12px;
+        border: none;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #fff;
+        background: linear-gradient(135deg, #6366f1, #4f46e5);
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 22px rgba(99, 102, 241, 0.25);
+      }
+      .auth-footer {
+        margin-top: 1.5rem;
+        text-align: center;
+        color: #5b678d;
+      }
+      .auth-footer a {
+        color: #4f46e5;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .auth-footer a:hover {
+        text-decoration: underline;
+      }
+      .flash-container {
+        margin-bottom: 1.25rem;
+      }
+      .flash-message {
+        padding: 0.8rem 1rem;
+        border-radius: 10px;
+        margin-bottom: 0.6rem;
+        border: 1px solid transparent;
+        font-weight: 500;
+      }
+      .flash-message.error {
+        background: #ffe5e7;
+        color: #a11828;
+        border-color: #f5b7bd;
+      }
+      .flash-message.success {
+        background: #e8fff4;
+        color: #127b49;
+        border-color: #9de2bf;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="auth-card">
+      <h1>Create Account</h1>
+      <p class="subtitle">
+        Choose your role to unlock tailored learning or teaching tools.
+      </p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-container">
+            {% for category, message in messages %}
+              <div class="flash-message {{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="post" action="{{ url_for('auth.register') }}">
+        <label for="username">Username</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          minlength="3"
+          maxlength="50"
+          required
+        />
+
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          autocomplete="email"
+          required
+        />
+
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          minlength="8"
+          autocomplete="new-password"
+          required
+        />
+
+        <label for="role">Role</label>
+        <select id="role" name="role" required>
+          <option value="" disabled selected>Select your role</option>
+          <option value="student">Student</option>
+          <option value="teacher">Teacher</option>
+        </select>
+
+        <button type="submit">Create Account</button>
+      </form>
+
+      <div class="auth-footer">
+        Already have an account?
+        <a href="{{ url_for('auth.login') }}">Log in</a>.
+      </div>
+    </section>
+  </body>
+</html>
