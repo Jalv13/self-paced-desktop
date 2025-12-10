@@ -1,0 +1,605 @@
+{
+  "lessons": [
+    {
+      "subject": "python",
+      "subtopic": "week-5",
+      "lesson_id": "python_arithmetic_operators",
+      "id": "python_arithmetic_operators",
+      "title": "Python Arithmetic Operators",
+      "lessonType": "initial",
+      "videoId": "",
+      "tags": [],
+      "order": 2,
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "The villagers cheer as you enter the battlefield… until — SPLAT! 🟢👾 \nA slime monster named *Jellothor* jiggles out of the bushes. It smells like expired pudding. \n \nThe Math Wizard Menthus yells: “Quick! Use your numbers before it multiplies!” \n \nWelcome, hero, to *Battle Math* — where every swing, heal, and loot split depends on operators. "
+        },
+        {
+          "type": "header",
+          "text": "Arithmetic Operators"
+        },
+        {
+          "type": "paragraph",
+          "text": "Operators are your battle skills! Each one has a secret power: \n\n+ → Heal HP 🧪 \n- → Take Damage 🩸 \n* → Multiply Attack ⚔️⚔️ \n/ → Split Loot 💰💰💰 \n\n💡 Think of them as your hero’s four basic moves! "
+        },
+        {
+          "type": "header",
+          "text": "Hero Training Drill 1 – First Punch 👊"
+        },
+        {
+          "type": "paragraph",
+          "text": "The slime punches! You must calculate your remaining HP before fainting. \n\nInstructions: \n1. Start with hero_hp = 100 \n2. Subtract 25 damage \n3. Print HP left "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n",
+          "expected_output": "The monster punches you! HP left: 75 ",
+          "hints": [
+            "Use the \"-\" operator"
+          ],
+          "solution": "hero_hp = 100 \nhero_hp = hero_hp - 25 \nprint(\"The monster punches you! HP left:\", hero_hp) "
+        }
+      ],
+      "type": "initial",
+      "updated_date": "2025-10-02"
+    },
+    {
+      "subject": "python",
+      "subtopic": "week-5",
+      "lesson_id": "python-floor-division",
+      "id": "python-floor-division",
+      "title": "Python Floor Division",
+      "lessonType": "initial",
+      "videoId": "",
+      "tags": [],
+      "order": 1,
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "Normal division (/) gives decimals, but heroes only deal in *whole coins*. \n🧝‍♂️ The Loot Goblin Glimmer says: “We share coins… but I keep the leftovers!” \n\ncoins = 50 \nplayers = 3 \nprint(coins // players)  # 16 coins each \n\n💡 Floor division // means 'only the whole coins, no decimals allowed!' "
+        },
+        {
+          "type": "header",
+          "text": "Hero Training Drill 2 – Goblin Loot 💰"
+        },
+        {
+          "type": "paragraph",
+          "text": "You defeat a goblin carrying 25 coins. \nDivide the loot between 4 heroes with \"//\" and print how many each gets. "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n",
+          "expected_output": "Each hero gets 6 coins.",
+          "hints": [],
+          "solution": "coins = 25 \nplayers = 4 \nprint(\"Each hero gets\", coins // players, \"coins.\")"
+        }
+      ],
+      "type": "initial",
+      "updated_date": "2025-10-02"
+    },
+    {
+      "subject": "python",
+      "subtopic": "week-5",
+      "lesson_id": "python-modulus",
+      "id": "python-modulus",
+      "title": "Python Modulus",
+      "lessonType": "initial",
+      "videoId": "",
+      "tags": [],
+      "order": 3,
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "The % operator is for leftovers! Perfect for counting spare loot or broken swords. \n🐱 Healer Cat Meowlin: “One extra coin? I’ll just use it to buy milk.” \n\ncoins = 25 \nplayers = 4 \nprint(coins % players)   # 1 coin left "
+        },
+        {
+          "type": "header",
+          "text": "Hero Training Drill 3 – The Lonely Coin 🪙"
+        },
+        {
+          "type": "paragraph",
+          "text": "You defeat a goblin carrying 25 coins.\nFind out how many coins remain after the goblin loot is split between 4 players. "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n",
+          "expected_output": "Lonely leftover coin: 1",
+          "hints": [
+            "Use the \"%\" operator."
+          ],
+          "solution": "coins = 25 \nplayers = 4 \nprint(\"Lonely leftover coin:\", coins % players)"
+        }
+      ],
+      "type": "initial",
+      "updated_date": "2025-10-02"
+    },
+    {
+      "subject": "python",
+      "subtopic": "week-5",
+      "lesson_id": "python-exponent",
+      "id": "python-exponent",
+      "title": "Python Exponent",
+      "lessonType": "initial",
+      "videoId": "",
+      "tags": [],
+      "order": 4,
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "The ** operator is your *Power-Up Spell*! It’s like casting ‘CRITICAL HIT MODE!’ \n⚡ The Math Wizard Menthus waves his staff: “Raise it to the power of doom!” \n\nattack = 7 \ncritical = attack ** 2 \nprint(\"Critical hit damage:\", critical) \n \n# Output: \nCritical hit damage: 49 "
+        },
+        {
+          "type": "header",
+          "text": "Hero Training Drill 4 – Mega Fireball 🔥 "
+        },
+        {
+          "type": "paragraph",
+          "text": "Your wizard sneezes out a fireball. Base damage = 5. Critical fireball damage = base ** 3. "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n",
+          "expected_output": "The wizard sneezes... FIREBALL! Damage: 125",
+          "hints": [
+            "Use the \"**\" operator."
+          ],
+          "solution": "attack = 5 \ncritical = attack ** 3 \nprint(\"The wizard sneezes... FIREBALL! Damage:\", critical)"
+        }
+      ],
+      "type": "initial",
+      "updated_date": "2025-10-02"
+    },
+    {
+      "subject": "python",
+      "subtopic": "week-5",
+      "lesson_id": "python-precedence",
+      "id": "python-precedence",
+      "title": "Python Precedence",
+      "lessonType": "initial",
+      "videoId": "",
+      "tags": [],
+      "order": 5,
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "When battles get chaotic, your hero performs multiple moves at once. \nPython follows *PEMDAS* — Parentheses, Exponent, Multiply/Divide, Add/Subtract. \n\ndamage = 10 + 5 * 2 \nprint(damage)  # 20, not 30 \n\n💡 Without parentheses, your hero might heal first… then faint anyway. "
+        },
+        {
+          "type": "header",
+          "text": "Hero Training Drill 5 – Goblin Claw Combo 🩸 "
+        },
+        {
+          "type": "paragraph",
+          "text": "The goblin claws for (5 + 3) * 2 damage. Calculate total damage. "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n",
+          "expected_output": "Goblin claws you for 16 damage!",
+          "hints": [],
+          "solution": "damage = (5 + 3) * 2 \nprint(\"Goblin claws you for\", damage, \"damage!\")"
+        }
+      ],
+      "type": "initial",
+      "updated_date": "2025-10-02"
+    },
+    {
+      "subject": "python",
+      "subtopic": "week-5",
+      "lesson_id": "challenge-quest-the-epic-slime-battle",
+      "id": "challenge-quest-the-epic-slime-battle",
+      "title": "Challenge Quest - The Epic Slime Battle",
+      "lessonType": "initial",
+      "videoId": "",
+      "tags": [],
+      "order": 6,
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "✨ Story: \nYou face the mighty Slime King Jellothor. \nStats: \n- Hero HP = 100 \n- Monster attack = 18 \n- Monster critical = attack ** 2 \n- Healer Cat restores 10 HP \n- Treasure chest = 47 coins shared among 3 allies \n\nYour mission: perform full battle math to survive and count your loot. "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n\n\n# Normal attack\n\n\n# Critical Hits\n\n\n# Heal\n\n\n# Loot",
+          "expected_output": "The Slime King squishes you! HP left: 82 \nCRITICAL SLIME SPLASH! HP left: -242 \nThe healer gives you soup. HP left: -232 \nEach hero gets 11 coins. \nLeftover coins: 3",
+          "hints": [
+            "Utilize each arithmetic operator."
+          ],
+          "solution": "hero_hp = 100 \nmonster_attack = 18 \n \n# Normal attack \nhero_hp -= monster_attack \nprint(\"The Slime King squishes you! HP left:\", hero_hp) \n \n# Critical hit \ncritical = monster_attack ** 2 \nhero_hp -= critical \nprint(\"CRITICAL SLIME SPLASH! HP left:\", hero_hp) \n \n# Heal \nhero_hp += 10 \nprint(\"The healer gives you soup. HP left:\", hero_hp) \n \n# Loot \ncoins = 47 \nallies = 4 \nprint(\"Each hero gets\", coins // allies, \"coins.\") \nprint(\"Leftover coins:\", coins % allies)"
+        }
+      ],
+      "type": "initial",
+      "updated_date": "2025-10-02"
+    },
+    {
+      "subject": "python",
+      "subtopic": "week-5",
+      "lesson_id": "summary-operators-and-expressions",
+      "id": "summary-operators-and-expressions",
+      "title": "Summary",
+      "lessonType": "initial",
+      "videoId": "",
+      "tags": [],
+      "order": 7,
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "So far, heroes master all Python operators — +, -, *, /, //, %, and **. \nThey understand operator precedence with parentheses. \nBattle math becomes second nature! \n \nTheir hero has (barely) survived the Slime King’s wrath — stronger, smarter, and a little slimier. \n \n👉 Next week: Survive multiple rounds of battle using loops! "
+        }
+      ],
+      "type": "initial",
+      "updated_date": "2025-10-02"
+    },
+    {
+      "subject": "python",
+      "subtopic": "week-5",
+      "lesson_id": "remedial-python-arithmetic-operators",
+      "id": "remedial-python-arithmetic-operators",
+      "title": "Remedial Python Arithmetic Operators",
+      "lessonType": "remedial",
+      "videoId": "",
+      "tags": [],
+      "order": 1,
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "🧙‍♂️ The Math Wizard Menthus says: “Every hero must master the four sacred moves of math!” \n \n💡 Concept Review: \nArithmetic operators control your hero’s power in battles: \n+ → heal or add HP \n- → take damage or lose items \n* → double or multiply effects \n/ → split loot evenly "
+        },
+        {
+          "type": "header",
+          "text": "🧾 Examples "
+        },
+        {
+          "type": "code",
+          "text": "hero_hp = 90 \nhero_hp = hero_hp + 10 \nprint(\"You drink a potion! HP:\", hero_hp) \n \ndamage = 20 \nhero_hp = hero_hp - damage \nprint(\"A bat bites! HP left:\", hero_hp) \n\nOutput: \nYou drink a potion! HP: 100 \nA bat bites! HP left: 80 "
+        },
+        {
+          "type": "header",
+          "text": "🎯 Practice Drills for Arithmetic Operators "
+        },
+        {
+          "type": "paragraph",
+          "text": "Drill A1 – The Healing Potion 🧪 \n- Task: Start with hero_hp = 60. Heal by 25. Print new HP. "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n",
+          "expected_output": "HP after potion: 85",
+          "hints": [
+            "Use the \"+\" operator."
+          ],
+          "solution": "hero_hp = 60 \nhero_hp += 25 \nprint('HP after potion:', hero_hp)"
+        },
+        {
+          "type": "paragraph",
+          "text": "Drill A2 – The Bat Attack 🦇 \n- Task: Start with hero_hp = 90. Take 35 damage. Print remaining HP. "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n",
+          "expected_output": "Remaining HP: 55",
+          "hints": [
+            "Use the \"-\" operator."
+          ],
+          "solution": "hero_hp = 90 \nhero_hp -= 35 \nprint('Remaining HP:', hero_hp)"
+        },
+        {
+          "type": "paragraph",
+          "text": "Drill A3 – Split the Gold 💰\n- Task: You have 60 coins and 3 allies. Use / to show equal split."
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n",
+          "expected_output": "Each ally gets 20.0 coins",
+          "hints": [],
+          "solution": "coins = 60 \nallies = 3 \nprint('Each ally gets', coins / allies, 'coins')"
+        },
+        {
+          "type": "paragraph",
+          "text": "Drill A4 – Mini-Battle: Slimelet Swarm 👾\n- Each slimelet deals 5 damage. There are 4 of them. \n- Your HP = 120. Calculate final HP after battle."
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\nprint(\"Hello, World!\")",
+          "expected_output": "HP after swarm: 100",
+          "hints": [
+            "Use the \"*\" and \"-\" operators."
+          ],
+          "solution": "hero_hp = 120 \nslime_damage = 5 * 4 \nhero_hp -= slime_damage \nprint('HP after swarm:', hero_hp)"
+        }
+      ],
+      "type": "remedial",
+      "updated_date": "2025-10-02"
+    },
+    {
+      "subject": "python",
+      "subtopic": "week-5",
+      "lesson_id": "remedial-python-floor-division",
+      "id": "remedial-python-floor-division",
+      "title": "Remedial Python Floor Division",
+      "lessonType": "remedial",
+      "videoId": "",
+      "tags": [],
+      "order": 2,
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "🪙 The Goblin Glimmer snickers: “Heroes never share loot evenly, but I do love counting!”\n\n💡 Concept Review: \n// divides numbers and returns only the whole part of the result (no decimals)."
+        },
+        {
+          "type": "header",
+          "text": "🧾 Examples "
+        },
+        {
+          "type": "code",
+          "text": "coins = 53 \nheroes = 4 \nprint(coins // heroes)   # Each gets 13 coins "
+        },
+        {
+          "type": "header",
+          "text": "🎯 Practice Drills for Floor Division"
+        },
+        {
+          "type": "paragraph",
+          "text": "Drill F1 – Fair Share 💰 \n- Task: 25 coins shared by 4 heroes. Print how many coins each hero gets (whole number). "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n",
+          "expected_output": "Each hero gets 6 coins",
+          "hints": [
+            "Use the \"//\" operator."
+          ],
+          "solution": "coins = 25 \nheroes = 4 \nprint('Each hero gets', coins // heroes, 'coins')"
+        },
+        {
+          "type": "code",
+          "text": "Drill F2 – The Greedy Goblin 🧌 \n- Task: 37 gems split among 5 goblins. Use // to see how many each gets. "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n",
+          "expected_output": "Each goblin grabs 7 gems",
+          "hints": [],
+          "solution": "gems = 37 \ngoblins = 5 \nprint('Each goblin grabs', gems // goblins, 'gems')"
+        },
+        {
+          "type": "code",
+          "text": "Drill F3 – Loot Festival 🎉 \n- Task: You win 99 gold pieces and have 8 allies. Calculate gold per ally. "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n",
+          "expected_output": "Output: Each ally gets 12 gold coins",
+          "hints": [],
+          "solution": "gold = 99 \nallies = 8 \nprint('Each ally gets', gold // allies, 'gold coins')"
+        }
+      ],
+      "type": "remedial",
+      "updated_date": "2025-10-02"
+    },
+    {
+      "subject": "python",
+      "subtopic": "week-5",
+      "lesson_id": "remedial-python-modulus",
+      "id": "remedial-python-modulus",
+      "title": "Remedial Python Modulus",
+      "lessonType": "remedial",
+      "videoId": "",
+      "tags": [],
+      "order": 3,
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "🐾 The Healer Cat Meowlin meows: “The % operator finds leftovers — just like leftover soup!” \n \n💡 Concept Review: \n% gives the remainder after division. Useful for leftover coins or items. "
+        },
+        {
+          "type": "header",
+          "text": "🧾 Examples "
+        },
+        {
+          "type": "code",
+          "text": "coins = 25 \nplayers = 4 \nprint(\"Leftover coins:\", coins % players) # 1 leftover coin"
+        },
+        {
+          "type": "paragraph",
+          "text": "Drill M1 – Lost Coin 🪙 \n- Task: 37 coins split among 6 players. Find leftover coins. "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n",
+          "expected_output": "Leftover coins: 1",
+          "hints": [],
+          "solution": "coins = 37 \nplayers = 6 \nprint('Leftover coins:', coins % players"
+        },
+        {
+          "type": "paragraph",
+          "text": "Drill M2 – Potion Bottles 🧴 \n- Task: 50 potions stored 9 per shelf. How many remain? "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n",
+          "expected_output": "Potions remaining: 5",
+          "hints": [],
+          "solution": "potions = 50 \nshelf = 9 \nprint('Potions remaining:', potions % shelf"
+        },
+        {
+          "type": "paragraph",
+          "text": "Drill M3 – Goblin’s Socks 🧦 \n- Task: 47 socks packed 8 per bag. How many socks remain? "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\n",
+          "expected_output": "Socks left: 7",
+          "hints": [],
+          "solution": "socks = 47 \nbag = 8 \nprint('Socks left:', socks % bag)"
+        }
+      ],
+      "type": "remedial",
+      "updated_date": "2025-10-02"
+    },
+    {
+      "subject": "python",
+      "subtopic": "week-5",
+      "lesson_id": "remeidal-python-exponent",
+      "id": "remeidal-python-exponent",
+      "title": "Remedial Python Exponent",
+      "lessonType": "remedial",
+      "videoId": "",
+      "tags": [],
+      "order": 4,
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "🧙‍♂️ The Math Wizard Menthus chants: “Raise your numbers to the power of glory!” \n \n💡 Concept Review: \n** raises one number to the power of another. "
+        },
+        {
+          "type": "header",
+          "text": "🧾 Examples "
+        },
+        {
+          "type": "code",
+          "text": "attack = 6 \npower = attack ** 2 \nprint(\"Critical hit damage:\", power) # 35 critical hit damage"
+        },
+        {
+          "type": "header",
+          "text": "🎯 Practice Drills for Exponent "
+        },
+        {
+          "type": "paragraph",
+          "text": "Drill E1 – Power Surge ⚡ \n- Task: attack = 3. Print attack squared (** 2). "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\nprint(\"Hello, World!\")",
+          "expected_output": "Attack power: 9",
+          "hints": [],
+          "solution": "attack = 3 \nprint('Attack power:', attack ** 2)"
+        },
+        {
+          "type": "paragraph",
+          "text": "Drill E2 – Mega Blast 💥 \n- Task: base = 4. Calculate base ** 3. "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\nprint(\"Hello, World!\")",
+          "expected_output": "Mega blast damage: 64",
+          "hints": [],
+          "solution": "base = 4 \nprint('Mega blast damage:', base ** 3)"
+        },
+        {
+          "type": "paragraph",
+          "text": "Drill E3 – Wizard Duel 🧙‍♀️ \n- Task: hero = 2, villain = 5. Compute villain ** hero. "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\nprint(\"Hello, World!\")",
+          "expected_output": "Villain’s spell power: 25",
+          "hints": [],
+          "solution": "hero = 2 \nvillain = 5 \nprint('Villain’s spell power:', villain ** hero)"
+        }
+      ],
+      "type": "remedial",
+      "updated_date": "2025-10-02"
+    },
+    {
+      "subject": "python",
+      "subtopic": "week-5",
+      "lesson_id": "remedial-python-precedence",
+      "id": "remedial-python-precedence",
+      "title": "Remedial Python Precedence",
+      "lessonType": "remedial",
+      "videoId": "",
+      "tags": [],
+      "order": 5,
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "💡 Concept Review: \nOrder of operations matters! Python follows PEMDAS. \nParentheses first, then Exponents, Multiplication/Division, and finally Addition/Subtraction. "
+        },
+        {
+          "type": "header",
+          "text": "🧾 Examples "
+        },
+        {
+          "type": "code",
+          "text": "damage = 10 + 5 * 2 \nprint(damage)   # 20 \n\ndamage = (10 + 5) * 2 \nprint(damage)   # 30 "
+        },
+        {
+          "type": "header",
+          "text": "🎯 Practice Drills for Precedence "
+        },
+        {
+          "type": "paragraph",
+          "text": "Drill P1 – Simple Order 🧮 \n- Task: Calculate 10 + 3 * 2. "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\nprint(\"Hello, World!\")",
+          "expected_output": "16",
+          "hints": [],
+          "solution": "print(10 + 3 * 2)"
+        },
+        {
+          "type": "paragraph",
+          "text": "Drill P2 – Bracketed Attack 🧠 \n- Task: Calculate (10 + 3) * 2. "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\nprint(\"Hello, World!\")",
+          "expected_output": "26",
+          "hints": [],
+          "solution": "print((10 + 3) * 2)"
+        },
+        {
+          "type": "paragraph",
+          "text": "Drill P3 – Potion Brew Accident 🧪 \n- Task: A formula (5 + 2) ** 2 / 3. Compute its value. "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\nprint(\"Hello, World!\")",
+          "expected_output": "16.333333333333332",
+          "hints": [],
+          "solution": "print((5 + 2) ** 2 / 3)"
+        }
+      ],
+      "type": "remedial",
+      "updated_date": "2025-10-02"
+    },
+    {
+      "subject": "python",
+      "subtopic": "week-5",
+      "lesson_id": "remedial-arithmetic-floordivision-modulus-exponent-precedence",
+      "id": "remedial-arithmetic-floordivision-modulus-exponent-precedence",
+      "title": "Remedial Python Review All",
+      "lessonType": "remedial",
+      "videoId": "",
+      "tags": [],
+      "order": 6,
+      "content": [
+        {
+          "type": "paragraph",
+          "text": "🧙‍♀️ The Math Wizard Duel – Final Challenge ⚔️ \nThe wizard Meowlin challenges you to a duel of numbers! \nYou must use everything you’ve learned to calculate the result of multiple operations. "
+        },
+        {
+          "type": "header",
+          "text": "🎯 Practice: Hero vs. Math Wizard Duel "
+        },
+        {
+          "type": "paragraph",
+          "text": "Step 1: Hero starts with HP = 120 \nStep 2: Takes (5 + 3) * 4 damage \nStep 3: Heals by 15 HP \nStep 4: Casts Power Spell (base = 3, power = base ** 3) \nStep 5: Treasure 47 coins shared among 4 allies (use // and %). "
+        },
+        {
+          "type": "code_runner",
+          "starter_code": "# Write your Python code here\nprint(\"Hello, World!\")",
+          "expected_output": "Hero HP: 103 \nPower Spell: 27 \nEach ally gets 11 coins \nLeftover coins: 3",
+          "hints": [],
+          "solution": "hero_hp = 120 \nhero_hp -= (5 + 3) * 4 \nhero_hp += 15 \npower = 3 ** 3 \ncoins = 47 \nallies = 4 \nprint(\"Hero HP:\", hero_hp) \nprint(\"Power Spell:\", power) \nprint(\"Each ally gets\", coins // allies, \"coins\") \nprint(\"Leftover coins:\", coins % allies) \n"
+        }
+      ],
+      "type": "remedial",
+      "updated_date": "2025-10-02"
+    }
+  ],
+  "updated_date": "2025-10-02"
+}

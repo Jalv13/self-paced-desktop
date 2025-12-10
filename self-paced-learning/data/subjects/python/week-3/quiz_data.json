@@ -1,0 +1,27 @@
+{
+  "quiz_title": "Python - Week-3 Quiz",
+  "questions": [
+    {
+      "answer_index": 1,
+      "options": [
+        "Displays a message on the screen",
+        "Reads user input as text",
+        "Converts text to numbers",
+        "Ends the program"
+      ],
+      "question": "What does the input() function do in Python?",
+      "tags": [],
+      "type": "multiple_choice"
+    },
+    {
+      "question": "Ask the player for their village name using input() and print: \u201cYou come from <village>.\u201d",
+      "sample_solution": "village = input(\"What village are you from? \")\n\nprint(\"You come from\", village + \".\")\n",
+      "starter_code": "",
+      "tags": [
+        "input"
+      ],
+      "type": "coding"
+    }
+  ],
+  "updated_date": "2025-01-01"
+}

@@ -1,0 +1,27 @@
+{
+  "pool_title": "Python - Week-4 Question Pool",
+  "questions": [
+    {
+      "answer_index": 1,
+      "options": [
+        "You run away!",
+        "The monster attacks!",
+        "Nothing happens",
+        "Error"
+      ],
+      "question": "If hero_choice = 'SLEEP', what happens?\nif hero_choice == 'RUN':\n    print('You run away!')\nelse:\n    print('The monster attacks!')",
+      "tags": [
+        "if-else"
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "type": "coding",
+      "question": "hero_coins = 12\npotion_cost = 10\nif hero_coins >= potion_cost:\n    print('You buy the potion!')\nelse:\n    print('Not enough coins!')",
+      "tags": [],
+      "starter_code": "",
+      "sample_solution": "You buy the potion!"
+    }
+  ],
+  "updated_date": "2025-01-01"
+}
