@@ -170,7 +170,9 @@ def check_subtopic_progress(subject, subtopic):
             return jsonify({"error": "Subject/subtopic not found"}), 404
 
         # Get content counts
-        lessons = data_service.get_lesson_plans(subject, subtopic)
+        lessons = data_service.get_lesson_plans(
+            subject, subtopic, include_unlisted=False
+        )
         videos_data = data_service.get_video_data(subject, subtopic)
 
         lesson_count = len(lessons) if lessons else 0
@@ -216,43 +218,29 @@ def api_lesson_plans(subject, subtopic):
         if not data_service.validate_subject_subtopic(subject, subtopic):
             return jsonify({"error": "Subject/subtopic not found"}), 404
 
-        # Get lesson plans
-        lesson_data = data_service.data_loader.load_lesson_plans(subject, subtopic)
+        lessons = data_service.get_lesson_plans(
+            subject, subtopic, include_unlisted=False
+        )
 
-        if not lesson_data or "lessons" not in lesson_data:
+        if not lessons:
             return jsonify({"lessons": {}, "message": "No lessons found"})
 
-        raw_lessons = lesson_data["lessons"]
-
-        # Normalise lessons into an ordered dictionary keyed by lesson id
+        ordered_lessons = []
         normalised_lessons = {}
 
-        if isinstance(raw_lessons, dict):
-            lesson_items = list(raw_lessons.items())
-        elif isinstance(raw_lessons, list):
-            lesson_items = []
-            for index, lesson in enumerate(raw_lessons):
-                lesson_id = lesson.get("id") or f"lesson_{index + 1}"
-                lesson_items.append((lesson_id, lesson))
-        else:
-            lesson_items = []
+        for lesson in lessons:
+            if not isinstance(lesson, dict):
+                continue
 
-        def _lesson_sort(item):
-            order_value = item[1].get("order")
-            try:
-                return float(order_value)
-            except (TypeError, ValueError):
-                return 9999
-
-        for lesson_id, lesson in sorted(lesson_items, key=_lesson_sort):
             lesson_copy = dict(lesson)
-            lesson_copy["id"] = lesson_copy.get("id", lesson_id)
+            lesson_id = lesson_copy.get("id") or f"lesson_{len(ordered_lessons) + 1}"
+            lesson_copy["id"] = lesson_id
             lesson_copy["completed"] = progress_service.is_lesson_complete(
-                subject, subtopic, lesson_copy["id"]
+                subject, subtopic, lesson_id
             )
-            normalised_lessons[lesson_copy["id"]] = lesson_copy
 
-        ordered_lessons = list(normalised_lessons.values())
+            ordered_lessons.append(lesson_copy)
+            normalised_lessons[lesson_id] = lesson_copy
 
         return jsonify(
             {
@@ -279,7 +267,9 @@ def api_lesson_progress_stats(subject, subtopic):
             return jsonify({"error": "Subject/subtopic not found"}), 404
 
         # Get lesson count
-        lessons = data_service.get_lesson_plans(subject, subtopic)
+        lessons = data_service.get_lesson_plans(
+            subject, subtopic, include_unlisted=False
+        )
         total_lessons = len(lessons) if lessons else 0
 
         # Get progress stats
@@ -307,7 +297,9 @@ def api_find_lessons_by_tags():
             return jsonify({"error": "Subject and tags are required"}), 400
 
         # Find lessons by tags
-        matching_lessons = data_service.find_lessons_by_tags(subject, tags)
+        matching_lessons = data_service.find_lessons_by_tags(
+            subject, tags, include_unlisted=False
+        )
 
         return jsonify(
             {
@@ -360,8 +352,16 @@ def api_get_subtopics(subject):
         # Get subject config
         subject_config = data_service.load_subject_config(subject)
         subtopics = subject_config.get("subtopics", {}) if subject_config else {}
+        active_subtopics = {
+            subtopic_id: subtopic_data
+            for subtopic_id, subtopic_data in subtopics.items()
+            if str((subtopic_data or {}).get("status", "") or "")
+            .strip()
+            .lower()
+            in ("", "active")
+        }
 
-        return jsonify({"subject": subject, "subtopics": subtopics})
+        return jsonify({"subject": subject, "subtopics": active_subtopics})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -401,7 +401,16 @@ def api_subtopic_prerequisites(subject, subtopic):
         progress_service = get_progress_service()
 
         subject_config = data_service.load_subject_config(subject) or {}
-        subtopics = subject_config.get("subtopics", {})
+        subtopics = {
+            subtopic_id: subtopic_data
+            for subtopic_id, subtopic_data in (
+                subject_config.get("subtopics", {}) or {}
+            ).items()
+            if str((subtopic_data or {}).get("status", "") or "")
+            .strip()
+            .lower()
+            in ("", "active")
+        }
 
         if subtopic not in subtopics:
             return jsonify({"error": "Subject/subtopic not found"}), 404

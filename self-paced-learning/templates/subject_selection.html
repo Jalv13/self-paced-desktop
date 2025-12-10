@@ -14,9 +14,48 @@
     />
   </head>
   <body>
+    <nav class="top-bar">
+      <div class="brand">
+        <i class="fas fa-graduation-cap"></i>
+        Self-Paced Learning
+      </div>
+      <div class="top-actions">
+        {% if username %}
+          <span class="welcome">
+            Hello, {{ username or "Learner" }}{% if is_admin %} &middot; Admin{% elif user_role %} &middot; {{ user_role|title }}{% endif %}
+          </span>
+          {% if user_role == "teacher" %}
+            <a class="link" href="{{ url_for('teacher.students') }}">
+              <i class="fas fa-users"></i> Manage Students
+            </a>
+          {% elif user_role == "student" %}
+            <a class="link" href="{{ url_for('student.view_classes') }}">
+              <i class="fas fa-chalkboard-teacher"></i> My Classes
+            </a>
+          {% endif %}
+          <a class="link danger" href="{{ url_for('auth.logout') }}">
+            <i class="fas fa-right-from-bracket"></i> Logout
+          </a>
+        {% else %}
+          <span class="welcome">Hello, please sign in to start learning</span>
+          <a class="btn-login" href="{{ url_for('auth.login') }}">
+            <i class="fas fa-right-to-bracket"></i> Log In
+          </a>
+        {% endif %}
+      </div>
+    </nav>
+
     <header>
       <h1>Choose a Subject!</h1>
-      <p class="subtitle"></p>
+      <p class="subtitle" style="text-align: center;">
+        {% if user_role == "teacher" %}
+          Explore content your classroom is working through.
+        {% elif user_role == "student" %}
+          Continue your learning journey and track your mastery.
+        {% else %}
+          Explore our subjects and dive into interactive lessons.
+        {% endif %}
+      </p>
     </header>
 
     <div class="subjects-container">
@@ -42,10 +81,17 @@
             </span>
           </div>
           <div class="subject-actions">
-            <a href="/subjects/{{ subject_id }}" class="btn btn-primary">
-              <i class="fas fa-play"></i>
-              Start Learning
-            </a>
+            {% if username %}
+              <a href="/subjects/{{ subject_id }}" class="btn btn-primary">
+                <i class="fas fa-play"></i>
+                Start Learning
+              </a>
+            {% else %}
+              <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                <i class="fas fa-right-to-bracket"></i>
+                Log In to Start Learning
+              </a>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -53,14 +99,88 @@
     </div>
 
     <!-- Admin Panel Link (Optional) -->
-    <div class="admin-link">
-      <a href="/admin" class="btn btn-secondary">
-        <i class="fas fa-cog"></i>
-        Admin Panel
-      </a>
-    </div>
+    {% if is_admin %}
+      <div class="admin-link">
+        <a href="/admin" class="btn btn-secondary">
+          <i class="fas fa-cog"></i>
+          Admin Panel
+        </a>
+      </div>
+    {% endif %}
 
     <style>
+      body {
+        margin: 0;
+        background: #f3f4ff;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-height: 60px;
+        padding: 0.75rem 1.75rem;
+        background: #0f172a;
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
+      }
+
+      .brand {
+        font-weight: 700;
+        font-size: 1.1rem;
+        display: flex;
+        gap: 0.6rem;
+        align-items: center;
+      }
+
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        font-weight: 500;
+        font-size: 0.95rem;
+        flex-wrap: nowrap;
+      }
+
+      .btn-login {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.9rem;
+        background: linear-gradient(135deg, #4f46e5, #4338ca);
+        color: #fff;
+        border-radius: 999px;
+        text-decoration: none;
+        font-weight: 600;
+        box-shadow: 0 6px 16px rgba(67, 56, 202, 0.35);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .btn-login:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px rgba(67, 56, 202, 0.35);
+      }
+
+      .top-actions .link {
+        color: #e0e7ff;
+        text-decoration: none;
+        display: inline-flex;
+        gap: 0.45rem;
+        align-items: center;
+        transition: opacity 0.15s ease;
+      }
+
+      .top-actions .link:hover {
+        opacity: 0.8;
+      }
+
+      .top-actions .link.danger {
+        color: #fca5a5;
+      }
+
       .subjects-container {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));

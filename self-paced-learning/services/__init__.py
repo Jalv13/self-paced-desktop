@@ -8,6 +8,7 @@ from .data_service import DataService
 from .progress_service import ProgressService
 from .ai_service import AIService
 from .admin_service import AdminService
+from .user_service import UserService
 from .service_factory import (
     ServiceFactory,
     init_services,
@@ -16,6 +17,7 @@ from .service_factory import (
     get_progress_service,
     get_ai_service,
     get_admin_service,
+    get_user_service,
 )
 
 __all__ = [
@@ -23,6 +25,7 @@ __all__ = [
     "ProgressService",
     "AIService",
     "AdminService",
+    "UserService",
     "ServiceFactory",
     "init_services",
     "get_service_factory",
@@ -30,4 +33,5 @@ __all__ = [
     "get_progress_service",
     "get_ai_service",
     "get_admin_service",
+    "get_user_service",
 ]

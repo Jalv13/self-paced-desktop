@@ -22,6 +22,25 @@ from typing import Dict, List, Optional, Any, Set
 main_bp = Blueprint("main", __name__)
 
 
+@main_bp.before_request
+def ensure_authenticated():
+    """Redirect anonymous users to the login page."""
+    if session.get("user_id"):
+        return None
+
+    # Allow public access to the subject selection landing page and auth routes
+    allowed_endpoints = {
+        "main.subject_selection",
+        "auth.login",
+        "auth.register",
+        "static",
+    }
+    if request.endpoint in allowed_endpoints:
+        return None
+
+    return redirect(url_for("auth.login"))
+
+
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
@@ -33,11 +52,12 @@ def get_quiz_data(subject: str, subtopic: str) -> Optional[List[Dict]]:
     return data_service.data_loader.get_quiz_questions(subject, subtopic)
 
 
-def get_lesson_plans(subject: str, subtopic: str) -> Optional[Dict]:
+def get_lesson_plans(subject: str, subtopic: str) -> List[Dict]:
     """Load lesson plans for a specific subject/subtopic."""
     data_service = get_data_service()
-    lesson_data = data_service.data_loader.load_lesson_plans(subject, subtopic)
-    return lesson_data.get("lessons", {}) if lesson_data else {}
+    return data_service.get_lesson_plans(
+        subject, subtopic, include_unlisted=False
+    ) or []
 
 
 def get_video_data(subject: str, subtopic: str) -> Optional[Dict]:
@@ -45,6 +65,24 @@ def get_video_data(subject: str, subtopic: str) -> Optional[Dict]:
     data_service = get_data_service()
     videos_data = data_service.data_loader.load_videos(subject, subtopic)
     return videos_data.get("videos", {}) if videos_data else {}
+
+
+def is_active_subtopic(subtopic_data: Dict[str, Any]) -> bool:
+    """Return True when the subtopic is considered available to learners."""
+    if not isinstance(subtopic_data, dict):
+        return False
+    status = subtopic_data.get("status")
+    normalized = "" if status is None else str(status).strip().lower()
+    return normalized in ("", "active")
+
+
+def filter_active_subtopics(subtopics: Dict[str, Any]) -> Dict[str, Any]:
+    """Filter subtopic map down to only active entries."""
+    return {
+        subtopic_id: subtopic_data
+        for subtopic_id, subtopic_data in (subtopics or {}).items()
+        if is_active_subtopic(subtopic_data)
+    }
 
 
 # ============================================================================
@@ -64,7 +102,7 @@ def subject_selection():
             subject_config = data_service.load_subject_config(subject_id)
 
             if subject_config and "subtopics" in subject_config:
-                subtopics = subject_config["subtopics"]
+                subtopics = filter_active_subtopics(subject_config["subtopics"])
                 total_lessons = 0
                 total_videos = 0
                 total_questions = 0
@@ -97,11 +135,28 @@ def subject_selection():
                     "subtopics": 0,
                 }
 
-        return render_template("subject_selection.html", subjects=subjects)
+        user_role = session.get("role")
+        username = session.get("username")
+        is_admin = session.get("is_admin", False)
+
+        return render_template(
+            "subject_selection.html",
+            subjects=subjects,
+            user_role=user_role,
+            username=username,
+            is_admin=is_admin,
+        )
 
     except Exception as e:
         print(f"Error loading subjects: {e}")
-        return render_template("subject_selection.html", subjects={})
+        user_role = session.get("role")
+        username = session.get("username")
+        return render_template(
+            "subject_selection.html",
+            subjects={},
+            user_role=user_role,
+            username=username,
+        )
 
 
 @main_bp.route("/subjects/<subject>")
@@ -119,7 +174,7 @@ def subject_page(subject):
             print(f"Subject data not found for: {subject}")
             return redirect(url_for("main.subject_selection"))
 
-        subtopics = subject_config.get("subtopics", {})
+        subtopics = filter_active_subtopics(subject_config.get("subtopics", {}))
 
         # Calculate actual counts for each subtopic by checking the files
         for subtopic_id, subtopic_data in subtopics.items():
@@ -187,7 +242,7 @@ def subtopic_prerequisites(subject, subtopic):
         if not subject_config:
             return redirect(url_for("main.subject_selection"))
 
-        subtopics = subject_config.get("subtopics", {})
+        subtopics = filter_active_subtopics(subject_config.get("subtopics", {}))
         if subtopic not in subtopics:
             return redirect(url_for("main.subject_page", subject=subject))
 
@@ -233,6 +288,13 @@ def quiz_page(subject, subtopic):
                 f"Error: Subject '{subject}' with subtopic '{subtopic}' not found.",
                 404,
             )
+
+        subject_config = data_service.load_subject_config(subject) or {}
+        subtopic_meta = (
+            subject_config.get("subtopics", {}) or {}
+        ).get(subtopic, {})
+        if not is_active_subtopic(subtopic_meta):
+            return redirect(url_for("main.subject_page", subject=subject))
 
         # Clear previous session data for this subject/subtopic
         progress_service.clear_session_data(subject, subtopic)
@@ -381,19 +443,9 @@ def show_results_page():
             normalized_topics.append(normalized)
 
         # Gather lessons for the current subject/subtopic
-        lessons_payload = (
-            data_service.data_loader.load_lesson_plans(
-                current_subject, current_subtopic
-            )
-            or {}
-        )
-        raw_lessons = lessons_payload.get("lessons", {})
-        lesson_list: List[Dict[str, Any]] = []
-
-        if isinstance(raw_lessons, dict):
-            lesson_list = list(raw_lessons.values())
-        elif isinstance(raw_lessons, list):
-            lesson_list = raw_lessons
+        lesson_list: List[Dict[str, Any]] = data_service.get_lesson_plans(
+            current_subject, current_subtopic, include_unlisted=False
+        ) or []
 
         # Sort lessons by order field to ensure predictable, pedagogical ordering
         lesson_list.sort(key=lambda x: (x.get("order", 999), x.get("id", "")))

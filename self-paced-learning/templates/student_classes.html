@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My Classes | Self-Paced Learning</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      integrity="sha512-SzlrxWUlpfuzQ+pcUCosxcglQRNAq/DZjVsC0lE40xsADsfeQoEypE+enwcjE7CkWLa4+0PqJrj2d2M7pZx1Xg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <style>
+      body {
+        background: #f4f7ff;
+        margin: 0;
+        font-family: "Inter", Arial, sans-serif;
+      }
+      header {
+        background: linear-gradient(120deg, #14b8a6, #0ea5e9);
+        color: #fff;
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+        box-shadow: 0 10px 28px rgba(14, 165, 233, 0.28);
+      }
+      header h1 {
+        margin: 0;
+        font-size: 2.2rem;
+        font-weight: 700;
+      }
+      main {
+        max-width: 820px;
+        margin: -50px auto 2.5rem;
+        padding: 0 1.5rem;
+      }
+      .card {
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 18px 40px rgba(13, 148, 136, 0.12);
+        padding: 2.25rem;
+      }
+      .flash-container {
+        margin-bottom: 1.5rem;
+      }
+      .flash-message {
+        border-radius: 12px;
+        padding: 0.9rem 1.1rem;
+        border: 1px solid transparent;
+        font-weight: 500;
+        margin-bottom: 0.75rem;
+      }
+      .flash-message.error {
+        background: #fee2e2;
+        color: #7f1d1d;
+        border-color: #fecaca;
+      }
+      .flash-message.success {
+        background: #ecfdf5;
+        color: #0f5132;
+        border-color: #86efac;
+      }
+      .section-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 1.25rem;
+      }
+      .teacher-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+        margin-bottom: 2.25rem;
+      }
+      .teacher-form input[type="text"] {
+        flex: 1 1 240px;
+        min-width: 200px;
+        padding: 0.8rem 1rem;
+        border-radius: 12px;
+        border: 1px solid #cbd5f5;
+        font-size: 1rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      .teacher-form input:focus {
+        outline: none;
+        border-color: #0ea5e9;
+        box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+      }
+      .teacher-form button {
+        background: linear-gradient(135deg, #14b8a6, #0ea5e9);
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        padding: 0.85rem 1.35rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+      .teacher-form button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 22px rgba(14, 165, 233, 0.22);
+      }
+      .class-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .class-item {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.1rem 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      }
+      .class-item:hover {
+        border-color: #bae6fd;
+        box-shadow: 0 12px 22px rgba(14, 165, 233, 0.16);
+      }
+      .class-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: #0f172a;
+        font-weight: 600;
+      }
+      .class-info i {
+        color: #0ea5e9;
+      }
+      .empty-state {
+        text-align: center;
+        color: #64748b;
+        padding: 2rem 1rem;
+      }
+      .back-link {
+        margin-top: 2.25rem;
+        text-align: center;
+      }
+      .back-link a {
+        color: #0ea5e9;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+      .back-link a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Your Learning Community</h1>
+      <p>Join your teacher's class to sync progress and earn recognition.</p>
+    </header>
+
+    <main>
+      <div class="card">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-container">
+              {% for category, message in messages %}
+                <div class="flash-message {{ category }}">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <section>
+          <h2 class="section-title">Join a Teacher's Class</h2>
+          <form
+            class="teacher-form"
+            action="{{ url_for('student.add_teacher') }}"
+            method="post"
+          >
+            <input
+              type="text"
+              name="code"
+              placeholder="Enter teacher code"
+              maxlength="10"
+              required
+            />
+            <button type="submit">
+              <i class="fas fa-user-plus"></i>
+              Join Class
+            </button>
+          </form>
+        </section>
+
+        <section>
+          <h2 class="section-title">My Enrolled Classes</h2>
+          {% if classes %}
+            <div class="class-list">
+              {% for class_item in classes %}
+                <div class="class-item">
+                  <div class="class-info">
+                    <i class="fas fa-user-graduate"></i>
+                    <span>{{ class_item.teacher_username }}</span>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty-state">
+              <p>You have not joined any classes yet.</p>
+            </div>
+          {% endif %}
+        </section>
+
+        <div class="back-link">
+          <a href="{{ url_for('main.subject_selection') }}">
+            <i class="fas fa-arrow-left"></i>
+            Back to learning dashboard
+          </a>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

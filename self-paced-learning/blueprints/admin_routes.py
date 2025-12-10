@@ -12,6 +12,7 @@ from flask import (
     redirect,
     url_for,
     Response,
+    session,
 )
 from services import get_admin_service, get_data_service
 from typing import Any, Dict, List
@@ -21,6 +22,20 @@ from datetime import datetime
 
 # Create the Blueprint
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
+
+
+# ============================================================================
+# ACCESS CONTROL
+# ============================================================================
+
+
+@admin_bp.before_request
+def require_admin():
+    """Restrict admin routes to authenticated admin users."""
+    if not session.get("user_id"):
+        return redirect(url_for("auth.login"))
+    if not session.get("is_admin"):
+        return redirect(url_for("main.subject_selection"))
 
 
 # ============================================================================
