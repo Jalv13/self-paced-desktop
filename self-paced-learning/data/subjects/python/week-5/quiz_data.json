@@ -1,0 +1,65 @@
+{
+  "quiz_title": "Python - Week-5 Quiz",
+  "questions": [
+    {
+      "answer_index": 1,
+      "content": [],
+      "options": [
+        "-",
+        "+",
+        "*",
+        "//"
+      ],
+      "question": "Which operator would you use to heal your hero by 20 HP?",
+      "tags": [],
+      "type": "multiple_choice"
+    },
+    {
+      "answer_index": 1,
+      "content": [
+        {
+          "text": "hp = 100 \nhp = hp - 30 \nprint(hp)",
+          "type": "code"
+        }
+      ],
+      "options": [
+        "100",
+        "70",
+        "30",
+        "Error"
+      ],
+      "question": "What will this code print?",
+      "tags": [],
+      "type": "multiple_choice"
+    },
+    {
+      "content": [],
+      "question": "Write code to start with hero_hp = 60, heal the hero by 15 HP, and print the new total.",
+      "sample_solution": "hero_hp = 60 \nhero_hp += 15 \nprint('Hero HP:', hero_hp)",
+      "starter_code": "",
+      "tags": [],
+      "type": "coding"
+    },
+    {
+      "content": [
+        {
+          "text": "damage = 10 * 3 - 5 \nprint(damage)",
+          "type": "code"
+        }
+      ],
+      "expected_answer": "25",
+      "question": "What is the output?",
+      "tags": [],
+      "type": "short_answer"
+    },
+    {
+      "type": "coding",
+      "question": "A monster attack reduces HP by 40. Start with hero_hp = 120 and print remaining HP.",
+      "tags": [],
+      "content": [],
+      "starter_code": "",
+      "sample_solution": "hero_hp = 120 \nhero_hp -= 40 \nprint(hero_hp)"
+    }
+  ],
+  "updated_date": "2025-01-01"
+}

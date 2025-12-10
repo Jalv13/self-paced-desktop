@@ -1,0 +1,64 @@
+{
+  "quiz_title": "Python - Week-4 Quiz",
+  "questions": [
+    {
+      "answer_index": 1,
+      "options": [
+        "You swing your sword!",
+        "You flee the battlefield!",
+        "You stand still.",
+        "Error"
+      ],
+      "question": "What will this code print if the player inputs 'RUN'?\n\nchoice = 'RUN'\nif choice == 'FIGHT':\n    print('You swing your sword!')\nelif choice == 'RUN':\n    print('You flee the battlefield!')\nelse:\n    print('You stand still.')",
+      "tags": [
+        "if-else"
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "answer_index": 1,
+      "options": [
+        "Alive!",
+        "Game Over!",
+        "Error",
+        "Nothing printed"
+      ],
+      "question": "HP Check \u2764\ufe0f\nhero_hp = 0\nif hero_hp > 0:\n    print('Alive!')\nelse:\n    print('Game Over!')",
+      "tags": [
+        "if-else"
+      ],
+      "type": "multiple_choice"
+    },
+    {
+      "type": "short_answer",
+      "question": "What\u2019s the Output?",
+      "tags": [],
+      "content": [
+        {
+          "type": "code",
+          "text": "score = 100 \nif score != 50: \n    print('Bonus unlocked!') \nelse: \n    print('Try again!')"
+        }
+      ],
+      "expected_answer": "Bonus unlocked!"
+    },
+    {
+      "type": "multiple_choice",
+      "question": "What's the Output?",
+      "tags": [],
+      "content": [
+        {
+          "type": "code",
+          "text": "hp = 50 \nif hp > 100: \n    print('Strong!') \nelif hp >= 50: \n    print('Average!') \nelse: \n    print('Weak!')"
+        }
+      ],
+      "options": [
+        "Strong!",
+        "Average!",
+        "Weak!",
+        "Error!"
+      ],
+      "answer_index": 1
+    }
+  ],
+  "updated_date": "2025-01-01"
+}

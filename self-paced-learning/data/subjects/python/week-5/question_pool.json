@@ -1,0 +1,32 @@
+{
+  "pool_title": "Python - Week-5 Question Pool",
+  "questions": [
+    {
+      "type": "coding",
+      "question": "monster attack reduces HP by 40. Start with hero_hp = 120 and print remaining HP.",
+      "tags": [],
+      "content": [],
+      "starter_code": "",
+      "sample_solution": "hero_hp = 120 \nhero_hp -= 40 \nprint(hero_hp)"
+    },
+    {
+      "type": "multiple_choice",
+      "question": "What will this code print?",
+      "tags": [],
+      "content": [
+        {
+          "type": "code",
+          "text": "hp = 100 \nhp = hp - 30 \nprint(hp)"
+        }
+      ],
+      "options": [
+        "100",
+        "70",
+        "30",
+        "Error"
+      ],
+      "answer_index": 1
+    }
+  ],
+  "updated_date": "2025-01-01"
+}

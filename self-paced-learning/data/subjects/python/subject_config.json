@@ -1,34 +1,43 @@
 {
   "subtopics": {
-    "functions": {
-      "description": "Master function concepts, arguments, return values, and advanced techniques",
+    "arrays": {
+      "description": "Discover efficient numerical computations and data processing with NumPy arrays",
       "estimated_time": "2 hours",
-      "lesson_count": 7,
-      "name": "Python Functions",
+      "lesson_count": 0,
+      "name": "NumPy Arrays",
       "order": 1,
-      "prerequisites": [],
+      "prerequisites": [
+        "functions",
+        "dictionaries",
+        "lists",
+        "loops",
+        "sets"
+      ],
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "total_count": 7,
-          "completion_percentage": 0.0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
+          "completed_lessons": [],
           "completion_percentage": 0,
-          "watched_videos": []
+          "total_count": 0
         },
         "overall": {
           "completed_items": 0,
-          "total_items": 7,
-          "completion_percentage": 0.0,
-          "is_complete": false
+          "completion_percentage": 0,
+          "is_complete": false,
+          "total_items": 0
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
         }
       },
-      "question_count": 23,
-      "status": "active",
+      "question_count": 0,
+      "status": "inactive",
+      "tags": [
+        "rest"
+      ],
       "video_count": 0
     },
     "dictionaries": {
@@ -37,7 +46,9 @@
       "lesson_count": 0,
       "name": "Python Dictionaries",
       "order": 2,
-      "prerequisites": ["lists"],
+      "prerequisites": [
+        "lists"
+      ],
       "progress": {
         "overall": {
           "completion_percentage": 0,
@@ -48,37 +59,36 @@
       "status": "inactive",
       "video_count": 0
     },
-    "arrays": {
-      "description": "Discover efficient numerical computations and data processing with NumPy arrays",
+    "functions": {
+      "description": "Master function concepts, arguments, return values, and advanced techniques",
       "estimated_time": "2 hours",
-      "lesson_count": 0,
-      "name": "NumPy Arrays",
+      "lesson_count": 7,
+      "name": "Python Functions",
       "order": 3,
-      "prerequisites": ["functions", "dictionaries", "lists", "loops", "sets"],
+      "prerequisites": [],
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "total_count": 0,
+          "completed_lessons": [],
           "completion_percentage": 0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
-          "completion_percentage": 0,
-          "watched_videos": []
+          "total_count": 7
         },
         "overall": {
           "completed_items": 0,
-          "total_items": 0,
           "completion_percentage": 0,
-          "is_complete": false
+          "is_complete": false,
+          "total_items": 7
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
         }
       },
-      "question_count": 0,
+      "question_count": 23,
       "status": "inactive",
-      "video_count": 0,
-      "tags": ["rest"]
+      "video_count": 0
     },
     "lists": {
       "description": "Understand Python's built-in list data structure and list comprehensions",
@@ -90,21 +100,21 @@
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "total_count": 10,
-          "completion_percentage": 0.0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
+          "completed_lessons": [],
           "completion_percentage": 0,
-          "watched_videos": []
+          "total_count": 10
         },
         "overall": {
           "completed_items": 0,
-          "total_items": 10,
-          "completion_percentage": 0.0,
-          "is_complete": false
+          "completion_percentage": 0,
+          "is_complete": false,
+          "total_items": 10
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
         }
       },
       "question_count": 1,
@@ -121,21 +131,21 @@
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "total_count": 7,
-          "completion_percentage": 0.0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
+          "completed_lessons": [],
           "completion_percentage": 0,
-          "watched_videos": []
+          "total_count": 7
         },
         "overall": {
           "completed_items": 0,
-          "total_items": 7,
-          "completion_percentage": 0.0,
-          "is_complete": false
+          "completion_percentage": 0,
+          "is_complete": false,
+          "total_items": 7
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
         }
       },
       "question_count": 0,
@@ -148,7 +158,9 @@
       "lesson_count": 0,
       "name": "Python Sets",
       "order": 6,
-      "prerequisites": ["lists"],
+      "prerequisites": [
+        "lists"
+      ],
       "progress": {
         "overall": {
           "completion_percentage": 0,
@@ -157,64 +169,6 @@
       },
       "question_count": 0,
       "status": "inactive",
-      "video_count": 0
-    },
-    "week-3": {
-      "description": "Your hero has stats now, but the villagers are not impressed. They shout:\n\"Traveler, tell us your name! How many coins do you carry? How strong are you?\"\n\nTo answer them, your hero needs to listen and respond. This is where we use input() and friendly output.",
-      "lesson_count": 0,
-      "name": "Week 3 – Speak with the Villagers",
-      "order": 7,
-      "progress": {
-        "lessons": {
-          "completed_count": 0,
-          "total_count": 0,
-          "completion_percentage": 0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
-          "completion_percentage": 0,
-          "watched_videos": []
-        },
-        "overall": {
-          "completed_items": 0,
-          "total_items": 0,
-          "completion_percentage": 0,
-          "is_complete": false
-        }
-      },
-      "question_count": 0,
-      "status": "active",
-      "video_count": 0
-    },
-    "week-4": {
-      "description": "Your hero steps bravely into the forest. Birds sing… until suddenly — BAM! 🐉\nA monster blocks the path.\n\nThe villagers whisper:\n\"Now we’ll see if this hero is smart… or just lunch.\"\n\nIt’s time for your first big choice:\n\nWill you fight the monster?\n\nWill you run away (screaming, probably)?\n\nOr will you bribe it with shiny coins?\n\nIn Python, choices are written with conditionals: if, elif, and else.",
-      "lesson_count": 5,
-      "name": "Week 4 – The Hero’s First Choice",
-      "order": 8,
-      "progress": {
-        "lessons": {
-          "completed_count": 0,
-          "total_count": 5,
-          "completion_percentage": 0.0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
-          "completion_percentage": 0,
-          "watched_videos": []
-        },
-        "overall": {
-          "completed_items": 0,
-          "total_items": 5,
-          "completion_percentage": 0.0,
-          "is_complete": false
-        }
-      },
-      "question_count": 0,
-      "status": "active",
       "video_count": 0
     },
     "week_1": {
@@ -227,21 +181,21 @@
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "total_count": 10,
-          "completion_percentage": 0.0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
+          "completed_lessons": [],
           "completion_percentage": 0,
-          "watched_videos": []
+          "total_count": 10
         },
         "overall": {
           "completed_items": 0,
-          "total_items": 10,
-          "completion_percentage": 0.0,
-          "is_complete": false
+          "completion_percentage": 0,
+          "is_complete": false,
+          "total_items": 10
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
         }
       },
       "question_count": 10,
@@ -254,25 +208,27 @@
       "lesson_count": 12,
       "name": "Week 2 - Hero Stats Training",
       "order": 8,
-      "prerequisites": ["week_1"],
+      "prerequisites": [
+        "week_1"
+      ],
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "total_count": 12,
-          "completion_percentage": 0.0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
+          "completed_lessons": [],
           "completion_percentage": 0,
-          "watched_videos": []
+          "total_count": 12
         },
         "overall": {
           "completed_items": 0,
-          "total_items": 12,
-          "completion_percentage": 0.0,
-          "is_complete": false
+          "completion_percentage": 0,
+          "is_complete": false,
+          "total_items": 12
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
         }
       },
       "question_count": 11,
@@ -287,24 +243,24 @@
       "progress": {
         "lessons": {
           "completed_count": 0,
-          "total_count": 0,
+          "completed_lessons": [],
           "completion_percentage": 0,
-          "completed_lessons": []
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
-          "completion_percentage": 0,
-          "watched_videos": []
+          "total_count": 0
         },
         "overall": {
           "completed_items": 0,
-          "total_items": 0,
           "completion_percentage": 0,
-          "is_complete": false
+          "is_complete": false,
+          "total_items": 0
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
         }
       },
-      "question_count": 0,
+      "question_count": 2,
       "status": "active",
       "video_count": 0
     },
@@ -313,34 +269,115 @@
       "lesson_count": 5,
       "name": "Week 4 – The Hero’s First Choice",
       "order": 10,
+      "pool_questions_count": 2,
       "progress": {
         "lessons": {
-          "completed_count": 4,
-          "total_count": 5,
-          "completion_percentage": 80.0,
+          "completed_count": 3,
           "completed_lessons": [
-            "challenge_quest_–_the_monster’s_challenge",
-            "comparison_operators",
             "python_conditions",
-            "summary"
-          ]
-        },
-        "videos": {
-          "watched_count": 0,
-          "total_count": 0,
-          "completion_percentage": 0,
-          "watched_videos": []
+            "comparison_operators",
+            "challenge_quest_–_the_monster’s_challenge"
+          ],
+          "completion_percentage": 60,
+          "total_count": 5
         },
         "overall": {
-          "completed_items": 4,
-          "total_items": 5,
-          "completion_percentage": 80.0,
-          "is_complete": false
+          "completed_items": 3,
+          "completion_percentage": 60,
+          "is_complete": false,
+          "total_items": 5
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
         }
       },
-      "question_count": 0,
+      "question_count": 4,
+      "quiz_questions_count": 4,
       "status": "active",
       "video_count": 0
+    },
+    "week-5": {
+      "description": "The villagers cheer as you enter the battlefield… until — SPLAT! 🟢👾 \nA slime monster named *Jellothor* jiggles out of the bushes. It smells like expired pudding. \n \nThe Math Wizard Menthus yells: “Quick! Use your numbers before it multiplies!” \n \nWelcome, hero, to *Battle Math* — where every swing, heal, and loot split depends on operators.",
+      "lesson_count": 13,
+      "name": "Week 5 - Battle Math",
+      "order": 11,
+      "pool_questions_count": 0,
+      "progress": {
+        "lessons": {
+          "completed_count": 0,
+          "completed_lessons": [],
+          "completion_percentage": 0,
+          "total_count": 13
+        },
+        "overall": {
+          "completed_items": 0,
+          "completion_percentage": 0,
+          "is_complete": false,
+          "total_items": 13
+        },
+        "videos": {
+          "completion_percentage": 0,
+          "total_count": 0,
+          "watched_count": 0,
+          "watched_videos": []
+        }
+      },
+      "question_count": 5,
+      "quiz_questions_count": 4,
+      "status": "active",
+      "tags": [
+        "Arithmetic Operators",
+        "Floor Division",
+        "Modulus",
+        "Exponent",
+        "Precedence"
+      ],
+      "video_count": 0
+    },
+    "week-6": {
+      "description": "The guild master smirks: \n'So you beat one orc? Cute. But real monsters don’t give up in one turn. They fight, and fight, and fight… until one of you falls. You need the magic of loops to survive.' \n \nLoops are like battle systems: they repeat actions until the monster is gone or the hero wins.",
+      "estimated_time": "2 Hours",
+      "name": "Week 6 - Endless Battles (Loops)",
+      "order": 12,
+      "prerequisites": [
+        "week-3",
+        "week-4",
+        "week-5",
+        "week_1",
+        "week_2"
+      ],
+      "status": "active",
+      "tags": [
+        "ForLoop",
+        "Range",
+        "WhileLoop",
+        "Break",
+        "Continue"
+      ]
+    },
+    "week-7": {
+      "description": "The Library of Whispering Scrolls welcomes you. Candles flicker, dusty tomes float around, and a hooded wizard mutters: \n\"Words are not just words here. They are weapons. Shout them, twist them, slice them — and reality bends to your will.\"",
+      "estimated_time": "1.5 Hours",
+      "name": "Week 7 - String Magic (Text Spells & Scrolls)",
+      "order": 13,
+      "prerequisites": [
+        "week-3",
+        "week-4",
+        "week-5",
+        "week-6",
+        "week_1",
+        "week_2"
+      ],
+      "status": "active",
+      "tags": [
+        "StringBasics",
+        "StringIndexSlice",
+        "StringMethods",
+        "StringFormatting"
+      ]
     }
   },
   "allowed_tags": [
@@ -361,6 +398,11 @@
     "return values",
     "syntax",
     "terminology",
-    "Variable"
+    "Variable",
+    "Arithmetic Operators",
+    "Floor Division",
+    "Modulus",
+    "Exponent",
+    "Precedence"
   ]
 }
